@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/main_backgroud"
+    tools:context=".MainActivity">
+
+    <!-- 메뉴판 RecyclerView -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/menu_board"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintEnd_toStartOf="@id/basket"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintHeight_percent="0.8"
+        android:layout_marginHorizontal="25dp"
+        android:paddingTop="10dp"
+        android:paddingBottom="10dp"
+        tools:listitem="@layout/menu_recycler_view" />
+
+    <!-- 메뉴판 RecyclerView의 Tab -->
+    <com.google.android.material.tabs.TabLayout
+        android:id="@+id/menu_tab"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        app:tabTextAppearance="@style/menu_tab"
+        android:background="@android:color/transparent"
+        app:layout_constraintBottom_toTopOf="@id/menu_board"
+        app:layout_constraintStart_toStartOf="@id/menu_board"
+        app:layout_constraintEnd_toEndOf="@id/menu_board"
+        />
+
+    <!-- Basket의 RecyclerView Tab -->
+
+    <!-- 주문번호(제목) -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/basket"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:background="@drawable/basket_design"
+        android:paddingTop="150dp"
+        android:paddingBottom="150dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintWidth_percent="0.4"
+        tools:listitem="@layout/basket_recycler_view" />
+
+    <TextView
+        android:id="@+id/orderNumTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="55dp"
+        android:layout_marginTop="100dp"
+        android:fontFamily="@font/nanum_gothic_extrabold"
+        android:text="주문번호 : "
+        android:textAppearance="@style/TextAppearance.AppCompat.Large"
+        app:layout_constraintStart_toStartOf="@id/basket"
+        app:layout_constraintTop_toTopOf="@id/basket" />
+
+    <!-- 주문번호(숫자) -->
+    <TextView
+        android:id="@+id/orderNum"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="@font/nanum_gothic_extrabold"
+        android:text="1"
+        android:textAppearance="@style/TextAppearance.AppCompat.Large"
+        app:layout_constraintBottom_toBottomOf="@id/orderNumTitle"
+        app:layout_constraintStart_toEndOf="@id/orderNumTitle" />
+
+    <!-- 현재 총 가격 (제목) -->
+    <TextView
+        android:id="@+id/totalPrice"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="@font/nanum_gothic_extrabold"
+        android:text="주문 금액 : "
+        android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+        app:layout_constraintEnd_toStartOf="@id/totalPriceNum"
+        app:layout_constraintBottom_toBottomOf="@id/totalPriceNum" />
+
+    <!-- 현재 총 가격 (숫자) -->
+    <TextView
+        android:id="@+id/totalPriceNum"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="@font/nanum_gothic_extrabold"
+        android:layout_marginEnd="55dp"
+        android:layout_marginBottom="130dp"
+        android:text="0"
+        android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+        app:layout_constraintBottom_toBottomOf="@id/basket"
+        app:layout_constraintEnd_toEndOf="@id/basket" />
+
+    <android.widget.Button
+        android:id="@+id/orderProcess"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginBottom="30dp"
+        android:background="@drawable/order_button_design"
+        android:fontFamily="@font/nanum_gothic_extrabold"
+        android:text="주문 완료"
+        android:textColor="#FFFFFF"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toBottomOf="@id/basket"
+        app:layout_constraintEnd_toEndOf="@id/basket"
+        app:layout_constraintHeight_percent="0.07"
+        app:layout_constraintStart_toStartOf="@id/basket"
+        app:layout_constraintWidth_percent="0.33" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

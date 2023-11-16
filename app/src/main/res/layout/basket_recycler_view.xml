@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:background="@drawable/basketitem_design"
+    android:paddingHorizontal="0dp"
+    android:paddingVertical="8dp">
+
+    <TextView
+        android:id="@+id/basket_name"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="50dp"
+        android:layout_weight="3"
+        android:fontFamily="@font/nanum_gothic_bold"
+        android:text="아이스 아메리카노"
+        android:textAppearance="@style/TextAppearance.AppCompat.Body2" />
+
+    <TextView
+        android:id="@+id/basket_count"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:fontFamily="@font/nanum_gothic_bold"
+        android:gravity="center"
+        android:paddingHorizontal="10dp"
+        android:text="1"
+        android:textAppearance="@style/TextAppearance.AppCompat.Body2" />
+
+    <TextView
+        android:id="@+id/basket_price"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="50dp"
+        android:layout_weight="1"
+        android:fontFamily="@font/nanum_gothic_bold"
+        android:gravity="center"
+        android:text="2000"
+        android:textAppearance="@style/TextAppearance.AppCompat.Body2" />
+</LinearLayout>
