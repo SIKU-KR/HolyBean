@@ -11,7 +11,7 @@
         android:id="@+id/basket_name"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="50dp"
+        android:layout_marginStart="35dp"
         android:layout_weight="3"
         android:fontFamily="@font/nanum_gothic_bold"
         android:text="아이스 아메리카노"

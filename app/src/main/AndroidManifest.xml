@@ -13,15 +13,26 @@
         android:theme="@style/Theme.HolyBean"
         tools:targetApi="31">
         <activity
+            android:name=".ProcessOrder"
+            android:exported="false"
+            android:label="@string/title_activity_process_order"
+            android:theme="@style/Theme.HolyBean" />
+        <activity
+            android:name=".process_order"
+            android:exported="false"
+            android:label="@string/title_activity_process_order"
+            android:theme="@style/Theme.HolyBean" />
+        <activity
             android:name=".MainActivity"
-            android:screenOrientation="landscape"
-            android:exported="true">
+            android:exported="true"
+            android:screenOrientation="landscape">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
         <meta-data
             android:name="preloaded_fonts"
             android:resource="@array/preloaded_fonts" />
