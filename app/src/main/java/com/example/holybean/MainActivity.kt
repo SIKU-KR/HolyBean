@@ -1,14 +1,27 @@
 package com.example.holybean
 
+import android.graphics.Color
+import android.os.Build
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
 import com.google.android.material.navigation.NavigationView
 
-class MainActivity : AppCompatActivity() {
+interface MainActivityListener {
+    fun replaceHomeFragment()
+}
+
+class MainActivity : AppCompatActivity(), MainActivityListener {
 
     private lateinit var drawerLayout: DrawerLayout
+
+    override fun replaceHomeFragment() {
+        val homeFragment = HomeFragment()
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.fragment_container, homeFragment)
+            .commit()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -26,6 +39,7 @@ class MainActivity : AppCompatActivity() {
             // 드로어 메뉴 아이템 클릭 시 해당 Fragment로 전환
             when (drawerItem.itemId) {
                 R.id.nav_home -> loadFragment(HomeFragment())
+                R.id.nav_orders -> loadFragment(OrdersFragment())
                 // 다른 메뉴 아이템에 대한 처리를 여기에 추가
             }
             drawerItem.isChecked = true

@@ -1,12 +1,15 @@
 import android.annotation.SuppressLint
+import android.content.ContentValues
 import android.content.Context
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
+import com.example.holybean.BasketItem
 import com.example.holybean.MenuItem
+import com.example.holybean.OrderItem
 import java.io.FileOutputStream
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
+import java.text.SimpleDateFormat
+import java.util.Date
 
 class DatabaseManager private constructor(
     context: Context
@@ -15,23 +18,74 @@ class DatabaseManager private constructor(
     companion object {
         private const val DATABASE_NAME = "database.db"
         private const val DATABASE_VERSION = 1
-        // private val TABLE_NAME = today
 
         private var instance: DatabaseManager? = null
 
         fun getInstance(context: Context): DatabaseManager {
-            if (instance == null) {
-                instance = DatabaseManager(context.applicationContext)
-                instance!!.copyDatabaseFromAssets(context, DATABASE_NAME)
+            return instance ?: synchronized(this) {
+                instance ?: DatabaseManager(context.applicationContext).also {
+                    instance = it
+                    it.copyDatabaseFromAssets(context, DATABASE_NAME)
+                }
             }
-            return instance!!
         }
 
         fun getMenuList(context: Context): ArrayList<MenuItem> {
-            var menuList: ArrayList<MenuItem>
             val instance = getInstance(context)
-            menuList = instance.readMenu()
-            return menuList!!
+            return instance.readMenu()
+        }
+
+        fun getOrderList(context: Context): ArrayList<OrderItem> {
+            val instance = getInstance(context)
+            return instance.readOrders()
+        }
+
+        fun getCurrentOrderNumber(context: Context): Int {
+            val currentDate = getInstance(context).getCurrentDate()
+            val db = getInstance(context).readableDatabase
+            val cursor: Cursor = db.rawQuery("SELECT COUNT(*) FROM Orders WHERE order_date = ?", arrayOf(currentDate))
+            var orderCount = 0
+            if (cursor.moveToFirst()) {
+                orderCount = cursor.getInt(0)
+            }
+            cursor.close()
+            db.close()
+            return orderCount + 1
+        }
+
+        fun orderDataProcess(context: Context, orderId: Int, totalPrice: Int, orderMethod: String, ordererName: String, basket: ArrayList<BasketItem>){
+            val currentDate = getInstance(context).getCurrentDate()
+            val dbHelper = getInstance(context)
+
+            // Insert into Orders table
+            val ordersValues = ContentValues().apply {
+                put("order_id", orderId)
+                put("order_date", currentDate)
+                put("total_amount", totalPrice)
+                put("method", orderMethod)
+                put("orderer", ordererName)
+            }
+
+            val ordersDb = dbHelper.writableDatabase
+            val orderIdInserted = ordersDb.insert("Orders", null, ordersValues)
+
+            val detailsDb = dbHelper.writableDatabase
+
+            for (basketItem in basket) {
+                val detailsValues = ContentValues().apply {
+                    put("order_id", orderIdInserted)
+                    put("product_id", basketItem.id)
+                    put("product_name", basketItem.name)
+                    put("quantity", basketItem.count)
+                    put("price", basketItem.price)
+                    put("subtotal", basketItem.total)
+                }
+                detailsDb.insert("Details", null, detailsValues)
+            }
+
+            // Close the databases after use
+            ordersDb.close()
+            detailsDb.close()
         }
     }
 
@@ -53,7 +107,7 @@ class DatabaseManager private constructor(
     }
 
     @SuppressLint("Range")
-    fun readMenu(): ArrayList<MenuItem> {
+    private fun readMenu(): ArrayList<MenuItem> {
         val menuList = ArrayList<MenuItem>()
         val db = this.readableDatabase
         val cursor: Cursor = db.rawQuery("SELECT * FROM products", null)
@@ -67,7 +121,35 @@ class DatabaseManager private constructor(
         }
         cursor.close()
         db.close()
-        menuList.sortBy{it.id}
+        menuList.sortBy { it.id }
         return menuList
+    }
+
+    @SuppressLint("Range")
+    private fun readOrders(): ArrayList<OrderItem> {
+        val currentDate = getCurrentDate()
+        val orderList = ArrayList<OrderItem>()
+        val db = this.readableDatabase
+        val cursor: Cursor = db.rawQuery("SELECT * FROM Orders WHERE order_date = ?", arrayOf(currentDate))
+
+        cursor.use {
+            while (it.moveToNext()) {
+                val orderId = it.getInt(it.getColumnIndex("order_id"))
+                val totalAmount = it.getInt(it.getColumnIndex("total_amount"))
+                val method = it.getString(it.getColumnIndex("method"))
+                val orderer = it.getString(it.getColumnIndex("orderer"))
+                orderList.add(OrderItem(orderId, totalAmount, method, orderer))
+            }
+        }
+        cursor.close()
+        db.close()
+        orderList.sortBy { it.orderId }
+        return orderList
+    }
+
+    private fun getCurrentDate(): String {
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd")
+        val currentDate = Date()
+        return dateFormat.format(currentDate)
     }
 }

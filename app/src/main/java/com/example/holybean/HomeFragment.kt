@@ -2,23 +2,29 @@ package com.example.holybean
 
 import DatabaseManager
 import android.annotation.SuppressLint
-import android.content.Intent
+import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.example.holybean.databinding.FragmentHomeBinding
 import com.google.android.material.tabs.TabLayout
 
 interface HomeFunctions{
     fun addToBasket(id:Int)
+    fun deleteFromBasket(id:Int)
 }
 
-class HomeFragment : Fragment(), HomeFunctions {
+class HomeFragment : Fragment(), HomeFunctions, OrderDialogListener {
+    private lateinit var binding: FragmentHomeBinding
+    private lateinit var context: Context
+
+    private var mainListener: MainActivityListener? = null
+
     private lateinit var menuBoard: RecyclerView
     private lateinit var menuTab: TabLayout
     private lateinit var basket: RecyclerView
@@ -26,39 +32,50 @@ class HomeFragment : Fragment(), HomeFunctions {
     private lateinit var itemList: ArrayList<MenuItem>
     private lateinit var basketList: ArrayList<BasketItem>
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        val view = inflater.inflate(R.layout.fragment_home, container, false)
+    private var orderId: Int = 0
+    private var totalPrice: Int = 0
 
-        itemList = DatabaseManager.getMenuList(view.context)// menu.db 에서 메뉴 목록 가져오기
+
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+        binding = FragmentHomeBinding.inflate(inflater, container, false)
+        val view = binding.root
+        context = view.context
+
+        itemList = DatabaseManager.getMenuList(view.context)
         basketList = ArrayList()
 
-        initMenuBoard(view)
-        initTabs(view)
-        initBasket(view)
+        val orderNumTextView: TextView = binding.orderNum
+        this.orderId = DatabaseManager.getCurrentOrderNumber(context)
+        orderNumTextView.text = orderId.toString()
 
-        val finishbutton = view.findViewById<Button>(R.id.orderProcess)
-        finishbutton.setOnClickListener {
-            val intent = Intent(view.context, ProcessOrder::class.java)
-            intent.putExtra("basket", basketList)
-            startActivity(intent)
+        initMenuBoard()
+        initTabs()
+        initBasket()
+
+        // 주문 담기 완료
+        binding.orderProcess.setOnClickListener{
+            if(basketList.isNotEmpty()){
+                val orderDialog = OrderDialog()
+                orderDialog.setOrderDialogListener(this)
+                orderDialog.show(parentFragmentManager, "OrderDialog")
+            }
         }
-
-
+        
         return view
     }
 
-    private fun initMenuBoard(view: View){
-        menuBoard = view.findViewById(R.id.menu_board)
+    private fun initMenuBoard(){
+        menuBoard = binding.menuBoard
         val boardAdapter = MenuAdapter(itemList, this)
         menuBoard.apply{
             adapter = boardAdapter
-            layoutManager = GridLayoutManager(view.context, 4)
+            layoutManager = GridLayoutManager(context, 3)
             addItemDecoration(RvCustomDesign(10,10,15,15)) // 20dp의 여백
         }
     }
 
-    private fun initTabs(view: View) {
-        menuTab = view.findViewById(R.id.menu_tab)
+    private fun initTabs() {
+        menuTab = binding.menuTab
         menuTab.addTab(menuTab.newTab().setText("전체"))
         menuTab.addTab(menuTab.newTab().setText("ICE커피"))
         menuTab.addTab(menuTab.newTab().setText("HOT커피"))
@@ -84,12 +101,12 @@ class HomeFragment : Fragment(), HomeFunctions {
         menuBoard.adapter = MenuAdapter(filteredItems as ArrayList<MenuItem>, this)
     }
 
-    private fun initBasket(view: View){
-        basket = view.findViewById(R.id.basket)
-        val basketAdapter = BasketAdapter(basketList)
+    private fun initBasket(){
+        basket = binding.basket
+        val basketAdapter = BasketAdapter(basketList, this)
         basket.apply{
             adapter = basketAdapter
-            layoutManager = GridLayoutManager(view.context, 1)
+            layoutManager = GridLayoutManager(context, 1)
             addItemDecoration(RvCustomDesign(15,15,0,0)) // 20dp의 여백
         }
     }
@@ -110,16 +127,33 @@ class HomeFragment : Fragment(), HomeFunctions {
         updateTotal()
     }
 
-    private fun updateTotal() {
-        view?.let { currentView ->
-            val totalPriceNumTextView: TextView = currentView.findViewById(R.id.totalPriceNum)
-            var totalSum = 0
-            for (item in basketList) {
-                item.total = item.count * item.price
-                totalSum += item.total
+    override fun deleteFromBasket(id: Int) {
+        val item = basketList.find { it.id  == id }
+        if (item != null) {
+            if (item.count == 1) {
+                basketList.remove(item)
+            } else {
+                item.count--
             }
-            totalPriceNumTextView.text = totalSum.toString()
         }
+        basket.adapter?.notifyDataSetChanged()
+        updateTotal()
+    }
+
+
+    private fun getTotal(): Int {
+        this.totalPrice = 0
+        for (item in basketList) {
+            item.total = item.count * item.price
+            this.totalPrice += item.total
+        }
+        return this.totalPrice
+    }
+
+    private fun updateTotal() {
+        this.totalPrice = getTotal()
+        val totalPriceNumTextView: TextView = binding.totalPriceNum
+        totalPriceNumTextView.text = this.totalPrice.toString()
     }
 
     // menulist binarysearch
@@ -136,5 +170,26 @@ class HomeFragment : Fragment(), HomeFunctions {
             }
         }
         return null // itemId not found
+    }
+
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        if (context is MainActivityListener) {
+            mainListener = context
+        } else {
+            throw RuntimeException("$context must implement OnFragmentInteractionListener")
+        }
+    }
+
+    override fun onDetach() {
+        super.onDetach()
+        mainListener = null
+    }
+
+    override fun onOrderConfirmed(orderMethod: String, ordererName: String){
+//        val toastMessage = "Order confirmed!\nMethod: $orderMethod\nOrderer: $ordererName"
+//        Toast.makeText(context, toastMessage, Toast.LENGTH_SHORT).show()
+        DatabaseManager.orderDataProcess(context, this.orderId, this.totalPrice, orderMethod, ordererName, this.basketList)
+        mainListener?.replaceHomeFragment()
     }
 }

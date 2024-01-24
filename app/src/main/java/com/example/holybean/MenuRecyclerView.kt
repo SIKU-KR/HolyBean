@@ -1,17 +1,11 @@
 package com.example.holybean
 
-import android.annotation.SuppressLint
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import android.content.Context
-import android.database.sqlite.SQLiteDatabase
-import android.database.sqlite.SQLiteOpenHelper
-import android.database.Cursor
 import android.widget.Toast
-import java.io.FileOutputStream
 
 // menu의 data class 정의
 data class MenuItem(val id:Int, val name:String, val price:Int)
