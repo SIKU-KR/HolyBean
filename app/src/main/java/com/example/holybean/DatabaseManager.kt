@@ -1,6 +1,5 @@
 package com.example.holybean
 
-import MenuItem
 import android.annotation.SuppressLint
 import android.content.ContentValues
 import android.content.Context
@@ -193,10 +192,4 @@ class DatabaseManager private constructor(
         }
         return dataMap
     }
-}
-
-fun getCurrentDate(): String {
-    val dateFormat = SimpleDateFormat("yyyy-MM-dd")
-    val currentDate = Date()
-    return dateFormat.format(currentDate)
 }

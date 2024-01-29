@@ -1,6 +1,5 @@
 package com.example.holybean
 
-import MenuItem
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup

@@ -1,3 +1,5 @@
+package com.example.holybean
+
 // menu의 data class 정의
 data class MenuItem(
     val id:Int,
