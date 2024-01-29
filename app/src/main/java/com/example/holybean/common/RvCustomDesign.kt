@@ -1,4 +1,4 @@
-package com.example.holybean
+package com.example.holybean.common
 
 import android.graphics.Rect
 import android.view.View

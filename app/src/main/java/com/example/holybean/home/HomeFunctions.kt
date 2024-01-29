@@ -1,4 +1,4 @@
-package com.example.holybean
+package com.example.holybean.home
 
 interface HomeFunctions{
     fun addToBasket(id:Int)

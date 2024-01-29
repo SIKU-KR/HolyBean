@@ -1,4 +1,4 @@
-package com.example.holybean
+package com.example.holybean.common
 
 interface MainActivityListener {
     fun replaceHomeFragment()

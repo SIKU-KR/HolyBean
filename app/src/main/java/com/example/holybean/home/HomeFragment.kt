@@ -1,4 +1,4 @@
-package com.example.holybean
+package com.example.holybean.home
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -13,7 +13,12 @@ import androidx.recyclerview.widget.RecyclerView
 import com.dantsu.escposprinter.EscPosCharsetEncoding
 import com.dantsu.escposprinter.EscPosPrinter
 import com.dantsu.escposprinter.connection.bluetooth.BluetoothPrintersConnections
+import com.example.holybean.common.DatabaseManager
+import com.example.holybean.common.MainActivityListener
+import com.example.holybean.common.RvCustomDesign
 import com.example.holybean.databinding.FragmentHomeBinding
+import com.example.holybean.dataclass.BasketItem
+import com.example.holybean.dataclass.MenuItem
 import com.google.android.material.tabs.TabLayout
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -211,7 +216,14 @@ class HomeFragment : Fragment(), HomeFunctions, OrderDialogListener {
             printer.disconnectPrinter()
 
         }
-        DatabaseManager.orderDataProcess(context, this.orderId, this.totalPrice, orderMethod, ordererName, this.basketList)
+        DatabaseManager.orderDataProcess(
+            context,
+            this.orderId,
+            this.totalPrice,
+            orderMethod,
+            ordererName,
+            this.basketList
+        )
         mainListener?.replaceHomeFragment()
     }
 

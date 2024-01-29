@@ -1,10 +1,12 @@
-package com.example.holybean
+package com.example.holybean.orders
 
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import com.example.holybean.R
+import com.example.holybean.dataclass.OrdersDetailItem
 
 class OrdersDetailAdapter(private var basketList: ArrayList<OrdersDetailItem>) : RecyclerView.Adapter<OrdersDetailAdapter.OrdersDetailHolder>() {
 

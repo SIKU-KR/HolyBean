@@ -9,6 +9,10 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
+import com.example.holybean.common.MainActivityListener
+import com.example.holybean.home.HomeFragment
+import com.example.holybean.orders.OrdersFragment
+import com.example.holybean.report.ReportFragment
 import com.google.android.material.navigation.NavigationView
 
 class MainActivity : AppCompatActivity(), MainActivityListener {

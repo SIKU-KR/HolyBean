@@ -1,4 +1,4 @@
-package com.example.holybean
+package com.example.holybean.report
 
 import android.content.Context
 import android.os.Bundle
@@ -7,6 +7,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.fragment.app.Fragment
+import com.example.holybean.common.DatabaseManager
+import com.example.holybean.common.getCurrentDate
 import com.example.holybean.databinding.FragmentReportBinding
 
 class ReportFragment: Fragment() {

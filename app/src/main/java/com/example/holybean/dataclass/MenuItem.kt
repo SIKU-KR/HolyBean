@@ -1,4 +1,4 @@
-package com.example.holybean
+package com.example.holybean.dataclass
 
 // menu의 data class 정의
 data class MenuItem(

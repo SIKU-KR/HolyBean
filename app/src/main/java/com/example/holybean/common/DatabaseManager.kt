@@ -1,4 +1,4 @@
-package com.example.holybean
+package com.example.holybean.common
 
 import android.annotation.SuppressLint
 import android.content.ContentValues
@@ -6,9 +6,11 @@ import android.content.Context
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
+import com.example.holybean.dataclass.BasketItem
+import com.example.holybean.dataclass.MenuItem
+import com.example.holybean.dataclass.OrderItem
+import com.example.holybean.dataclass.OrdersDetailItem
 import java.io.FileOutputStream
-import java.text.SimpleDateFormat
-import java.util.Date
 
 class DatabaseManager private constructor(
     context: Context

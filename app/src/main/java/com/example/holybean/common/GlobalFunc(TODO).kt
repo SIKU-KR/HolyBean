@@ -1,4 +1,4 @@
-package com.example.holybean
+package com.example.holybean.common
 
 import java.text.SimpleDateFormat
 import java.util.Date

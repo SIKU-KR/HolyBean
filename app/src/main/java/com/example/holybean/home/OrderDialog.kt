@@ -1,4 +1,4 @@
-package com.example.holybean
+package com.example.holybean.home
 
 import android.app.AlertDialog
 import android.app.Dialog
@@ -7,6 +7,7 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.RadioGroup
 import androidx.fragment.app.DialogFragment
+import com.example.holybean.R
 
 class OrderDialog : DialogFragment() {
 
