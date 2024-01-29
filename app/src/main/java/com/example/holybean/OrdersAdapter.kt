@@ -4,17 +4,9 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
-import android.widget.Toast
 import androidx.recyclerview.widget.RecyclerView
 
-data class OrderItem(
-    val orderId: Int,
-    val totalAmount: Int,
-    val method: String,
-    val orderer: String,
-)
-
-class OrdersAdapter(private var ordersList: ArrayList<OrderItem>) : RecyclerView.Adapter<OrdersAdapter.OrdersHolder>() {
+class OrdersAdapter(private var ordersList: ArrayList<OrderItem>, private val ordersListener: OrdersFragmentFunction) : RecyclerView.Adapter<OrdersAdapter.OrdersHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): OrdersHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.orders_recycler_view, parent, false)
@@ -28,7 +20,7 @@ class OrdersAdapter(private var ordersList: ArrayList<OrderItem>) : RecyclerView
         holder.ordersMethod.text = "주문방식: ${item.method}"
         holder.ordersOrderer.text = "주문자: ${item.orderer}"
         holder.itemView.setOnClickListener {
-            Toast.makeText(holder.itemView.context, "주문 번호 조회(NOT IMPLEMENTED): ${item.orderId}", Toast.LENGTH_SHORT).show()
+            ordersListener.newOrderSelected(item.orderId, item.totalAmount)
         }
     }
 

@@ -1,18 +1,23 @@
 package com.example.holybean
 
-import android.graphics.Color
+import android.Manifest
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
 import com.google.android.material.navigation.NavigationView
 
-interface MainActivityListener {
-    fun replaceHomeFragment()
-}
-
 class MainActivity : AppCompatActivity(), MainActivityListener {
+    companion object {
+        const val PERMISSION_BLUETOOTH = 1
+        const val PERMISSION_BLUETOOTH_ADMIN = 2
+        const val PERMISSION_BLUETOOTH_CONNECT = 3
+        const val PERMISSION_BLUETOOTH_SCAN = 4
+    }
 
     private lateinit var drawerLayout: DrawerLayout
 
@@ -29,7 +34,7 @@ class MainActivity : AppCompatActivity(), MainActivityListener {
 
         drawerLayout = findViewById(R.id.drawer_layout)
         val navigationView: NavigationView = findViewById(R.id.nav_view)
-        // 초기 화면을 HomeFragment로 설정
+
         if (savedInstanceState == null) {
             supportFragmentManager.beginTransaction()
                 .replace(R.id.fragment_container, HomeFragment())
@@ -40,12 +45,28 @@ class MainActivity : AppCompatActivity(), MainActivityListener {
             when (drawerItem.itemId) {
                 R.id.nav_home -> loadFragment(HomeFragment())
                 R.id.nav_orders -> loadFragment(OrdersFragment())
+                R.id.nav_report -> loadFragment(ReportFragment())
                 // 다른 메뉴 아이템에 대한 처리를 여기에 추가
             }
             drawerItem.isChecked = true
             drawerLayout.closeDrawers()
             true
         }
+
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S && ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.BLUETOOTH), MainActivity.PERMISSION_BLUETOOTH)
+        } else if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S && ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_ADMIN) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.BLUETOOTH_ADMIN), MainActivity.PERMISSION_BLUETOOTH_ADMIN)
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.BLUETOOTH_CONNECT), MainActivity.PERMISSION_BLUETOOTH_CONNECT)
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.BLUETOOTH_SCAN), MainActivity.PERMISSION_BLUETOOTH_SCAN)
+        } else {
+
+
+
+        }
+
     }
 
     private fun loadFragment(fragment: Fragment) {

@@ -1,6 +1,6 @@
 package com.example.holybean
 
-import DatabaseManager
+import MenuItem
 import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Bundle
@@ -11,13 +11,14 @@ import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.dantsu.escposprinter.EscPosCharsetEncoding
+import com.dantsu.escposprinter.EscPosPrinter
+import com.dantsu.escposprinter.connection.bluetooth.BluetoothPrintersConnections
 import com.example.holybean.databinding.FragmentHomeBinding
 import com.google.android.material.tabs.TabLayout
-
-interface HomeFunctions{
-    fun addToBasket(id:Int)
-    fun deleteFromBasket(id:Int)
-}
+import java.text.SimpleDateFormat
+import java.util.Date
+import kotlin.concurrent.thread
 
 class HomeFragment : Fragment(), HomeFunctions, OrderDialogListener {
     private lateinit var binding: FragmentHomeBinding
@@ -187,9 +188,48 @@ class HomeFragment : Fragment(), HomeFunctions, OrderDialogListener {
     }
 
     override fun onOrderConfirmed(orderMethod: String, ordererName: String){
-//        val toastMessage = "Order confirmed!\nMethod: $orderMethod\nOrderer: $ordererName"
-//        Toast.makeText(context, toastMessage, Toast.LENGTH_SHORT).show()
+        val printer = EscPosPrinter(BluetoothPrintersConnections.selectFirstPaired(), 180, 72f, 32, EscPosCharsetEncoding("EUC-KR", 13))
+        // 고객용 영수증 인쇄
+        thread {
+            printer.printFormattedTextAndCut("[C]=====================================\n" +
+                    "[L]\n" +
+                    "[C]<u><font size='big'>주문번호 : ${this.orderId}</font></u>\n"
+                    + "[L]\n"+
+                    "[C]====================================="
+                , 500)
+            // 포스용 영수증 인쇄, 1초 딜레이
+            Thread.sleep(500)
+            printer.printFormattedTextAndCut(
+                "[C]=====================================\n" +
+                        "[L]\n"
+                        + "[C]<u><font size='big'>주문번호 : ${this.orderId}</font></u>\n"
+                        + "[L]\n"
+                        + "[R]주문자 : ${ordererName}\n"
+                        + "[C]-------------------------------------\n"
+                + receiptText(orderMethod),
+                500)
+            Thread.sleep(2000)
+            printer.disconnectPrinter()
+
+        }
         DatabaseManager.orderDataProcess(context, this.orderId, this.totalPrice, orderMethod, ordererName, this.basketList)
         mainListener?.replaceHomeFragment()
+    }
+
+    private fun receiptText(orderMethod: String) : String {
+        val dateFormat = SimpleDateFormat("yyyy.MM.dd HH:mm:ss")
+        val currentTime = Date()
+
+        var result = "[L]\n"
+        for (item in basketList) {
+            result += "[L]${item.name}[R]${item.count}\n"
+        }
+        result += "[L]\n"
+        result += "[R]합계 : ${this.totalPrice}\n"
+        result += "[C]-------------------------------------\n"
+        result += "[R]결제수단 : ${orderMethod}\n"
+        result += "[R]${dateFormat.format(currentTime)}\n"
+        result += "[C]====================================="
+        return result
     }
 }

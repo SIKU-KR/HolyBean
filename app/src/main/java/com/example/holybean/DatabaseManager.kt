@@ -1,12 +1,12 @@
+package com.example.holybean
+
+import MenuItem
 import android.annotation.SuppressLint
 import android.content.ContentValues
 import android.content.Context
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
-import com.example.holybean.BasketItem
-import com.example.holybean.MenuItem
-import com.example.holybean.OrderItem
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -35,13 +35,23 @@ class DatabaseManager private constructor(
             return instance.readMenu()
         }
 
-        fun getOrderList(context: Context): ArrayList<OrderItem> {
+        fun getOrderList(context: Context, date: String): ArrayList<OrderItem> {
             val instance = getInstance(context)
-            return instance.readOrders()
+            return instance.readOrders(date)
+        }
+
+        fun getOrderDetail(context: Context, num: Int, date: String): ArrayList<OrdersDetailItem> {
+            val instance = getInstance(context)
+            return instance.readOrderDetail(num, date)
+        }
+
+        fun getReportData(context: Context, date: String): Map<String, Int> {
+            val instance = getInstance(context)
+            return instance.makeReportInfo(date)
         }
 
         fun getCurrentOrderNumber(context: Context): Int {
-            val currentDate = getInstance(context).getCurrentDate()
+            val currentDate = getCurrentDate()
             val db = getInstance(context).readableDatabase
             val cursor: Cursor = db.rawQuery("SELECT COUNT(*) FROM Orders WHERE order_date = ?", arrayOf(currentDate))
             var orderCount = 0
@@ -54,7 +64,7 @@ class DatabaseManager private constructor(
         }
 
         fun orderDataProcess(context: Context, orderId: Int, totalPrice: Int, orderMethod: String, ordererName: String, basket: ArrayList<BasketItem>){
-            val currentDate = getInstance(context).getCurrentDate()
+            val currentDate = getCurrentDate()
             val dbHelper = getInstance(context)
 
             // Insert into Orders table
@@ -73,7 +83,8 @@ class DatabaseManager private constructor(
 
             for (basketItem in basket) {
                 val detailsValues = ContentValues().apply {
-                    put("order_id", orderIdInserted)
+                    put("order_id", orderId)
+                    put("date",currentDate)
                     put("product_id", basketItem.id)
                     put("product_name", basketItem.name)
                     put("quantity", basketItem.count)
@@ -126,12 +137,10 @@ class DatabaseManager private constructor(
     }
 
     @SuppressLint("Range")
-    private fun readOrders(): ArrayList<OrderItem> {
-        val currentDate = getCurrentDate()
+    private fun readOrders(date: String): ArrayList<OrderItem> {
         val orderList = ArrayList<OrderItem>()
         val db = this.readableDatabase
-        val cursor: Cursor = db.rawQuery("SELECT * FROM Orders WHERE order_date = ?", arrayOf(currentDate))
-
+        val cursor: Cursor = db.rawQuery("SELECT * FROM Orders WHERE order_date = ?", arrayOf(date))
         cursor.use {
             while (it.moveToNext()) {
                 val orderId = it.getInt(it.getColumnIndex("order_id"))
@@ -147,9 +156,47 @@ class DatabaseManager private constructor(
         return orderList
     }
 
-    private fun getCurrentDate(): String {
-        val dateFormat = SimpleDateFormat("yyyy-MM-dd")
-        val currentDate = Date()
-        return dateFormat.format(currentDate)
+    @SuppressLint("Range")
+    private fun readOrderDetail(num: Int, date: String): ArrayList<OrdersDetailItem> {
+        val orderList = ArrayList<OrdersDetailItem>()
+        val db = this.readableDatabase
+        val cursor: Cursor = db.rawQuery("SELECT * FROM Details WHERE order_id = ? AND date = ?", arrayOf(num.toString(), date))
+        cursor.use{
+            while (it.moveToNext()) {
+                val id = it.getInt(it.getColumnIndex("id"))
+                val name = it.getString(it.getColumnIndex("product_name"))
+                val quantity = it.getInt(it.getColumnIndex("quantity"))
+                val subtotal = it.getInt(it.getColumnIndex("subtotal"))
+                orderList.add(OrdersDetailItem(id, name, quantity, subtotal))
+            }
+        }
+        cursor.close()
+        db.close()
+        orderList.sortBy { it.id }
+        return orderList
     }
+
+    @SuppressLint("Range")
+    private fun makeReportInfo(date: String): Map<String, Int> {
+        var dataMap = mutableMapOf<String, Int>("전체" to 0, "쿠폰" to 0, "현금" to 0, "계좌이체" to 0, "외상" to 0)
+        val db = this.readableDatabase
+        val cursor: Cursor = db.rawQuery("SELECT * FROM Orders WHERE order_date = ?", arrayOf(date))
+        cursor.use {
+            while (it.moveToNext()) {
+                val totalAmount = it.getInt(it.getColumnIndex("total_amount"))
+                val method = it.getString(it.getColumnIndex("method"))
+                dataMap["전체"] = dataMap["전체"]!! + totalAmount
+                when (method) {
+                    "쿠폰", "현금", "계좌이체", "외상" -> dataMap[method] = dataMap[method]!! + totalAmount
+                }
+            }
+        }
+        return dataMap
+    }
+}
+
+fun getCurrentDate(): String {
+    val dateFormat = SimpleDateFormat("yyyy-MM-dd")
+    val currentDate = Date()
+    return dateFormat.format(currentDate)
 }

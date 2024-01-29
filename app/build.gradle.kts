@@ -77,4 +77,5 @@ dependencies {
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
+    implementation ("com.github.DantSu:ESCPOS-ThermalPrinter-Android:3.3.0")
 }

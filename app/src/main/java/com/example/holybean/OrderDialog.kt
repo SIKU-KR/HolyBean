@@ -8,10 +8,6 @@ import android.widget.EditText
 import android.widget.RadioGroup
 import androidx.fragment.app.DialogFragment
 
-interface OrderDialogListener {
-    fun onOrderConfirmed(orderMethod: String, orderName: String)
-}
-
 class OrderDialog : DialogFragment() {
 
     private lateinit var orderMethodGroup: RadioGroup
