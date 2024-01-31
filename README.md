@@ -1,5 +1,3 @@
-# README
-
 # HolyBean POS Project
 
 **Customized software** for a cafe in Eloom Church(Wonju). A basic Point of Sale(POS) system supporting Bluetooth ESC/POS printer connection. Used Android Kotlin in development.
@@ -14,14 +12,14 @@
 ### Try it !
 
 - Create a directory and open with terminal.
-- Paste the following line in terminal.
 
-<aside>
-<img src="https://www.notion.so/icons/command-line_gray.svg" alt="https://www.notion.so/icons/command-line_gray.svg" width="40px" /> git clone https://github.com/SIKU-KR/HolyBean.git
-
-</aside>
+- Paste 
+<code>
+git clone https://github.com/SIKU-KR/HolyBean.git
+</code>
 
 - Open with Android Studio.
+
 - All ready to build, try it !
 
 ---
@@ -45,7 +43,7 @@
 
 - Kotlin
 - SQLite
-- @Dantsu/ESCPOS-ThermalPrinter-Android
+- [@Dantsu/ESCPOS-ThermalPrinter-Android](https://github.com/DantSu/ESCPOS-ThermalPrinter-Android)
 
 ---
 
@@ -63,8 +61,6 @@
 ---
 
 ### Contacts
-
-<aside>
-<img src="https://www.notion.so/icons/invitation_gray.svg" alt="https://www.notion.so/icons/invitation_gray.svg" width="40px" /> Email : peter012677@konkuk.ac.kr
-
-</aside>
+Email : <code>
+peter012677@konkuk.ac.kr
+</code>
