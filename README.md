@@ -1,9 +1,9 @@
 # HolyBean POS Project
-<div align=center> 
+<div> 
 <img src="https://img.shields.io/badge/Kotlin-7F52FF?style=for-the-badge&logo=Kotlin&logoColor=white">
 <img src="https://img.shields.io/badge/Android-34A853?style=for-the-badge&logo=Android&logoColor=white">
 </div>
-
+<br/>
 **Customized software** for a cafe in Eloom Church(Wonju). A basic Point of Sale(POS) system supporting Bluetooth ESC/POS printer connection. Used Android Kotlin in development.
 
 ### Hardwares in use
