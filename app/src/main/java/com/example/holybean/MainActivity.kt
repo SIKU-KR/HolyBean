@@ -10,6 +10,7 @@ import androidx.core.content.ContextCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
 import com.example.holybean.common.MainActivityListener
+import com.example.holybean.credits.CreditsFragment
 import com.example.holybean.home.HomeFragment
 import com.example.holybean.orders.OrdersFragment
 import com.example.holybean.report.ReportFragment
@@ -32,6 +33,13 @@ class MainActivity : AppCompatActivity(), MainActivityListener {
             .commit()
     }
 
+    override fun replaceCreditsFragment() {
+        val creditsFragment = CreditsFragment()
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.fragment_container, creditsFragment)
+            .commit()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -50,6 +58,7 @@ class MainActivity : AppCompatActivity(), MainActivityListener {
                 R.id.nav_home -> loadFragment(HomeFragment())
                 R.id.nav_orders -> loadFragment(OrdersFragment())
                 R.id.nav_report -> loadFragment(ReportFragment())
+                R.id.nav_credit -> loadFragment(CreditsFragment())
                 // 다른 메뉴 아이템에 대한 처리를 여기에 추가
             }
             drawerItem.isChecked = true
@@ -65,11 +74,7 @@ class MainActivity : AppCompatActivity(), MainActivityListener {
             ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.BLUETOOTH_CONNECT), MainActivity.PERMISSION_BLUETOOTH_CONNECT)
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.BLUETOOTH_SCAN), MainActivity.PERMISSION_BLUETOOTH_SCAN)
-        } else {
-
-
-
-        }
+        } else { }
 
     }
 

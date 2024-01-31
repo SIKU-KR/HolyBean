@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/main_backgroud"
-    tools:context=".orders.OrdersFragment"
+    tools:context=".credits.CreditsFragment"
     >
 
     <androidx.recyclerview.widget.RecyclerView
@@ -96,14 +96,14 @@
         app:layout_constraintWidth_percent="0.13" />
 
     <android.widget.Button
-        android:id="@+id/reprint"
+        android:id="@+id/deleteCredit"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_marginBottom="30dp"
         android:layout_marginEnd="75dp"
-        android:background="#598BAF"
+        android:background="#CA3433"
         android:fontFamily="@font/nanum_gothic_extrabold"
-        android:text="재 출 력"
+        android:text="삭 제"
         android:textColor="#FFFFFF"
         android:textSize="24sp"
         android:textStyle="bold"

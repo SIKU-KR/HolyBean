@@ -1,4 +1,4 @@
-package com.example.holybean.orders
+package com.example.holybean.credits
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -10,50 +10,49 @@ import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.dantsu.escposprinter.EscPosCharsetEncoding
-import com.dantsu.escposprinter.EscPosPrinter
-import com.dantsu.escposprinter.connection.bluetooth.BluetoothPrintersConnections
 import com.example.holybean.common.DatabaseManager
+import com.example.holybean.common.MainActivityListener
 import com.example.holybean.common.RvCustomDesign
 import com.example.holybean.common.getCurrentDate
-import com.example.holybean.databinding.FragmentOrdersBinding
-import com.example.holybean.dataclass.OrderItem
+import com.example.holybean.databinding.FragmentCreditBinding
+import com.example.holybean.dataclass.CreditItem
 import com.example.holybean.dataclass.OrdersDetailItem
-import kotlin.concurrent.thread
+import com.example.holybean.orders.OrdersDetailAdapter
 
-class OrdersFragment : Fragment(), OrdersFragmentFunction {
-    private lateinit var binding: FragmentOrdersBinding
+class CreditsFragment : Fragment(), CreditsFragmentFunction {
+    private lateinit var binding: FragmentCreditBinding
     private lateinit var context: Context
 
+    private var mainListener: MainActivityListener? = null
+
     private var orderNumber = 1
+    private var orderDate = ""
 
     private lateinit var orderNum: TextView
     private lateinit var totalPrice: TextView
 
     private lateinit var ordersBoard: RecyclerView
-    private lateinit var ordersList: ArrayList<OrderItem>
+    private lateinit var creditsList: ArrayList<CreditItem>
 
     private lateinit var basket: RecyclerView
     private lateinit var basketList: ArrayList<OrdersDetailItem>
 
     @SuppressLint("NotifyDataSetChanged")
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle? ): View? {
-        binding = FragmentOrdersBinding.inflate(inflater, container, false)
+        binding = FragmentCreditBinding.inflate(inflater, container, false)
         val view = binding.root
         context = view.context
 
         orderNum = binding.orderNum
         totalPrice = binding.totalPriceNum
 
-        val today = getCurrentDate()
-
-        ordersList = DatabaseManager.getOrderList(view.context, today)
+        creditsList = DatabaseManager.getCreditList(view.context)
         basketList = ArrayList()
 
         initBasket()
 
         ordersBoard = binding.orderBoard
-        val boardAdapter = OrdersAdapter(ordersList, this)
+        val boardAdapter = CreditsAdapter(creditsList, this)
         ordersBoard.apply{
             adapter = boardAdapter
             layoutManager = GridLayoutManager(context, 1)
@@ -63,27 +62,15 @@ class OrdersFragment : Fragment(), OrdersFragmentFunction {
         binding.viewThisOrder.setOnClickListener{
             activity?.runOnUiThread {
                 basketList.clear()
-                basketList = DatabaseManager.getOrderDetail(view.context, orderNumber, today)
+                basketList = DatabaseManager.getOrderDetail(view.context, orderNumber, orderDate)
                 initBasket()
             }
         }
-        binding.reprint.setOnClickListener {
-            if(this.basketList.isNotEmpty()) {
-                val printer = EscPosPrinter(
-                    BluetoothPrintersConnections.selectFirstPaired(),
-                    180,
-                    72f,
-                    32,
-                    EscPosCharsetEncoding("EUC-KR", 13)
-                )
-                thread {
-                    printer.printFormattedTextAndCut(getTargetText(), 500)
-                    Thread.sleep(2000)
-                    printer.disconnectPrinter()
-                }
-            }
-        }
 
+        binding.deleteCredit.setOnClickListener{
+            DatabaseManager.deleteCreditRecord(view.context, orderNumber, orderDate)
+            mainListener?.replaceCreditsFragment()
+        }
         return view
     }
 
@@ -98,26 +85,26 @@ class OrdersFragment : Fragment(), OrdersFragmentFunction {
     }
 
     @SuppressLint("NotifyDataSetChanged")
-    override fun newOrderSelected(num: Int, total: Int) {
-        orderNumber = num
+    override fun newOrderSelected(num: Int, total: Int, date:String) {
+        this.orderNumber = num
+        this.orderDate = date
         orderNum.text = num.toString()
         totalPrice.text = total.toString()
         basketList.clear()
         basket.adapter?.notifyDataSetChanged()
     }
 
-    fun getTargetText(): String {
-        var result = "[R]영수증 재출력\n"
-        result += "[C]=====================================\n"
-        result += "[L]\n"
-        result += "[C]<u><font size='big'>주문번호 : ${this.orderNumber}</font></u>\n"
-        result += "[L]\n"
-        result += "[C]-------------------------------------\n"
-        for (item in basketList) {
-            result += "[L]<b>${item.name}</b>[R]${item.count}\n"
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        if (context is MainActivityListener) {
+            mainListener = context
+        } else {
+            throw RuntimeException("$context must implement OnFragmentInteractionListener")
         }
-        result += "[L]\n"
-        result += "[C]====================================="
-        return result
+    }
+
+    override fun onDetach() {
+        super.onDetach()
+        mainListener = null
     }
 }

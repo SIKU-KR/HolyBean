@@ -191,8 +191,11 @@ class HomeFragment : Fragment(), HomeFunctions, OrderDialogListener {
         mainListener = null
     }
 
-    override fun onOrderConfirmed(orderMethod: String, ordererName: String){
+    override fun onOrderConfirmed(orderMethod: String, ordererName: String, takeOption: String){
         val printer = EscPosPrinter(BluetoothPrintersConnections.selectFirstPaired(), 180, 72f, 32, EscPosCharsetEncoding("EUC-KR", 13))
+        if(orderMethod == "무료제공") {
+            this.totalPrice = 0
+        }
         // 고객용 영수증 인쇄
         thread {
             printer.printFormattedTextAndCut("[C]=====================================\n" +
@@ -207,6 +210,8 @@ class HomeFragment : Fragment(), HomeFunctions, OrderDialogListener {
                 "[C]=====================================\n" +
                         "[L]\n"
                         + "[C]<u><font size='big'>주문번호 : ${this.orderId}</font></u>\n"
+                        + "[L]\n"
+                        + "[C]<font size='big'>${takeOption}</font>\n"
                         + "[L]\n"
                         + "[R]주문자 : ${ordererName}\n"
                         + "[C]-------------------------------------\n"
@@ -230,10 +235,9 @@ class HomeFragment : Fragment(), HomeFunctions, OrderDialogListener {
     private fun receiptText(orderMethod: String) : String {
         val dateFormat = SimpleDateFormat("yyyy.MM.dd HH:mm:ss")
         val currentTime = Date()
-
         var result = "[L]\n"
         for (item in basketList) {
-            result += "[L]${item.name}[R]${item.count}\n"
+            result += "[L]<b>${item.name}</b>[R]${item.count}\n"
         }
         result += "[L]\n"
         result += "[R]합계 : ${this.totalPrice}\n"

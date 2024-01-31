@@ -1,8 +1,8 @@
 package com.example.holybean.dataclass
 
-data class OrderItem(
+data class CreditItem (
     val orderId: Int,
     val totalAmount: Int,
-    val method: String,
+    val date: String,
     val orderer: String
 )

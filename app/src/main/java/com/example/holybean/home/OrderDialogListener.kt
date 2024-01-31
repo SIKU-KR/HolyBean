@@ -1,5 +1,5 @@
 package com.example.holybean.home
 
 interface OrderDialogListener {
-    fun onOrderConfirmed(orderMethod: String, orderName: String)
+    fun onOrderConfirmed(orderMethod: String, orderName: String, takeOption: String)
 }

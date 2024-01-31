@@ -7,9 +7,11 @@ import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import com.example.holybean.dataclass.BasketItem
+import com.example.holybean.dataclass.CreditItem
 import com.example.holybean.dataclass.MenuItem
 import com.example.holybean.dataclass.OrderItem
 import com.example.holybean.dataclass.OrdersDetailItem
+import com.example.holybean.dataclass.ReportDetailItem
 import java.io.FileOutputStream
 
 class DatabaseManager private constructor(
@@ -22,7 +24,7 @@ class DatabaseManager private constructor(
 
         private var instance: DatabaseManager? = null
 
-        fun getInstance(context: Context): DatabaseManager {
+        private fun getInstance(context: Context): DatabaseManager {
             return instance ?: synchronized(this) {
                 instance ?: DatabaseManager(context.applicationContext).also {
                     instance = it
@@ -39,6 +41,11 @@ class DatabaseManager private constructor(
         fun getOrderList(context: Context, date: String): ArrayList<OrderItem> {
             val instance = getInstance(context)
             return instance.readOrders(date)
+        }
+
+        fun getCreditList(context: Context): ArrayList<CreditItem> {
+            val instance = getInstance(context)
+            return instance.readCredits()
         }
 
         fun getOrderDetail(context: Context, num: Int, date: String): ArrayList<OrdersDetailItem> {
@@ -68,6 +75,9 @@ class DatabaseManager private constructor(
             val currentDate = getCurrentDate()
             val dbHelper = getInstance(context)
 
+            val ordersDb = dbHelper.writableDatabase
+            val detailsDb = dbHelper.writableDatabase
+
             // Insert into Orders table
             val ordersValues = ContentValues().apply {
                 put("order_id", orderId)
@@ -76,12 +86,9 @@ class DatabaseManager private constructor(
                 put("method", orderMethod)
                 put("orderer", ordererName)
             }
+            ordersDb.insert("Orders", null, ordersValues)
 
-            val ordersDb = dbHelper.writableDatabase
-            val orderIdInserted = ordersDb.insert("Orders", null, ordersValues)
-
-            val detailsDb = dbHelper.writableDatabase
-
+            // Insert into Details table
             for (basketItem in basket) {
                 val detailsValues = ContentValues().apply {
                     put("order_id", orderId)
@@ -95,9 +102,39 @@ class DatabaseManager private constructor(
                 detailsDb.insert("Details", null, detailsValues)
             }
 
+            if(orderMethod == "외상"){
+                val creditDb = dbHelper.writableDatabase
+                val creditValues = ContentValues().apply {
+                    put("order_id", orderId)
+                    put("order_date", currentDate)
+                    put("total_amount", totalPrice)
+                    put("orderer", ordererName)
+                }
+                ordersDb.insert("Credits", null, creditValues)
+                creditDb.close()
+            }
+
             // Close the databases after use
             ordersDb.close()
             detailsDb.close()
+        }
+
+        fun deleteCreditRecord(context: Context, orderNum: Int, orderDate: String){
+            val dbHelper = getInstance(context)
+            val creditDb = dbHelper.writableDatabase
+
+            try {
+                // Delete from Credits table
+                val whereClause = "order_id = ? AND order_date = ?"
+                val whereArgs = arrayOf(orderNum.toString(), orderDate)
+                creditDb.delete("Credits", whereClause, whereArgs)
+                println("Credit record deleted successfully.")
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
+                // Close the database after use
+                creditDb.close()
+            }
         }
     }
 
@@ -158,6 +195,26 @@ class DatabaseManager private constructor(
     }
 
     @SuppressLint("Range")
+    private fun readCredits(): ArrayList<CreditItem> {
+        val orderList = ArrayList<CreditItem>()
+        val db = this.readableDatabase
+        val cursor: Cursor = db.rawQuery("SELECT * FROM Credits", null)
+        cursor.use {
+            while (it.moveToNext()) {
+                val orderId = it.getInt(it.getColumnIndex("order_id"))
+                val totalAmount = it.getInt(it.getColumnIndex("total_amount"))
+                val orderDate = it.getString(it.getColumnIndex("order_date"))
+                val orderer = it.getString(it.getColumnIndex("orderer"))
+                orderList.add(CreditItem(orderId, totalAmount, orderDate, orderer))
+            }
+        }
+        cursor.close()
+        db.close()
+        orderList.sortBy { it.date }
+        return orderList
+    }
+
+    @SuppressLint("Range")
     private fun readOrderDetail(num: Int, date: String): ArrayList<OrdersDetailItem> {
         val orderList = ArrayList<OrdersDetailItem>()
         val db = this.readableDatabase
@@ -193,5 +250,39 @@ class DatabaseManager private constructor(
             }
         }
         return dataMap
+    }
+
+    @SuppressLint("Range")
+    private fun makeReportDetail(date1: String, date2: String): ArrayList<ReportDetailItem> {
+        var result = mutableMapOf<Int, Triple<String, Int, Int>>()
+        val db = this.readableDatabase
+        val cursor: Cursor = db.rawQuery("SELECT * FROM Details WHERE date BETWEEN ? AND ?",arrayOf(date1, date2))
+        cursor.use {
+            while (it.moveToNext()) {
+                val productId = it.getInt(it.getColumnIndex("product_id"))
+                val productName = it.getString(it.getColumnIndex("product_name"))
+                val quantity = it.getInt(it.getColumnIndex("quantity"))
+                val subtotal = it.getInt(it.getColumnIndex("subtotal"))
+
+                // Check if the productName is already in the map
+                if (result.containsKey(productId)) {
+                    // If yes, update the existing entry by adding the current quantity and subtotal
+                    val currentTriple = result[productId]!!
+                    val updatedTriple = Triple(productName, currentTriple.second + quantity, currentTriple.third + subtotal)
+                    result[productId] = updatedTriple
+                } else {
+                    // If no, create a new entry with the current quantity and subtotal
+                    result[productId] = Triple(productName, quantity, subtotal)
+                }
+            }
+        }
+        db.close()
+
+        val filteredResult = result.filter { (_, triple) -> triple.third != 0 }
+        val reportDetailsList = ArrayList(filteredResult.entries.map { entry ->
+            ReportDetailItem(entry.key, entry.value.first, entry.value.second, entry.value.third)
+        }.sortedBy { reportDetail -> reportDetail.id })
+
+        return reportDetailsList
     }
 }

@@ -10,9 +10,46 @@
         android:layout_height="wrap_content"
         android:fontFamily="@font/nanum_gothic_extrabold"
         android:gravity="center"
-        android:text="주문 방식 선택"
+        android:text="주문 옵션 선택"
         android:textSize="24sp"
         android:textStyle="bold" />
+
+    <RadioGroup
+        android:id="@+id/takeOptionGroup"
+        android:paddingTop="15dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:orientation="horizontal"
+        >
+        <RadioButton
+            android:id="@+id/togo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/selector_radiobutton"
+            android:button="@null"
+            android:checked="true"
+            android:fontFamily="@font/nanum_gothic_bold"
+            android:paddingLeft="30dp"
+            android:paddingRight="30dp"
+            android:text="일회용컵"
+            android:textColor="@drawable/selector_radiotext"
+            android:textSize="16sp" />
+
+        <RadioButton
+            android:id="@+id/eatin"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/selector_radiobutton"
+            android:button="@null"
+            android:fontFamily="@font/nanum_gothic_bold"
+            android:paddingLeft="30dp"
+            android:paddingRight="30dp"
+            android:text="머그컵"
+            android:textColor="@drawable/selector_radiotext"
+            android:textSize="16sp" />
+
+    </RadioGroup>
 
     <RadioGroup
         android:id="@+id/orderMethodGroup"
@@ -75,13 +112,26 @@
             android:text="외상"
             android:textColor="@drawable/selector_radiotext"
             android:textSize="16sp" />
+
+        <RadioButton
+            android:id="@+id/Button5"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/selector_radiobutton"
+            android:button="@null"
+            android:fontFamily="@font/nanum_gothic_bold"
+            android:paddingLeft="30dp"
+            android:paddingRight="30dp"
+            android:text="무료제공"
+            android:textColor="@drawable/selector_radiotext"
+            android:textSize="16sp" />
     </RadioGroup>
 
     <EditText
         android:id="@+id/orderNameEditText"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="(계좌이체, 외상) 주문자 성함 입력"
+        android:hint="주문자 성함 입력"
         android:inputType="text"
         android:enabled="false"/>
 
