@@ -4,7 +4,7 @@
 <img src="https://img.shields.io/badge/Android-34A853?style=for-the-badge&logo=Android&logoColor=white">
 </div>
 <br/>
-__Customized software__ for a cafe in Eloom Church(Wonju). A basic Point of Sale(POS) system supporting Bluetooth ESC/POS printer connection. Used Android Kotlin in development.
+Customized software for a cafe in Eloom Church(Wonju). A basic Point of Sale(POS) system supporting Bluetooth ESC/POS printer connection. Used Android Kotlin in development.
 
 ### Hardwares in use
 
