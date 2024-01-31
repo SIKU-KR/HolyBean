@@ -10,17 +10,15 @@
 ---
 
 ### Try it !
-
-- Create a directory and open with terminal.
-
-- Paste 
+<li>
+Create a directory and open with terminal.
+</li>
+<li>Paste 
 <code>
 git clone https://github.com/SIKU-KR/HolyBean.git
-</code>
-
-- Open with Android Studio.
-
-- All ready to build, try it !
+</code></li>
+<li>Open with Android Studio.</li>
+<li>All ready to build, try it !</li>
 
 ---
 
