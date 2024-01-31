@@ -57,6 +57,4 @@ Create a directory and open with terminal.
 ---
 
 ### Contacts
-Email : <code>
-peter012677@konkuk.ac.kr
-</code>
+Email : peter012677@konkuk.ac.kr
