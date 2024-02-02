@@ -13,6 +13,8 @@ import com.example.holybean.dataclass.OrderItem
 import com.example.holybean.dataclass.OrdersDetailItem
 import com.example.holybean.dataclass.ReportDetailItem
 import java.io.FileOutputStream
+import java.text.SimpleDateFormat
+import java.util.Date
 
 class DatabaseManager private constructor(
     context: Context
@@ -53,14 +55,20 @@ class DatabaseManager private constructor(
             return instance.readOrderDetail(num, date)
         }
 
-        fun getReportData(context: Context, date: String): Map<String, Int> {
+        fun getReportData(context: Context, date1: String, date2: String): Map<String, Int> {
             val instance = getInstance(context)
-            return instance.makeReportInfo(date)
+            return instance.makeReportInfo(date1, date2)
+        }
+
+        fun getReportDetailData(context: Context, date1: String, date2: String): ArrayList<ReportDetailItem> {
+            val instance = getInstance(context)
+            return instance.makeReportDetail(date1, date2)
         }
 
         fun getCurrentOrderNumber(context: Context): Int {
-            val currentDate = getCurrentDate()
-            val db = getInstance(context).readableDatabase
+            val instance = getInstance(context)
+            val currentDate = instance.getCurrentDate()
+            val db = instance.readableDatabase
             val cursor: Cursor = db.rawQuery("SELECT COUNT(*) FROM Orders WHERE order_date = ?", arrayOf(currentDate))
             var orderCount = 0
             if (cursor.moveToFirst()) {
@@ -72,9 +80,8 @@ class DatabaseManager private constructor(
         }
 
         fun orderDataProcess(context: Context, orderId: Int, totalPrice: Int, orderMethod: String, ordererName: String, basket: ArrayList<BasketItem>){
-            val currentDate = getCurrentDate()
             val dbHelper = getInstance(context)
-
+            val currentDate = dbHelper.getCurrentDate()
             val ordersDb = dbHelper.writableDatabase
             val detailsDb = dbHelper.writableDatabase
 
@@ -153,6 +160,12 @@ class DatabaseManager private constructor(
                 }
             }
         }
+    }
+
+    private fun getCurrentDate(): String {
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd")
+        val currentDate = Date()
+        return dateFormat.format(currentDate)
     }
 
     @SuppressLint("Range")
@@ -235,10 +248,10 @@ class DatabaseManager private constructor(
     }
 
     @SuppressLint("Range")
-    private fun makeReportInfo(date: String): Map<String, Int> {
+    private fun makeReportInfo(date1: String, date2: String): Map<String, Int> {
         var dataMap = mutableMapOf<String, Int>("전체" to 0, "쿠폰" to 0, "현금" to 0, "계좌이체" to 0, "외상" to 0)
         val db = this.readableDatabase
-        val cursor: Cursor = db.rawQuery("SELECT * FROM Orders WHERE order_date = ?", arrayOf(date))
+        val cursor: Cursor = db.rawQuery("SELECT * FROM Orders WHERE order_date Between ? AND ?", arrayOf(date1, date2))
         cursor.use {
             while (it.moveToNext()) {
                 val totalAmount = it.getInt(it.getColumnIndex("total_amount"))

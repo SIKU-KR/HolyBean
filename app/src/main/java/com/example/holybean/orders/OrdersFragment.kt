@@ -15,10 +15,11 @@ import com.dantsu.escposprinter.EscPosPrinter
 import com.dantsu.escposprinter.connection.bluetooth.BluetoothPrintersConnections
 import com.example.holybean.common.DatabaseManager
 import com.example.holybean.common.RvCustomDesign
-import com.example.holybean.common.getCurrentDate
 import com.example.holybean.databinding.FragmentOrdersBinding
 import com.example.holybean.dataclass.OrderItem
 import com.example.holybean.dataclass.OrdersDetailItem
+import java.text.SimpleDateFormat
+import java.util.Date
 import kotlin.concurrent.thread
 
 class OrdersFragment : Fragment(), OrdersFragmentFunction {
@@ -106,7 +107,7 @@ class OrdersFragment : Fragment(), OrdersFragmentFunction {
         basket.adapter?.notifyDataSetChanged()
     }
 
-    fun getTargetText(): String {
+    private fun getTargetText(): String {
         var result = "[R]영수증 재출력\n"
         result += "[C]=====================================\n"
         result += "[L]\n"
@@ -119,5 +120,11 @@ class OrdersFragment : Fragment(), OrdersFragmentFunction {
         result += "[L]\n"
         result += "[C]====================================="
         return result
+    }
+
+    private fun getCurrentDate(): String {
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd")
+        val currentDate = Date()
+        return dateFormat.format(currentDate)
     }
 }

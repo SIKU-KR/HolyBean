@@ -195,6 +195,7 @@ class HomeFragment : Fragment(), HomeFunctions, OrderDialogListener {
         val printer = EscPosPrinter(BluetoothPrintersConnections.selectFirstPaired(), 180, 72f, 32, EscPosCharsetEncoding("EUC-KR", 13))
         if(orderMethod == "무료제공") {
             this.totalPrice = 0
+            basketList.forEach { it.total = 0 }
         }
         // 고객용 영수증 인쇄
         thread {

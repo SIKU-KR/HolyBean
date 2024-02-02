@@ -13,7 +13,6 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.holybean.common.DatabaseManager
 import com.example.holybean.common.MainActivityListener
 import com.example.holybean.common.RvCustomDesign
-import com.example.holybean.common.getCurrentDate
 import com.example.holybean.databinding.FragmentCreditBinding
 import com.example.holybean.dataclass.CreditItem
 import com.example.holybean.dataclass.OrdersDetailItem
