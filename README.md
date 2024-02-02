@@ -52,6 +52,7 @@ Create a directory and open with terminal.
 | version | details |
 | --- | --- |
 | 1.0.0 | Start with Beta Testing (24.01.28) |
+| 1.1.0 | Added following method. <br> Credit buyer inquiry <br> Sales report inquiry and print <br> Sales options added |
 |  |  |
 
 ---
