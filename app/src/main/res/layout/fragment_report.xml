@@ -146,7 +146,7 @@
             android:fontFamily="@font/nanum_gothic_extrabold"
             android:gravity="center"
             android:text="매출 조회 옵션"
-            android:textAppearance="@style/TextAppearance.AppCompat.Display1"
+            android:textAppearance="@style/TextAppearance.AppCompat.Large"
             app:layout_constraintTop_toTopOf="parent"
             android:textColor="#000000"/>
 
@@ -163,7 +163,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:layout_marginStart="80dp"
+                android:layout_marginStart="40dp"
                 android:fontFamily="@font/nanum_gothic_extrabold"
                 android:text="시작일"
                 android:textAppearance="@style/TextAppearance.AppCompat.Medium"
@@ -211,7 +211,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:layout_marginStart="80dp"
+                android:layout_marginStart="40dp"
                 android:fontFamily="@font/nanum_gothic_extrabold"
                 android:text="종료일"
                 android:textAppearance="@style/TextAppearance.AppCompat.Medium"
