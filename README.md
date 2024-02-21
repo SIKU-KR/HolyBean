@@ -25,6 +25,8 @@ Create a directory and open with terminal.
 ---
 
 ### Photos
+![img1](./docs/IMG_4935.jpg) <br/>
+Will be uploaded soon
 
 ---
 
