@@ -26,9 +26,9 @@ Create a directory and open with terminal.
 
 ### Photos
 
-![1](./docs/readme/1.gif)
-![2](./docs/readme/2.gif)
-![3](./docs/readme/3.gif)
+![1](./docs/readme/1.gif)<br/>
+![2](./docs/readme/2.gif)<br/>
+![3](./docs/readme/3.gif)<br/>
 
 ---
 
