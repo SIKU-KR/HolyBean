@@ -33,6 +33,13 @@ class MainActivity : AppCompatActivity(), MainActivityListener {
             .commit()
     }
 
+    override fun replaceOrdersFragment() {
+        val ordersFragment = OrdersFragment()
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.fragment_container, ordersFragment)
+            .commit()
+    }
+
     override fun replaceCreditsFragment() {
         val creditsFragment = CreditsFragment()
         supportFragmentManager.beginTransaction()

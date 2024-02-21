@@ -1,12 +1,14 @@
 package com.example.holybean.orders
 
 import android.annotation.SuppressLint
+import android.app.AlertDialog
 import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -14,6 +16,7 @@ import com.dantsu.escposprinter.EscPosCharsetEncoding
 import com.dantsu.escposprinter.EscPosPrinter
 import com.dantsu.escposprinter.connection.bluetooth.BluetoothPrintersConnections
 import com.example.holybean.common.DatabaseManager
+import com.example.holybean.common.MainActivityListener
 import com.example.holybean.common.RvCustomDesign
 import com.example.holybean.databinding.FragmentOrdersBinding
 import com.example.holybean.dataclass.OrderItem
@@ -25,6 +28,8 @@ import kotlin.concurrent.thread
 class OrdersFragment : Fragment(), OrdersFragmentFunction {
     private lateinit var binding: FragmentOrdersBinding
     private lateinit var context: Context
+
+    private var mainListener: MainActivityListener? = null
 
     private var orderNumber = 1
 
@@ -38,7 +43,11 @@ class OrdersFragment : Fragment(), OrdersFragmentFunction {
     private lateinit var basketList: ArrayList<OrdersDetailItem>
 
     @SuppressLint("NotifyDataSetChanged")
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle? ): View? {
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
         binding = FragmentOrdersBinding.inflate(inflater, container, false)
         val view = binding.root
         context = view.context
@@ -55,21 +64,22 @@ class OrdersFragment : Fragment(), OrdersFragmentFunction {
 
         ordersBoard = binding.orderBoard
         val boardAdapter = OrdersAdapter(ordersList, this)
-        ordersBoard.apply{
+        ordersBoard.apply {
             adapter = boardAdapter
             layoutManager = GridLayoutManager(context, 1)
-            addItemDecoration(RvCustomDesign(0,0,0,20))
+            addItemDecoration(RvCustomDesign(0, 0, 0, 20))
         }
 
-        binding.viewThisOrder.setOnClickListener{
+        binding.viewThisOrder.setOnClickListener {
             activity?.runOnUiThread {
                 basketList.clear()
                 basketList = DatabaseManager.getOrderDetail(view.context, orderNumber, today)
                 initBasket()
             }
         }
+        // 영수증 재출력 버튼
         binding.reprint.setOnClickListener {
-            if(this.basketList.isNotEmpty()) {
+            if (this.basketList.isNotEmpty()) {
                 val printer = EscPosPrinter(
                     BluetoothPrintersConnections.selectFirstPaired(),
                     180,
@@ -84,17 +94,33 @@ class OrdersFragment : Fragment(), OrdersFragmentFunction {
                 }
             }
         }
+        // 주문 내역 삭제 버튼
+        binding.deleteButton.setOnClickListener {
+            if (this.basketList.isNotEmpty()) {
+                val builder = AlertDialog.Builder(context)
+                builder.setTitle("주문 내역을 삭제하시겠습니까?")
+                    .setMessage("주문번호 ${this.orderNumber}번이 삭제되며 복구할 수 없습니다")
+                    .setPositiveButton("확인") { _, _ ->
+                        DatabaseManager.deleteAnOrder(context, orderNumber, today)
+                        mainListener?.replaceOrdersFragment()
+                    }
+                    .setNegativeButton("취소") { _, _ -> }
+                    .show()
+            } else {
+                Toast.makeText(context, "주문 조회 후 클릭해주세요", Toast.LENGTH_SHORT).show()
+            }
+        }
 
         return view
     }
 
-    private fun initBasket(){
+    private fun initBasket() {
         basket = binding.basket
         val ordersDetailAdapter = OrdersDetailAdapter(basketList)
-        basket.apply{
+        basket.apply {
             adapter = ordersDetailAdapter
             layoutManager = GridLayoutManager(context, 1)
-            addItemDecoration(RvCustomDesign(15,15,0,0)) // 20dp의 여백
+            addItemDecoration(RvCustomDesign(15, 15, 0, 0)) // 20dp의 여백
         }
     }
 
@@ -126,5 +152,19 @@ class OrdersFragment : Fragment(), OrdersFragmentFunction {
         val dateFormat = SimpleDateFormat("yyyy-MM-dd")
         val currentDate = Date()
         return dateFormat.format(currentDate)
+    }
+
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        if (context is MainActivityListener) {
+            mainListener = context
+        } else {
+            throw RuntimeException("$context must implement OnFragmentInteractionListener")
+        }
+    }
+
+    override fun onDetach() {
+        super.onDetach()
+        mainListener = null
     }
 }

@@ -143,6 +143,32 @@ class DatabaseManager private constructor(
                 creditDb.close()
             }
         }
+
+        fun deleteAnOrder(context: Context, orderNum: Int, orderDate: String){
+            val dbHelper = getInstance(context)
+            val db = dbHelper.writableDatabase
+
+            try {
+                // Update from Orders table
+                val values = ContentValues()
+                values.put("method", "삭제된주문")
+                values.put("orderer", "삭제된주문")
+                values.put("total_amount", 0)
+                val whereClause1 = "order_id = ? AND order_date = ?"
+                val whereArgs1 = arrayOf(orderNum.toString(), orderDate)
+                db.update("Orders", values, whereClause1, whereArgs1)
+
+                // Delete from Details table
+                val whereClause2 = "order_id = ? AND date = ?"
+                val whereArgs2 = arrayOf(orderNum.toString(), orderDate)
+                db.delete("Details", whereClause2, whereArgs2)
+
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
+                db.close()
+            }
+        }
     }
 
     override fun onCreate(db: SQLiteDatabase) { }
