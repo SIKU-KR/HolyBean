@@ -25,7 +25,7 @@ Create a directory and open with terminal.
 ---
 
 ### Photos
-
+![img1](./docs/readme_1.jpg)
 Will be uploaded soon
 
 ---
