@@ -26,6 +26,10 @@ Create a directory and open with terminal.
 
 ### Photos
 
+![1](./docs/readme/1.gif)
+![2](./docs/readme/2.gif)
+![3](./docs/readme/3.gif)
+
 ---
 
 ### Features
