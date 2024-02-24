@@ -317,11 +317,15 @@ class DatabaseManager private constructor(
         }
         db.close()
 
-        val filteredResult = result.filter { (_, triple) -> triple.third != 0 }
+        val menuData = this.readMenu().filter {it.price == 0}
+        val filterData = menuData.map { it.id }.toSet()
+        val filteredResult = result.filterKeys { it !in filterData }.toMutableMap()
+
         val reportDetailsList = ArrayList(filteredResult.entries.map { entry ->
             ReportDetailItem(entry.key, entry.value.first, entry.value.second, entry.value.third)
         }.sortedBy { reportDetail -> reportDetail.id })
 
         return reportDetailsList
     }
+
 }

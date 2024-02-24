@@ -104,7 +104,6 @@
             android:layout_height="match_parent"
             android:background="@drawable/basket_design"
             android:paddingVertical="100dp"
-            android:paddingHorizontal="50dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintRight_toRightOf="parent"
             tools:listitem="@layout/basket_recycler_view" />
