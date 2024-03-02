@@ -46,7 +46,7 @@ class HomeFragment : Fragment(), HomeFunctions, OrderDialogListener {
         val view = binding.root
         context = view.context
 
-        itemList = DatabaseManager.getMenuList(view.context)
+        itemList = DatabaseManager.getMenuList()
         basketList = ArrayList()
 
         val orderNumTextView: TextView = binding.orderNum
@@ -87,6 +87,7 @@ class HomeFragment : Fragment(), HomeFunctions, OrderDialogListener {
         menuTab.addTab(menuTab.newTab().setText("에이드/스무디"))
         menuTab.addTab(menuTab.newTab().setText("티/음료"))
         menuTab.addTab(menuTab.newTab().setText("베이커리"))
+        menuTab.addTab(menuTab.newTab().setText("기타"))
 
         menuTab.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
             override fun onTabSelected(tab: TabLayout.Tab) {

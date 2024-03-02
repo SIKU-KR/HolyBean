@@ -51,13 +51,14 @@ Will be uploaded soon
 
 ### Updates
 
-| version | details |
-| --- | --- |
-| 1.0.0 | Start with Beta Testing (24.01.28) |
-| 1.1.0 | Added following Features (24.02.02) <br> 1. Credit buyer inquiry <br> 2. Sales report inquiry and print <br> 3. Sales options added <br> 4. Full screen window |
-| 1.2.0 | Added following Features (24.02.21) <br> 1. Delete button in Orders fragment |
-| 1.2.1 | Minor Update (24.02.24) <br> 1. Sales report printing logic changed <br> 2. Report Fragment fixed |
-| | |
+| version | details                                                                                                                                                        |
+|---------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 1.0.0   | Start with Beta Testing (24.01.28)                                                                                                                             |
+| 1.1.0   | Added following Features (24.02.02) <br> 1. Credit buyer inquiry <br> 2. Sales report inquiry and print <br> 3. Sales options added <br> 4. Full screen window |
+| 1.2.0   | Added following Features (24.02.21) <br> 1. Delete button in Orders fragment                                                                                   |
+| 1.2.1   | Minor Update (24.02.24) <br> 1. Sales report printing logic changed <br> 2. Report Fragment fixed                                                              |
+| 1.2.2   | Minor Update (24.03.02) <br> 1. Menu information seperated to CSV file (for easy change) <br> 2. Added new tab for coupons and discount options                |
+|         |                                                                                                                                                                |
 
 ---
 

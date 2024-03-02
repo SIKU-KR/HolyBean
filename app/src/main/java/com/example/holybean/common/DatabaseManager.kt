@@ -12,7 +12,11 @@ import com.example.holybean.dataclass.MenuItem
 import com.example.holybean.dataclass.OrderItem
 import com.example.holybean.dataclass.OrdersDetailItem
 import com.example.holybean.dataclass.ReportDetailItem
+import com.opencsv.CSVReaderBuilder
+import java.io.BufferedReader
 import java.io.FileOutputStream
+import java.io.FileReader
+import java.io.InputStreamReader
 import java.text.SimpleDateFormat
 import java.util.Date
 
@@ -35,9 +39,29 @@ class DatabaseManager private constructor(
             }
         }
 
-        fun getMenuList(context: Context): ArrayList<MenuItem> {
-            val instance = getInstance(context)
-            return instance.readMenu()
+        fun getMenuList(): ArrayList<MenuItem> {
+            val menuList = ArrayList<MenuItem>()
+
+            try {
+                val inputStream = javaClass.classLoader.getResourceAsStream("assets/menu.csv")
+                val reader = CSVReaderBuilder(InputStreamReader(inputStream))
+                    .withSkipLines(1) // Skip the header row
+                    .build()
+                reader.readAll().forEach { line ->
+                    if (line.size == 3) {
+                        val id = line[0].toInt()
+                        val name = line[1]
+                        val price = line[2].toInt()
+                        val menuItem = MenuItem(id, name, price)
+                        menuList.add(menuItem)
+                    }
+                }
+                reader.close()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            menuList.sortBy { it.id }
+            return menuList
         }
 
         fun getOrderList(context: Context, date: String): ArrayList<OrderItem> {
@@ -195,25 +219,6 @@ class DatabaseManager private constructor(
     }
 
     @SuppressLint("Range")
-    private fun readMenu(): ArrayList<MenuItem> {
-        val menuList = ArrayList<MenuItem>()
-        val db = this.readableDatabase
-        val cursor: Cursor = db.rawQuery("SELECT * FROM products", null)
-        if (cursor.moveToFirst()) {
-            do {
-                val id = cursor.getInt(cursor.getColumnIndex("product_id"))
-                val name = cursor.getString(cursor.getColumnIndex("name"))
-                val price = cursor.getInt(cursor.getColumnIndex("price"))
-                menuList.add(MenuItem(id, name, price))
-            } while (cursor.moveToNext())
-        }
-        cursor.close()
-        db.close()
-        menuList.sortBy { it.id }
-        return menuList
-    }
-
-    @SuppressLint("Range")
     private fun readOrders(date: String): ArrayList<OrderItem> {
         val orderList = ArrayList<OrderItem>()
         val db = this.readableDatabase
@@ -317,7 +322,7 @@ class DatabaseManager private constructor(
         }
         db.close()
 
-        val menuData = this.readMenu().filter {it.price == 0}
+        val menuData = getMenuList().filter {it.price == 0}
         val filterData = menuData.map { it.id }.toSet()
         val filteredResult = result.filterKeys { it !in filterData }.toMutableMap()
 
