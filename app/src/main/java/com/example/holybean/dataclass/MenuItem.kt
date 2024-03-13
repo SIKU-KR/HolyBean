@@ -4,5 +4,6 @@ package com.example.holybean.dataclass
 data class MenuItem(
     val id:Int,
     val name:String,
-    val price:Int
+    val price:Int,
+    val placement:Int
 )

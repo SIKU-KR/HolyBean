@@ -21,8 +21,6 @@ class MenuAdapter(private val itemList: ArrayList<MenuItem>, private val mainLis
         holder.menuName.text = item.name
         holder.menuPrice.text = item.price.toString()
         holder.itemView.setOnClickListener {
-            // 여기서 각 item의 click function을 지정해주자.
-            // Toast.makeText(holder.itemView.context, "메뉴 추가 : ${item.name}", Toast.LENGTH_SHORT).show()
             mainListner.addToBasket(item.id)
         }
     }

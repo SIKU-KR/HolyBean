@@ -48,11 +48,12 @@ class DatabaseManager private constructor(
                     .withSkipLines(1) // Skip the header row
                     .build()
                 reader.readAll().forEach { line ->
-                    if (line.size == 3) {
+                    if (line.size == 4) {
                         val id = line[0].toInt()
                         val name = line[1]
                         val price = line[2].toInt()
-                        val menuItem = MenuItem(id, name, price)
+                        val placement = line[3].toInt()
+                        val menuItem = MenuItem(id, name, price, placement)
                         menuList.add(menuItem)
                     }
                 }
@@ -92,22 +93,26 @@ class DatabaseManager private constructor(
         fun getCurrentOrderNumber(context: Context): Int {
             val instance = getInstance(context)
             val currentDate = instance.getCurrentDate()
+            var lastorderId: Int? = null
             val db = instance.readableDatabase
-            val cursor: Cursor = db.rawQuery("SELECT COUNT(*) FROM Orders WHERE order_date = ?", arrayOf(currentDate))
-            var orderCount = 0
-            if (cursor.moveToFirst()) {
-                orderCount = cursor.getInt(0)
+            val query = "SELECT MAX(order_id) FROM Orders WHERE order_date = ?"
+            val cursor: Cursor = db.rawQuery(query, arrayOf(currentDate))
+
+            cursor.use {
+                if (it.moveToFirst()) {
+                    lastorderId = it.getInt(0)
+                }
             }
             cursor.close()
             db.close()
-            return orderCount + 1
+            return lastorderId?.plus(1) ?: 1
         }
 
-        fun orderDataProcess(context: Context, orderId: Int, totalPrice: Int, orderMethod: String, ordererName: String, basket: ArrayList<BasketItem>){
+
+        fun orderProcess(context: Context, orderId: Int, totalPrice: Int, orderMethod: String, ordererName: String){
             val dbHelper = getInstance(context)
             val currentDate = dbHelper.getCurrentDate()
             val ordersDb = dbHelper.writableDatabase
-            val detailsDb = dbHelper.writableDatabase
 
             // Insert into Orders table
             val ordersValues = ContentValues().apply {
@@ -118,20 +123,6 @@ class DatabaseManager private constructor(
                 put("orderer", ordererName)
             }
             ordersDb.insert("Orders", null, ordersValues)
-
-            // Insert into Details table
-            for (basketItem in basket) {
-                val detailsValues = ContentValues().apply {
-                    put("order_id", orderId)
-                    put("date",currentDate)
-                    put("product_id", basketItem.id)
-                    put("product_name", basketItem.name)
-                    put("quantity", basketItem.count)
-                    put("price", basketItem.price)
-                    put("subtotal", basketItem.total)
-                }
-                detailsDb.insert("Details", null, detailsValues)
-            }
 
             if(orderMethod == "외상"){
                 val creditDb = dbHelper.writableDatabase
@@ -147,6 +138,26 @@ class DatabaseManager private constructor(
 
             // Close the databases after use
             ordersDb.close()
+        }
+
+        fun orderDetailProcess(context: Context, orderId: Int, basket: ArrayList<BasketItem>) {
+            val dbHelper = getInstance(context)
+            val currentDate = dbHelper.getCurrentDate()
+            val detailsDb = dbHelper.writableDatabase
+
+            // Insert into Details table
+            for (basketItem in basket) {
+                val detailsValues = ContentValues().apply {
+                    put("order_id", orderId)
+                    put("date",currentDate)
+                    put("product_id", basketItem.id)
+                    put("product_name", basketItem.name)
+                    put("quantity", basketItem.count)
+                    put("price", basketItem.price)
+                    put("subtotal", basketItem.total)
+                }
+                detailsDb.insert("Details", null, detailsValues)
+            }
             detailsDb.close()
         }
 
@@ -173,14 +184,10 @@ class DatabaseManager private constructor(
             val db = dbHelper.writableDatabase
 
             try {
-                // Update from Orders table
-                val values = ContentValues()
-                values.put("method", "삭제된주문")
-                values.put("orderer", "삭제된주문")
-                values.put("total_amount", 0)
+                // Delete from Orders table
                 val whereClause1 = "order_id = ? AND order_date = ?"
                 val whereArgs1 = arrayOf(orderNum.toString(), orderDate)
-                db.update("Orders", values, whereClause1, whereArgs1)
+                db.delete("Orders", whereClause1, whereArgs1)
 
                 // Delete from Details table
                 val whereClause2 = "order_id = ? AND date = ?"

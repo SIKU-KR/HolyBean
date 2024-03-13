@@ -14,14 +14,22 @@
         android:textSize="24sp"
         android:textStyle="bold" />
 
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fontFamily="@font/nanum_gothic_bold"
+        android:gravity="center"
+        android:paddingTop="15dp"
+        android:text="매장 여부 선택" />
+
     <RadioGroup
         android:id="@+id/takeOptionGroup"
-        android:paddingTop="15dp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:orientation="horizontal"
-        >
+        android:paddingVertical="5dp">
+
         <RadioButton
             android:id="@+id/togo"
             android:layout_width="match_parent"
@@ -51,14 +59,21 @@
 
     </RadioGroup>
 
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fontFamily="@font/nanum_gothic_bold"
+        android:gravity="center"
+        android:paddingTop="15dp"
+        android:text="결제 수단 선택" />
+
     <RadioGroup
         android:id="@+id/orderMethodGroup"
-        android:paddingTop="15dp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:orientation="horizontal"
-        >
+        android:paddingTop="5dp">
 
         <RadioButton
             android:id="@+id/Button1"
@@ -127,32 +142,137 @@
             android:textSize="16sp" />
     </RadioGroup>
 
+    <CheckBox
+        android:id="@+id/dualMethodCB"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:fontFamily="@font/nanum_gothic_bold"
+        android:text="결제 수단 추가" />
+
+    <RadioGroup
+        android:id="@+id/dualMethodGroup"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:visibility="gone"
+        android:orientation="horizontal">
+
+        <RadioButton
+            android:id="@+id/extraButton1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/selector_radiobutton"
+            android:button="@null"
+            android:checked="true"
+            android:fontFamily="@font/nanum_gothic_bold"
+            android:paddingLeft="30dp"
+            android:paddingRight="30dp"
+            android:text="현금"
+            android:textColor="@drawable/selector_radiotext"
+            android:textSize="16sp" />
+
+        <RadioButton
+            android:id="@+id/extraButton2"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/selector_radiobutton"
+            android:button="@null"
+            android:fontFamily="@font/nanum_gothic_bold"
+            android:paddingLeft="30dp"
+            android:paddingRight="30dp"
+            android:text="쿠폰"
+            android:textColor="@drawable/selector_radiotext"
+            android:textSize="16sp" />
+
+        <RadioButton
+            android:id="@+id/extraButton3"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/selector_radiobutton"
+            android:button="@null"
+            android:fontFamily="@font/nanum_gothic_bold"
+            android:paddingLeft="30dp"
+            android:paddingRight="30dp"
+            android:text="계좌이체"
+            android:textColor="@drawable/selector_radiotext"
+            android:textSize="16sp" />
+
+        <RadioButton
+            android:id="@+id/extraButton4"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/selector_radiobutton"
+            android:button="@null"
+            android:fontFamily="@font/nanum_gothic_bold"
+            android:paddingLeft="30dp"
+            android:paddingRight="30dp"
+            android:text="외상"
+            android:textColor="@drawable/selector_radiotext"
+            android:textSize="16sp" />
+
+    </RadioGroup>
+
+    <LinearLayout
+        android:id="@+id/dualMethodInputGroup"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/dualMethodAmountTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/nanum_gothic_bold"
+            android:layout_weight="1"
+            android:gravity="right"
+            android:paddingRight="10dp"
+            android:text="현금 결제금액" />
+
+        <EditText
+            android:id="@+id/dualMethodAmount"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="2"
+            android:hint="결제 금액 입력"
+            android:inputType="text" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/orderNameTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fontFamily="@font/nanum_gothic_bold"
+        android:gravity="center"
+        android:paddingTop="15dp"
+        android:text="주문자 입력 (이체, 외상)" />
+
     <EditText
         android:id="@+id/orderNameEditText"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:hint="주문자 성함 입력"
-        android:inputType="text"
-        android:enabled="false"/>
+        android:inputType="text"/>
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginTop="16dp">
+        android:layout_marginTop="16dp"
+        android:orientation="horizontal">
+
         <android.widget.Button
             android:id="@+id/cancelButton"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="취소"/>
+            android:text="취소" />
 
         <android.widget.Button
             android:id="@+id/confirmButton"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="확인"/>
+            android:text="확인" />
     </LinearLayout>
 
 </LinearLayout>
