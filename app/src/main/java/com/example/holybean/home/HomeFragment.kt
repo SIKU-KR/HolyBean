@@ -205,7 +205,8 @@ class HomeFragment : Fragment(), HomeFunctions, OrderDialogListener {
                     basket.adapter?.notifyDataSetChanged()
                     updateTotal()
                 } else {
-                    Toast.makeText(view?.context ?: context, "올바른 금액이 아닙니다", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(view?.context ?: context, "올바른 금액이 아닙니다", Toast.LENGTH_SHORT)
+                        .show()
                 }
             }
             .setNegativeButton("취소") { _, _ -> }

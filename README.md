@@ -2,6 +2,9 @@
 <div> 
 <img src="https://img.shields.io/badge/Kotlin-7F52FF?style=for-the-badge&logo=Kotlin&logoColor=white">
 <img src="https://img.shields.io/badge/Android-34A853?style=for-the-badge&logo=Android&logoColor=white">
+<img src="https://img.shields.io/badge/SQLite-003B57?style=for-the-badge&logo=SQLite&logoColor=white">
+<img src="https://img.shields.io/badge/Google API-34A853?style=for-the-badge&logo=googlesheets&logoColor=white">
+
 </div>
 <br/>
 Customized software for a cafe in Eloom Church(Wonju). A basic Point of Sale(POS) system supporting Bluetooth ESC/POS printer connection. Used Android Kotlin in development.
@@ -25,7 +28,7 @@ Create a directory and open with terminal.
 ---
 
 ### Photos
-![img1](./docs/IMG_4935.jpg) <br/>
+![img1](./docs/imgsrc/IMG_4935.jpg) <br/>
 Will be uploaded soon
 
 ---
@@ -45,6 +48,7 @@ Will be uploaded soon
 
 - Kotlin
 - SQLite
+- Google Sheet API
 - [@Dantsu/ESCPOS-ThermalPrinter-Android](https://github.com/DantSu/ESCPOS-ThermalPrinter-Android)
 
 ---
