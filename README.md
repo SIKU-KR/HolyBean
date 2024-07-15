@@ -64,9 +64,5 @@ Bluetooth 연결을 통한 ESC/POS 명령 타입의 영수증 프린터를 지�
 
 ---
 
-### Bug fix
-
----
-
 ### Contacts
 Email : peter012677@konkuk.ac.kr
