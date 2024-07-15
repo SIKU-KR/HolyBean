@@ -136,7 +136,8 @@ class HomeFragment : Fragment(), HomeFunctions, OrderDialogListener {
         val item = basketList.find { it.id == id }
         // item이 basketList에 존재하지 않는 경우
         if (item == null) {
-            val target = searchMenuItem(itemList, id) ?: return
+//            val target = searchMenuItem(itemList, id) ?: return
+            val target = itemList.find { it.id == id } ?: return
             basketList.add(BasketItem(id, target.name, target.price, 1, target.price))
         }
         // item이 basketList에 존재하는 경우
@@ -174,22 +175,6 @@ class HomeFragment : Fragment(), HomeFunctions, OrderDialogListener {
         this.totalPrice = getTotal()
         val totalPriceNumTextView: TextView = binding.totalPriceNum
         totalPriceNumTextView.text = this.totalPrice.toString()
-    }
-
-    // menulist binarysearch
-    private fun searchMenuItem(menuItems: ArrayList<MenuItem>, itemId: Int): MenuItem? {
-        var low = 0
-        var high = menuItems.size - 1
-        while (low <= high) {
-            val mid = (low + high) / 2
-            val midVal = menuItems[mid]
-            when {
-                midVal.id < itemId -> low = mid + 1
-                midVal.id > itemId -> high = mid - 1
-                else -> return midVal
-            }
-        }
-        return null // itemId not found
     }
 
     private fun addCouponListener() {
