@@ -6,6 +6,7 @@ import android.content.Context
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
+import android.os.Environment
 import com.example.holybean.dataclass.BasketItem
 import com.example.holybean.dataclass.CreditItem
 import com.example.holybean.dataclass.MenuItem
@@ -13,6 +14,7 @@ import com.example.holybean.dataclass.OrderItem
 import com.example.holybean.dataclass.OrdersDetailItem
 import com.example.holybean.dataclass.ReportDetailItem
 import com.opencsv.CSVReaderBuilder
+import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStreamReader
 import java.text.SimpleDateFormat
@@ -238,6 +240,34 @@ class DatabaseManager private constructor(
             } catch (e: Exception) {
                 e.printStackTrace()
             } finally {
+                db.close()
+            }
+        }
+
+        fun exportTableToCSV(context: Context, tableName: String): Boolean {
+            val db = getInstance(context).readableDatabase
+            val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+            val csvFile = File(downloadsDir, "$tableName.csv")
+            val cursor: Cursor = db.rawQuery("SELECT * FROM $tableName", null)
+
+            try {
+                FileOutputStream(csvFile).use { fos ->
+                    fos.write((cursor.columnNames.joinToString(",") + "\n").toByteArray())
+                    cursor.use {
+                        while (it.moveToNext()) {
+                            val rowValues = (0 until it.columnCount).joinToString(",") { index ->
+                                it.getString(index) ?: ""
+                            }
+                            fos.write((rowValues + "\n").toByteArray())
+                        }
+                    }
+                }
+                return true
+            } catch (e: Exception) {
+                e.printStackTrace()
+                return false
+            } finally {
+                cursor.close()
                 db.close()
             }
         }
