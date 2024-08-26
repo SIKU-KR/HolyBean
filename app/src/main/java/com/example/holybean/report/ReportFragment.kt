@@ -71,6 +71,11 @@ class ReportFragment: Fragment() {
         date1.text = todayDate
         date2.text = todayDate
 
+        binding.tocsvbutton.setOnClickListener{
+            DatabaseManager.exportTableToCSV(context, "Orders")
+            DatabaseManager.exportTableToCSV(context, "Details")
+        }
+
         // set button onClickListener
         binding.date1Button.setOnClickListener {
             getDateFromUser { selectedDate ->
