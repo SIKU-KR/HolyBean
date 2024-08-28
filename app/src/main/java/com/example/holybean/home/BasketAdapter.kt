@@ -9,7 +9,7 @@ import com.example.holybean.R
 import com.example.holybean.dataclass.BasketItem
 
 // 메뉴목록 (RecyclerView)의 어댑터 정의
-class BasketAdapter(private var basketList: ArrayList<BasketItem>, private val mainListener: HomeFragment) : RecyclerView.Adapter<BasketAdapter.BasketHolder>() {
+class BasketAdapter(private var basketList: ArrayList<BasketItem>, private val mainListener: HomeController) : RecyclerView.Adapter<BasketAdapter.BasketHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): BasketHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.basket_recycler_view, parent, false)

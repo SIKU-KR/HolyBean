@@ -5,7 +5,6 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.view.WindowInsets
-import android.view.WindowInsetsController
 import android.view.WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -14,11 +13,13 @@ import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
 import com.example.holybean.common.MainActivityListener
 import com.example.holybean.credits.CreditsFragment
-import com.example.holybean.home.HomeFragment
+import com.example.holybean.home.HomeController
 import com.example.holybean.orders.OrdersFragment
 import com.example.holybean.report.ReportFragment
 import com.google.android.material.navigation.NavigationView
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MainActivity : AppCompatActivity(), MainActivityListener {
     companion object {
         const val PERMISSION_BLUETOOTH = 1
@@ -30,9 +31,9 @@ class MainActivity : AppCompatActivity(), MainActivityListener {
     private lateinit var drawerLayout: DrawerLayout
 
     override fun replaceHomeFragment() {
-        val homeFragment = HomeFragment()
+        val homeController = HomeController()
         supportFragmentManager.beginTransaction()
-            .replace(R.id.fragment_container, homeFragment)
+            .replace(R.id.fragment_container, homeController)
             .commit()
     }
 
@@ -67,13 +68,13 @@ class MainActivity : AppCompatActivity(), MainActivityListener {
 
         if (savedInstanceState == null) {
             supportFragmentManager.beginTransaction()
-                .replace(R.id.fragment_container, HomeFragment())
+                .replace(R.id.fragment_container, HomeController())
                 .commit()
         }
         navigationView.setNavigationItemSelectedListener { drawerItem ->
             // 드로어 메뉴 아이템 클릭 시 해당 Fragment로 전환
             when (drawerItem.itemId) {
-                R.id.nav_home -> loadFragment(HomeFragment())
+                R.id.nav_home -> loadFragment(HomeController())
                 R.id.nav_orders -> loadFragment(OrdersFragment())
                 R.id.nav_report -> loadFragment(ReportFragment())
                 R.id.nav_credit -> loadFragment(CreditsFragment())

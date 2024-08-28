@@ -1,6 +1,9 @@
 package com.example.holybean.home
 
+import com.example.holybean.home.dto.OrderData
+import com.example.holybean.home.dto.OrderDataWithDualMethod
+
 interface OrderDialogListener {
-    fun onOrderConfirmed(takeOption: String, ordererName: String, orderMethod: String)
-    fun onOrderConfirmed(takeOption: String, ordererName: String, firstMethod: String, secondMethod: String, firstAmount: Int, secondAmount: Int)
+    fun onOrderConfirmed(data: OrderData)
+    fun onOrderConfirmed(data: OrderDataWithDualMethod)
 }
