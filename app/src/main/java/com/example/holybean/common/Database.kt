@@ -1,4 +1,4 @@
-package com.example.holybean
+package com.example.holybean.common
 
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase

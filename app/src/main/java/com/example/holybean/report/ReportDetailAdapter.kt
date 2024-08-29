@@ -6,7 +6,7 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.example.holybean.R
-import com.example.holybean.dataclass.ReportDetailItem
+import com.example.holybean.report.dto.ReportDetailItem
 
 class ReportDetailAdapter(private var detailData: ArrayList<ReportDetailItem>) : RecyclerView.Adapter<ReportDetailAdapter.ReportDetailHolder>() {
 

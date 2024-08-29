@@ -15,7 +15,6 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.DialogFragment
 import com.example.holybean.R
-import com.example.holybean.common.DatabaseManager
 import com.example.holybean.home.dto.OrderData
 import com.example.holybean.home.dto.OrderDataWithDualMethod
 import com.example.holybean.home.dto.OrderDialogData

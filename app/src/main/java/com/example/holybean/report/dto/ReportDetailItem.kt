@@ -1,7 +1,6 @@
-package com.example.holybean.dataclass
+package com.example.holybean.report.dto
 
 data class ReportDetailItem(
-    val id: Int,
     val name: String,
     val quantity: Int,
     val subtotal: Int

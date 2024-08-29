@@ -1,6 +1,6 @@
 package com.example.holybean.home
 
-import com.example.holybean.Printer
+import com.example.holybean.common.Printer
 import com.example.holybean.home.dto.OrderData
 
 class HomePrinter : Printer() {

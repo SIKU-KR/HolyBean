@@ -10,15 +10,21 @@ import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.example.holybean.common.DatabaseManager
 import com.example.holybean.common.MainActivityListener
 import com.example.holybean.common.RvCustomDesign
+import com.example.holybean.credits.dto.CreditItem
 import com.example.holybean.databinding.FragmentCreditBinding
-import com.example.holybean.dataclass.CreditItem
-import com.example.holybean.dataclass.OrdersDetailItem
+import com.example.holybean.orders.dto.OrdersDetailItem
 import com.example.holybean.orders.OrdersDetailAdapter
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
-class CreditsFragment : Fragment(), CreditsFragmentFunction {
+@AndroidEntryPoint
+class CreditsController : Fragment(), CreditsFragmentFunction {
+
+    @Inject
+    lateinit var repository: CreditsRepository
+
     private lateinit var binding: FragmentCreditBinding
     private lateinit var context: Context
 
@@ -26,6 +32,7 @@ class CreditsFragment : Fragment(), CreditsFragmentFunction {
 
     private var orderNumber = 1
     private var orderDate = ""
+    private var rowId: Long = 0
 
     private lateinit var orderNum: TextView
     private lateinit var totalPrice: TextView
@@ -45,7 +52,7 @@ class CreditsFragment : Fragment(), CreditsFragmentFunction {
         orderNum = binding.orderNum
         totalPrice = binding.totalPriceNum
 
-        creditsList = DatabaseManager.getCreditList(view.context)
+        creditsList = repository.readCredits()
         basketList = ArrayList()
 
         initBasket()
@@ -61,13 +68,13 @@ class CreditsFragment : Fragment(), CreditsFragmentFunction {
         binding.viewThisOrder.setOnClickListener{
             activity?.runOnUiThread {
                 basketList.clear()
-                basketList = DatabaseManager.getOrderDetail(view.context, orderNumber, orderDate)
+                basketList = repository.readOrderDetail(this.rowId)
                 initBasket()
             }
         }
 
         binding.deleteCredit.setOnClickListener{
-            DatabaseManager.deleteCreditRecord(view.context, orderNumber, orderDate)
+            repository.deleteCredits(this.rowId)
             mainListener?.replaceCreditsFragment()
         }
         return view
@@ -84,7 +91,8 @@ class CreditsFragment : Fragment(), CreditsFragmentFunction {
     }
 
     @SuppressLint("NotifyDataSetChanged")
-    override fun newOrderSelected(num: Int, total: Int, date:String) {
+    override fun newOrderSelected(rowId: Long, num: Int, total: Int, date:String) {
+        this.rowId = rowId
         this.orderNumber = num
         this.orderDate = date
         orderNum.text = num.toString()

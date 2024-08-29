@@ -6,7 +6,7 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.example.holybean.R
-import com.example.holybean.dataclass.CreditItem
+import com.example.holybean.credits.dto.CreditItem
 
 class CreditsAdapter(private var creditsList: ArrayList<CreditItem>, private val creditsListener: CreditsFragmentFunction) : RecyclerView.Adapter<CreditsAdapter.CreditsHolder>() {
 
@@ -22,7 +22,7 @@ class CreditsAdapter(private var creditsList: ArrayList<CreditItem>, private val
         holder.ordersDate.text = "주문방식: ${item.date}"
         holder.ordersOrderer.text = "주문자: ${item.orderer}"
         holder.itemView.setOnClickListener {
-            creditsListener.newOrderSelected(item.orderId, item.totalAmount, item.date)
+            creditsListener.newOrderSelected(item.rowId, item.orderId, item.totalAmount, item.date)
         }
     }
 

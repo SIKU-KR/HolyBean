@@ -1,4 +1,4 @@
-package com.example.holybean
+package com.example.holybean.common
 
 import com.dantsu.escposprinter.EscPosCharsetEncoding
 import com.dantsu.escposprinter.EscPosPrinter

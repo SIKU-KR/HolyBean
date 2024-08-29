@@ -14,13 +14,12 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.example.holybean.Menu
-import com.example.holybean.common.DatabaseManager
+import com.example.holybean.common.Menu
 import com.example.holybean.common.MainActivityListener
 import com.example.holybean.common.RvCustomDesign
 import com.example.holybean.databinding.FragmentHomeBinding
-import com.example.holybean.dataclass.BasketItem
-import com.example.holybean.dataclass.MenuItem
+import com.example.holybean.home.dto.BasketItem
+import com.example.holybean.common.MenuItem
 import com.example.holybean.home.dto.OrderDialogData
 import com.google.android.material.tabs.TabLayout
 import dagger.hilt.android.AndroidEntryPoint

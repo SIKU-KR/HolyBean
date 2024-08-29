@@ -6,7 +6,7 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.example.holybean.R
-import com.example.holybean.dataclass.OrdersDetailItem
+import com.example.holybean.orders.dto.OrdersDetailItem
 
 class OrdersDetailAdapter(private var basketList: ArrayList<OrdersDetailItem>) : RecyclerView.Adapter<OrdersDetailAdapter.OrdersDetailHolder>() {
 

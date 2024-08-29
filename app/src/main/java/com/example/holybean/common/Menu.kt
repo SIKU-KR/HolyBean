@@ -1,6 +1,5 @@
-package com.example.holybean
+package com.example.holybean.common
 
-import com.example.holybean.dataclass.MenuItem
 import com.opencsv.CSVReaderBuilder
 import java.io.InputStreamReader
 

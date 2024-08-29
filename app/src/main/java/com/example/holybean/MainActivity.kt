@@ -12,10 +12,10 @@ import androidx.core.content.ContextCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
 import com.example.holybean.common.MainActivityListener
-import com.example.holybean.credits.CreditsFragment
+import com.example.holybean.credits.CreditsController
 import com.example.holybean.home.HomeController
-import com.example.holybean.orders.OrdersFragment
-import com.example.holybean.report.ReportFragment
+import com.example.holybean.orders.OrdersController
+import com.example.holybean.report.ReportController
 import com.google.android.material.navigation.NavigationView
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -38,16 +38,16 @@ class MainActivity : AppCompatActivity(), MainActivityListener {
     }
 
     override fun replaceOrdersFragment() {
-        val ordersFragment = OrdersFragment()
+        val ordersController = OrdersController()
         supportFragmentManager.beginTransaction()
-            .replace(R.id.fragment_container, ordersFragment)
+            .replace(R.id.fragment_container, ordersController)
             .commit()
     }
 
     override fun replaceCreditsFragment() {
-        val creditsFragment = CreditsFragment()
+        val creditsController = CreditsController()
         supportFragmentManager.beginTransaction()
-            .replace(R.id.fragment_container, creditsFragment)
+            .replace(R.id.fragment_container, creditsController)
             .commit()
     }
 
@@ -75,9 +75,9 @@ class MainActivity : AppCompatActivity(), MainActivityListener {
             // 드로어 메뉴 아이템 클릭 시 해당 Fragment로 전환
             when (drawerItem.itemId) {
                 R.id.nav_home -> loadFragment(HomeController())
-                R.id.nav_orders -> loadFragment(OrdersFragment())
-                R.id.nav_report -> loadFragment(ReportFragment())
-                R.id.nav_credit -> loadFragment(CreditsFragment())
+                R.id.nav_orders -> loadFragment(OrdersController())
+                R.id.nav_report -> loadFragment(ReportController())
+                R.id.nav_credit -> loadFragment(CreditsController())
                 // 다른 메뉴 아이템에 대한 처리를 여기에 추가
             }
             drawerItem.isChecked = true

@@ -1,6 +1,5 @@
-package com.example.holybean.dataclass
+package com.example.holybean.common
 
-// menu의 data class 정의
 data class MenuItem(
     val id:Int,
     val name:String,

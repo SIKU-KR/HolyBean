@@ -3,16 +3,8 @@ package com.example.holybean.home
 import android.content.ContentValues
 import android.content.Context
 import android.database.Cursor
-import com.example.holybean.Database
-import com.example.holybean.common.DatabaseManager.Companion.DETAILS_PRICE
-import com.example.holybean.common.DatabaseManager.Companion.DETAILS_PRODUCT_ID
-import com.example.holybean.common.DatabaseManager.Companion.DETAILS_PRODUCT_NAME
-import com.example.holybean.common.DatabaseManager.Companion.DETAILS_QUANTITY
-import com.example.holybean.common.DatabaseManager.Companion.ORDERS
-import com.example.holybean.common.DatabaseManager.Companion.ORDERS_DATE
-import com.example.holybean.common.DatabaseManager.Companion.ORDERS_ORDER_ID
+import com.example.holybean.common.Database
 import com.example.holybean.home.dto.OrderData
-import dagger.Module
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 
@@ -20,11 +12,12 @@ class HomeRepository @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
 
-    fun getLastOrderNum(date: String): Int{
+    fun getLastOrderNum(date: String): Int {
         var lastorderId: Int? = null
         val dbHelper = Database.getInstance(context)
         val db = dbHelper.readableDatabase
-        val query = "SELECT MAX(${Database.ORDERS_NUM}) FROM ${Database.ORDERS} WHERE ${Database.ORDERS_DATE} = ?"
+        val query =
+            "SELECT MAX(${Database.ORDERS_NUM}) FROM ${Database.ORDERS} WHERE ${Database.ORDERS_DATE} = ?"
         val cursor: Cursor = db.rawQuery(query, arrayOf(date))
         cursor.use {
             if (it.moveToFirst()) {
@@ -35,7 +28,7 @@ class HomeRepository @Inject constructor(
         return lastorderId ?: 0
     }
 
-    fun insertToOrders(data: OrderData): Long{
+    fun insertToOrders(data: OrderData): Long {
         val dbHelper = Database.getInstance(context)
         val db = dbHelper.writableDatabase
         val insertValue = ContentValues().apply {

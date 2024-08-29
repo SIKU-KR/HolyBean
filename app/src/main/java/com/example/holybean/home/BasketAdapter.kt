@@ -6,7 +6,7 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.example.holybean.R
-import com.example.holybean.dataclass.BasketItem
+import com.example.holybean.home.dto.BasketItem
 
 // 메뉴목록 (RecyclerView)의 어댑터 정의
 class BasketAdapter(private var basketList: ArrayList<BasketItem>, private val mainListener: HomeController) : RecyclerView.Adapter<BasketAdapter.BasketHolder>() {
