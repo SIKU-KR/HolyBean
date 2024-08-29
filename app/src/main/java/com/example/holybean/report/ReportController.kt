@@ -150,7 +150,6 @@ class ReportController: Fragment() {
         }
     }
 
-    // TODO ("Repository")
     private fun loadButtonFunction() {
         val startDate = date1.text.toString()
         val endDate = date2.text.toString()
