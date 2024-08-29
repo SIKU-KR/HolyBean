@@ -1,4 +1,4 @@
-package com.example.holybean.dataclass
+package com.example.holybean.orders.dto
 
 data class OrdersDetailItem(
     val id: Int,

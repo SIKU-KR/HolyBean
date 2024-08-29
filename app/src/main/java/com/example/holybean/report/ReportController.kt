@@ -2,32 +2,33 @@ package com.example.holybean.report
 
 import android.app.DatePickerDialog
 import android.content.Context
-import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
-import androidx.annotation.RequiresApi
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.dantsu.escposprinter.EscPosCharsetEncoding
-import com.dantsu.escposprinter.EscPosPrinter
-import com.dantsu.escposprinter.connection.bluetooth.BluetoothPrintersConnections
-import com.example.holybean.common.DatabaseManager
-import com.example.holybean.common.RvCustomDesign
 import com.example.holybean.databinding.FragmentReportBinding
-import com.example.holybean.dataclass.ReportDetailItem
+import com.example.holybean.report.dto.PrinterDTO
+import com.example.holybean.report.dto.ReportDetailItem
+import dagger.hilt.android.AndroidEntryPoint
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
 import java.util.Date
+import javax.inject.Inject
 import kotlin.concurrent.thread
 
-class ReportFragment: Fragment() {
+@AndroidEntryPoint
+class ReportController: Fragment() {
+
+    @Inject
+    lateinit var repository: ReportRepository
+
     private lateinit var binding: FragmentReportBinding
     private lateinit var context: Context
 
@@ -72,8 +73,8 @@ class ReportFragment: Fragment() {
         date2.text = todayDate
 
         binding.tocsvbutton.setOnClickListener{
-            DatabaseManager.exportTableToCSV(context, "Orders")
-            DatabaseManager.exportTableToCSV(context, "Details")
+//            DatabaseManager.exportTableToCSV(context, "Orders")
+//            DatabaseManager.exportTableToCSV(context, "Details")
         }
 
         // set button onClickListener
@@ -90,21 +91,13 @@ class ReportFragment: Fragment() {
         }
 
         binding.printButton.setOnClickListener {
-            if(reportDetailData.size > 0){
-                val printer = EscPosPrinter(BluetoothPrintersConnections.selectFirstPaired(), 180, 72f, 32, EscPosCharsetEncoding("EUC-KR", 13))
-                thread {
-                    printer.printFormattedTextAndCut(getPrintingText(), 500)
-                    Thread.sleep(2000)
-                    printer.disconnectPrinter()
-                }
-            } else {
-                Toast.makeText(view.context, "기간 설정 후 조회해주세요", Toast.LENGTH_SHORT).show()
-            }
+            printButtonFunction()
         }
 
         binding.loadButton.setOnClickListener {
             loadButtonFunction()
         }
+
         return view
     }
 
@@ -138,6 +131,25 @@ class ReportFragment: Fragment() {
         }, year, month, day)?.show()
     }
 
+    private fun printButtonFunction(){
+        if(reportDetailData.size > 0){
+            val printer = ReportPrinter()
+            val text = printer.getPrintingText(PrinterDTO(
+                date1.text.toString(),
+                date2.text.toString(),
+                reportData,
+                reportDetailData
+            ))
+            thread {
+                printer.print(text)
+                Thread.sleep(2000)
+                printer.disconnect()
+            }
+        } else {
+            Toast.makeText(context, "기간 설정 후 조회해주세요", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     private fun loadButtonFunction() {
         val startDate = date1.text.toString()
         val endDate = date2.text.toString()
@@ -147,9 +159,12 @@ class ReportFragment: Fragment() {
         val date2parse = LocalDate.parse(endDate, dateFormat)
         if (date1parse.isBefore(date2parse) || date1parse.isEqual(date2parse)) {
             reportTitle.text = "${startDate}~${endDate}"
-            reportData = DatabaseManager.getReportData(view?.context ?: context, startDate, endDate)
-            reportDetailData = DatabaseManager.getReportDetailData(view?.context ?: context, startDate, endDate)
+
+            reportData = repository.makeReport(startDate, endDate)
+            reportDetailData = repository.makeReportDetail(startDate, endDate)
+
             setReportTitles()
+
             val boardAdapter = ReportDetailAdapter(reportDetailData)
             reportDetail.apply {
                 adapter = boardAdapter
@@ -159,27 +174,6 @@ class ReportFragment: Fragment() {
             // when invalid date input
             Toast.makeText(view?.context ?: context, "올바른 조회 기간이 아닙니다", Toast.LENGTH_SHORT).show()
         }
-    }
-
-    private fun getPrintingText(): String{
-        var result = "[L]\n"
-        val startDate = date1.text.toString()
-        val endDate = date2.text.toString()
-        result += "[C]<u><font size='big'>${startDate}~</font></u>\n"
-        result += "[C]<u><font size='big'>${endDate}</font></u>\n"
-        result += "[C]-------------------------------------\n"
-        result += "[L]총 판매금액 : ${reportData["전체"]}\n"
-        result += "[L]현금 판매금액 : ${reportData["현금"]}\n"
-        result += "[L]쿠폰 판매금액 : ${reportData["쿠폰"]}\n"
-        result += "[L]계좌이체 판매금액 : ${reportData["계좌이체"]}\n"
-        result += "[L]외상 판매금액 : ${reportData["외상"]}\n"
-        result += "[C]-------------------------------------\n"
-        result += "[L]이름[R]수량[R]판매액\n"
-        for(item in reportDetailData) {
-            result += "[L]${item.name}[R]${item.quantity}[R]${item.subtotal}\n"
-        }
-        result += "[L]\n"
-        return result
     }
 
 }

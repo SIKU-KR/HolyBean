@@ -15,10 +15,12 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.DialogFragment
 import com.example.holybean.R
-import com.example.holybean.common.DatabaseManager
+import com.example.holybean.home.dto.OrderData
+import com.example.holybean.home.dto.OrderDataWithDualMethod
+import com.example.holybean.home.dto.OrderDialogData
 import java.lang.Exception
 
-class OrderDialog : DialogFragment() {
+class OrderDialog(val data: OrderDialogData) : DialogFragment() {
     private var orderDialogListener: OrderDialogListener? = null
 
     private lateinit var takeOptionGroup: RadioGroup
@@ -41,10 +43,10 @@ class OrderDialog : DialogFragment() {
     private var secondAmount = 0
 
     companion object {
-        fun newInstance(amount: Int): OrderDialog {
-            val fragment = OrderDialog()
+        fun newInstance(data: OrderDialogData): OrderDialog {
+            val fragment = OrderDialog(data)
             val args = Bundle()
-            args.putInt("amount", amount)
+            args.putInt("amount", data.totalPrice)
             fragment.arguments = args
             return fragment
         }
@@ -144,9 +146,15 @@ class OrderDialog : DialogFragment() {
         } else {
             val ordererName = orderNameEditText.text.toString()
             orderDialogListener?.onOrderConfirmed(
-                selectedTakeOption,
-                ordererName,
-                selectedOrderMethod
+                OrderData(
+                    data.basketList,
+                    data.orderNum,
+                    data.totalPrice,
+                    selectedTakeOption,
+                    ordererName,
+                    selectedOrderMethod,
+                    data.date
+                )
             )
             dismiss()
         }
@@ -175,15 +183,21 @@ class OrderDialog : DialogFragment() {
             // 결제금액 확인
             val builder = AlertDialog.Builder(context)
             builder.setTitle("결제금액 확인")
-                .setMessage("$selectedOrderMethod : ${totalPrice-secondAmount}원, $selectedExtraMethod : ${secondAmount}원")
+                .setMessage("$selectedOrderMethod : ${totalPrice - secondAmount}원, $selectedExtraMethod : ${secondAmount}원")
                 .setPositiveButton("확인") { _, _ ->
                     orderDialogListener?.onOrderConfirmed(
-                        selectedTakeOption,
-                        ordererName,
-                        selectedOrderMethod,
-                        selectedExtraMethod,
-                        totalPrice - secondAmount,
-                        secondAmount
+                        OrderDataWithDualMethod(
+                            data.basketList,
+                            data.orderNum,
+                            data.totalPrice,
+                            selectedTakeOption,
+                            ordererName,
+                            selectedOrderMethod,
+                            selectedExtraMethod,
+                            totalPrice - secondAmount,
+                            secondAmount,
+                            data.date
+                        )
                     )
                     dismiss()
                 }

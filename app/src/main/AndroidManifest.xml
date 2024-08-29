@@ -11,17 +11,9 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.HolyBean"
+        android:name=".AppClass"
         tools:targetApi="31">
-        <activity
-            android:name=".ProcessOrder"
-            android:exported="false"
-            android:label="@string/title_activity_process_order"
-            android:theme="@style/Theme.HolyBean" />
-        <activity
-            android:name=".process_order"
-            android:exported="false"
-            android:label="@string/title_activity_process_order"
-            android:theme="@style/Theme.HolyBean" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"

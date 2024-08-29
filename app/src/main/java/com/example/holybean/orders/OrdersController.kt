@@ -12,26 +12,27 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.dantsu.escposprinter.EscPosCharsetEncoding
-import com.dantsu.escposprinter.EscPosPrinter
-import com.dantsu.escposprinter.connection.bluetooth.BluetoothPrintersConnections
-import com.example.holybean.common.DatabaseManager
 import com.example.holybean.common.MainActivityListener
 import com.example.holybean.common.RvCustomDesign
 import com.example.holybean.databinding.FragmentOrdersBinding
-import com.example.holybean.dataclass.OrderItem
-import com.example.holybean.dataclass.OrdersDetailItem
-import java.text.SimpleDateFormat
-import java.util.Date
-import kotlin.concurrent.thread
+import com.example.holybean.orders.dto.OrderItem
+import com.example.holybean.orders.dto.OrdersDetailItem
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
-class OrdersFragment : Fragment(), OrdersFragmentFunction {
+@AndroidEntryPoint
+class OrdersController : Fragment(), OrdersFragmentFunction {
+
+    @Inject
+    lateinit var service: OrdersService
+
     private lateinit var binding: FragmentOrdersBinding
     private lateinit var context: Context
 
     private var mainListener: MainActivityListener? = null
 
     private var orderNumber = 1
+    private var rowId: Long = 1
 
     private lateinit var orderNum: TextView
     private lateinit var totalPrice: TextView
@@ -55,9 +56,9 @@ class OrdersFragment : Fragment(), OrdersFragmentFunction {
         orderNum = binding.orderNum
         totalPrice = binding.totalPriceNum
 
-        val today = getCurrentDate()
+        val today = service.getCurrentDate()
 
-        ordersList = DatabaseManager.getOrderList(view.context, today)
+        ordersList = service.getOrderList()
         basketList = ArrayList()
 
         initBasket()
@@ -73,27 +74,18 @@ class OrdersFragment : Fragment(), OrdersFragmentFunction {
         binding.viewThisOrder.setOnClickListener {
             activity?.runOnUiThread {
                 basketList.clear()
-                basketList = DatabaseManager.getOrderDetail(view.context, orderNumber, today)
+                basketList = service.getOrderDetail(rowId)
                 initBasket()
             }
         }
+
         // 영수증 재출력 버튼
         binding.reprint.setOnClickListener {
             if (this.basketList.isNotEmpty()) {
-                val printer = EscPosPrinter(
-                    BluetoothPrintersConnections.selectFirstPaired(),
-                    180,
-                    72f,
-                    32,
-                    EscPosCharsetEncoding("EUC-KR", 13)
-                )
-                thread {
-                    printer.printFormattedTextAndCut(getTargetText(), 500)
-                    Thread.sleep(2000)
-                    printer.disconnectPrinter()
-                }
+                service.reprint(this.orderNumber, this.basketList)
             }
         }
+
         // 주문 내역 삭제 버튼
         binding.deleteButton.setOnClickListener {
             if (this.basketList.isNotEmpty()) {
@@ -101,7 +93,7 @@ class OrdersFragment : Fragment(), OrdersFragmentFunction {
                 builder.setTitle("주문 내역을 삭제하시겠습니까?")
                     .setMessage("주문번호 ${this.orderNumber}번이 삭제되며 복구할 수 없습니다")
                     .setPositiveButton("확인") { _, _ ->
-                        DatabaseManager.deleteAnOrder(context, orderNumber, today)
+                        service.deleteOrder(rowId, orderNumber)
                         mainListener?.replaceOrdersFragment()
                     }
                     .setNegativeButton("취소") { _, _ -> }
@@ -125,33 +117,13 @@ class OrdersFragment : Fragment(), OrdersFragmentFunction {
     }
 
     @SuppressLint("NotifyDataSetChanged")
-    override fun newOrderSelected(num: Int, total: Int) {
+    override fun newOrderSelected(id: Long, num: Int, total: Int) {
+        rowId = id
         orderNumber = num
         orderNum.text = num.toString()
         totalPrice.text = total.toString()
         basketList.clear()
         basket.adapter?.notifyDataSetChanged()
-    }
-
-    private fun getTargetText(): String {
-        var result = "[R]영수증 재출력\n"
-        result += "[C]=====================================\n"
-        result += "[L]\n"
-        result += "[C]<u><font size='big'>주문번호 : ${this.orderNumber}</font></u>\n"
-        result += "[L]\n"
-        result += "[C]-------------------------------------\n"
-        for (item in basketList) {
-            result += "[L]<b>${item.name}</b>[R]${item.count}\n"
-        }
-        result += "[L]\n"
-        result += "[C]====================================="
-        return result
-    }
-
-    private fun getCurrentDate(): String {
-        val dateFormat = SimpleDateFormat("yyyy-MM-dd")
-        val currentDate = Date()
-        return dateFormat.format(currentDate)
     }
 
     override fun onAttach(context: Context) {

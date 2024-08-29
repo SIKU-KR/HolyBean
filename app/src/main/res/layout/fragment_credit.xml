@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/main_backgroud"
-    tools:context=".credits.CreditsFragment"
+    tools:context=".credits.CreditsController"
     >
 
     <androidx.recyclerview.widget.RecyclerView

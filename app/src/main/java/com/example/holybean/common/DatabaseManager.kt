@@ -1,5 +1,10 @@
 package com.example.holybean.common
 
+// THIS CLASS IS DEPRECATED
+// 2024.08.28.
+// v1.4.0
+
+/*
 import android.annotation.SuppressLint
 import android.content.ContentValues
 import android.content.Context
@@ -7,18 +12,16 @@ import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import android.os.Environment
-import com.example.holybean.dataclass.BasketItem
-import com.example.holybean.dataclass.CreditItem
-import com.example.holybean.dataclass.MenuItem
-import com.example.holybean.dataclass.OrderItem
-import com.example.holybean.dataclass.OrdersDetailItem
-import com.example.holybean.dataclass.ReportDetailItem
-import com.opencsv.CSVReaderBuilder
+import com.example.holybean.credits.dto.CreditItem
+import com.example.holybean.report.dto.ReportDetailItem
+import com.example.holybean.home.dto.BasketItem
+import com.example.holybean.orders.dto.OrderItem
+import com.example.holybean.orders.dto.OrdersDetailItem
 import java.io.File
 import java.io.FileOutputStream
-import java.io.InputStreamReader
 import java.text.SimpleDateFormat
 import java.util.Date
+
 
 class DatabaseManager private constructor(
     context: Context
@@ -68,32 +71,6 @@ class DatabaseManager private constructor(
                     it.copyDatabaseFromAssets(context, DATABASE_NAME)
                 }
             }
-        }
-
-        fun getMenuList(): ArrayList<MenuItem> {
-            val menuList = ArrayList<MenuItem>()
-
-            try {
-                val inputStream = javaClass.classLoader.getResourceAsStream("assets/menu.csv")
-                val reader = CSVReaderBuilder(InputStreamReader(inputStream))
-                    .withSkipLines(1) // Skip the header row
-                    .build()
-                reader.readAll().forEach { line ->
-                    if (line.size == 4) {
-                        val id = line[0].toInt()
-                        val name = line[1]
-                        val price = line[2].toInt()
-                        val placement = line[3].toInt()
-                        val menuItem = MenuItem(id, name, price, placement)
-                        menuList.add(menuItem)
-                    }
-                }
-                reader.close()
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-            menuList.sortBy { it.id }
-            return menuList
         }
 
         fun getOrderList(context: Context, date: String): ArrayList<OrderItem> {
@@ -307,7 +284,7 @@ class DatabaseManager private constructor(
                 val totalAmount = it.getInt(it.getColumnIndex(ORDERS_TOTAL_AMOUNT))
                 val method = it.getString(it.getColumnIndex(ORDERS_METHOD))
                 val orderer = it.getString(it.getColumnIndex(ORDERS_ORDERER))
-                orderList.add(OrderItem(orderId, totalAmount, method, orderer))
+                orderList.add(OrderItem(-1, orderId, totalAmount, method, orderer))
             }
         }
         db.close()
@@ -325,7 +302,7 @@ class DatabaseManager private constructor(
                 val totalAmount = it.getInt(it.getColumnIndex(CREDITS_TOTAL_AMOUNT))
                 val orderDate = it.getString(it.getColumnIndex(CREDITS_DATE))
                 val orderer = it.getString(it.getColumnIndex(CREDITS_ORDERER))
-                orderList.add(CreditItem(orderId, totalAmount, orderDate, orderer))
+                orderList.add(CreditItem(-1, orderId, totalAmount, orderDate, orderer))
             }
         }
         db.close()
@@ -389,7 +366,7 @@ class DatabaseManager private constructor(
                 val productName = it.getString(it.getColumnIndex(DETAILS_PRODUCT_NAME))
                 val totalQuantity = it.getInt(it.getColumnIndex("total_quantity"))
                 val totalSubtotal = it.getInt(it.getColumnIndex("total_subtotal"))
-                resultList.add(ReportDetailItem(productId, productName, totalQuantity, totalSubtotal))
+                resultList.add(ReportDetailItem(productName, totalQuantity, totalSubtotal))
             }
         }
         db.close()
@@ -398,3 +375,4 @@ class DatabaseManager private constructor(
     }
 
 }
+*/

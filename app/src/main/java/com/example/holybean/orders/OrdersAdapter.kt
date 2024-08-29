@@ -6,7 +6,7 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.example.holybean.R
-import com.example.holybean.dataclass.OrderItem
+import com.example.holybean.orders.dto.OrderItem
 
 class OrdersAdapter(private var ordersList: ArrayList<OrderItem>, private val ordersListener: OrdersFragmentFunction) : RecyclerView.Adapter<OrdersAdapter.OrdersHolder>() {
 
@@ -22,7 +22,7 @@ class OrdersAdapter(private var ordersList: ArrayList<OrderItem>, private val or
         holder.ordersMethod.text = "주문방식: ${item.method}"
         holder.ordersOrderer.text = "주문자: ${item.orderer}"
         holder.itemView.setOnClickListener {
-            ordersListener.newOrderSelected(item.orderId, item.totalAmount)
+            ordersListener.newOrderSelected(item.rowId, item.orderId, item.totalAmount)
         }
     }
 
