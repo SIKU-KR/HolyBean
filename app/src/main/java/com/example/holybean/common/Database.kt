@@ -12,7 +12,7 @@ class Database private constructor(
 
         // db info
         const val DATABASE_NAME = "databaseV2.db"
-        const val DATABASE_VERSION = 1
+        const val DATABASE_VERSION = 2
 
         // tables
         const val ORDERS = "Orders"
@@ -46,7 +46,7 @@ class Database private constructor(
         val createOrdersTable = """
         CREATE TABLE $ORDERS (
             $ORDERS_ID INTEGER PRIMARY KEY AUTOINCREMENT,
-            $ORDERS_NUM TEXT NOT NULL,
+            $ORDERS_NUM INTEGER NOT NULL,
             $ORDERS_DATE TEXT NOT NULL,
             $ORDERS_TOTAL_AMOUNT INTEGER NOT NULL,
             $ORDERS_METHOD TEXT NOT NULL,
