@@ -1,5 +1,5 @@
 package com.example.holybean.orders
 
 interface OrdersFragmentFunction {
-    fun newOrderSelected(id: Long, num: Int, total: Int)
+    fun newOrderSelected(id: String, num: Int, total: Int)
 }

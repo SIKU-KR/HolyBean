@@ -32,7 +32,7 @@ class OrdersController : Fragment(), OrdersFragmentFunction {
     private var mainListener: MainActivityListener? = null
 
     private var orderNumber = 1
-    private var rowId: Long = 1
+    private var rowId: String = '1'.toString()
 
     private lateinit var orderNum: TextView
     private lateinit var totalPrice: TextView
@@ -117,7 +117,7 @@ class OrdersController : Fragment(), OrdersFragmentFunction {
     }
 
     @SuppressLint("NotifyDataSetChanged")
-    override fun newOrderSelected(id: Long, num: Int, total: Int) {
+    override fun newOrderSelected(id: String, num: Int, total: Int) {
         rowId = id
         orderNumber = num
         orderNum.text = num.toString()

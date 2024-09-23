@@ -114,7 +114,7 @@
             android:paddingVertical="100dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintRight_toRightOf="parent"
-            tools:listitem="@layout/basket_recycler_view" />
+            tools:listitem="@layout/list_item_basket" />
 
         <android.widget.Button
             android:id="@+id/print_button"

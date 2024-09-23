@@ -6,6 +6,7 @@ import com.example.holybean.home.dto.OrderData
 import com.example.holybean.home.dto.OrderDataWithDualMethod
 import java.text.SimpleDateFormat
 import java.util.Date
+import java.util.UUID
 import javax.inject.Inject
 import kotlin.concurrent.thread
 
@@ -35,6 +36,11 @@ class HomeService @Inject constructor(
         return totalPrice
     }
 
+    fun getUUID(): String {
+        val uuid = UUID.randomUUID().toString()
+        return uuid
+    }
+
     fun getCurrentOrderNum(): Int {
         val date = getCurrentDate()
         var orderNum = repository.getLastOrderNum(date) + 1
@@ -51,7 +57,7 @@ class HomeService @Inject constructor(
         printReceipt(data)
 
         val rowId = repository.insertToOrders(data)
-        repository.insertToDetails(rowId, data)
+        repository.insertToDetails(data)
 
         mainListener?.replaceHomeFragment()
     }
@@ -64,10 +70,12 @@ class HomeService @Inject constructor(
             data.takeOption,
             data.customer,
             "${data.firstMethod}+${data.secondMethod}",
-            data.date
+            data.date,
+            this.getUUID()
         )
         printReceipt(receiptData)
 
+        val uuid = this.getUUID()
         val firstData = OrderData(
             data.basketList,
             data.orderNum,
@@ -75,7 +83,8 @@ class HomeService @Inject constructor(
             data.takeOption,
             data.customer,
             data.firstMethod,
-            data.date
+            data.date,
+            uuid
         )
         val secondData = OrderData(
             data.basketList,
@@ -84,13 +93,13 @@ class HomeService @Inject constructor(
             data.takeOption,
             data.customer,
             data.secondMethod,
-            data.date
+            data.date,
+            uuid
         )
 
         val firstRowId = repository.insertToOrders(firstData)
         val secondRowId = repository.insertToOrders(secondData)
-        repository.insertToDetails(firstRowId, firstData)
-        repository.insertToDetails(secondRowId, secondData)
+        repository.insertToDetails(firstData)
 
         mainListener?.replaceHomeFragment()
     }

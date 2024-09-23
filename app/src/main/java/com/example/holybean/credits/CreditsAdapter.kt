@@ -11,7 +11,7 @@ import com.example.holybean.credits.dto.CreditItem
 class CreditsAdapter(private var creditsList: ArrayList<CreditItem>, private val creditsListener: CreditsFragmentFunction) : RecyclerView.Adapter<CreditsAdapter.CreditsHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CreditsHolder {
-        val view = LayoutInflater.from(parent.context).inflate(R.layout.credits_recycler_view, parent, false)
+        val view = LayoutInflater.from(parent.context).inflate(R.layout.list_item_credits, parent, false)
         return CreditsHolder(view)
     }
 

@@ -19,6 +19,7 @@ import com.example.holybean.home.dto.OrderData
 import com.example.holybean.home.dto.OrderDataWithDualMethod
 import com.example.holybean.home.dto.OrderDialogData
 import java.lang.Exception
+import java.util.UUID
 
 class OrderDialog(val data: OrderDialogData) : DialogFragment() {
     private var orderDialogListener: OrderDialogListener? = null
@@ -153,7 +154,8 @@ class OrderDialog(val data: OrderDialogData) : DialogFragment() {
                     selectedTakeOption,
                     ordererName,
                     selectedOrderMethod,
-                    data.date
+                    data.date,
+                    UUID.randomUUID().toString()
                 )
             )
             dismiss()

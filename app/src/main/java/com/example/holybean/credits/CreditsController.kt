@@ -32,7 +32,7 @@ class CreditsController : Fragment(), CreditsFragmentFunction {
 
     private var orderNumber = 1
     private var orderDate = ""
-    private var rowId: Long = 0
+    private var rowId: String = '0'.toString()
 
     private lateinit var orderNum: TextView
     private lateinit var totalPrice: TextView
@@ -91,7 +91,7 @@ class CreditsController : Fragment(), CreditsFragmentFunction {
     }
 
     @SuppressLint("NotifyDataSetChanged")
-    override fun newOrderSelected(rowId: Long, num: Int, total: Int, date:String) {
+    override fun newOrderSelected(rowId: String, num: Int, total: Int, date:String) {
         this.rowId = rowId
         this.orderNumber = num
         this.orderDate = date

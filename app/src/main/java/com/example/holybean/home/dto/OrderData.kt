@@ -7,5 +7,6 @@ data class OrderData(
     val takeOption: String,
     val customer: String,
     val orderMethod: String,
-    val date: String
+    val date: String,
+    val uuid: String
 )

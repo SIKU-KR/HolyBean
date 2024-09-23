@@ -154,7 +154,7 @@ class HomeController : Fragment(), HomeFunctions {
         val filteredItems = if (category == 0) {
             itemList // 전체
         } else {
-            itemList.filter { it.id / 100 == category } // 카테고리
+            itemList.filter { it.id / 1000 == category } // 카테고리
         }
         menuBoard.adapter = MenuAdapter(filteredItems as ArrayList<MenuItem>, this)
     }

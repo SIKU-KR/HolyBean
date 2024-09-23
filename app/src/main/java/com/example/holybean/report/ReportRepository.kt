@@ -57,7 +57,7 @@ class ReportRepository @Inject constructor(
         val query = """
         SELECT o.method, (d.price * d.quantity) AS total_price
         FROM Orders AS o
-        JOIN Details AS d ON o.id = d.order_id
+        JOIN Details AS d ON o.uuid = d.uuid
         WHERE d.product_id = 999 AND o.date BETWEEN ? AND ?;
         """.trimIndent()
         val cursor: Cursor = db.rawQuery(query, arrayOf(date1, date2))
@@ -81,11 +81,14 @@ class ReportRepository @Inject constructor(
         val dbHelper = Database.getInstance(context)
         val db = dbHelper.readableDatabase
         val query = """
-        SELECT d.product_name, SUM(d.quantity) AS quantity, SUM(d.price * d.quantity) AS total_price
-        FROM Orders AS o
-        JOIN Details AS d ON o.id = d.order_id
-        WHERE o.date BETWEEN ? AND ?
-        GROUP BY d.product_name;
+        SELECT product_name, SUM(quantity) AS quantity, SUM(price * quantity) AS total_price
+        FROM (
+            SELECT DISTINCT d.uuid, d.product_name, d.quantity, d.price
+            FROM Details AS d
+            JOIN Orders AS o ON d.uuid = o.uuid
+            WHERE o.date BETWEEN ? AND ?
+        ) AS distinct_results
+        GROUP BY product_name;
         """.trimIndent()
         val cursor: Cursor = db.rawQuery(query, arrayOf(date1, date2))
 

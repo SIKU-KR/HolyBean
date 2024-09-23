@@ -12,7 +12,7 @@ import com.example.holybean.home.dto.BasketItem
 class BasketAdapter(private var basketList: ArrayList<BasketItem>, private val mainListener: HomeController) : RecyclerView.Adapter<BasketAdapter.BasketHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): BasketHolder {
-        val view = LayoutInflater.from(parent.context).inflate(R.layout.basket_recycler_view, parent, false)
+        val view = LayoutInflater.from(parent.context).inflate(R.layout.list_item_basket, parent, false)
         return BasketHolder(view)
     }
 

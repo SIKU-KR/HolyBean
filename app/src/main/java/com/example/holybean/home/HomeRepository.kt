@@ -33,6 +33,7 @@ class HomeRepository @Inject constructor(
         val db = dbHelper.writableDatabase
         val insertValue = ContentValues().apply {
             put(Database.ORDERS_NUM, data.orderNum)
+            put(Database.ORDERS_UUID, data.uuid)
             put(Database.ORDERS_DATE, data.date)
             put(Database.ORDERS_TOTAL_AMOUNT, data.totalPrice)
             put(Database.ORDERS_METHOD, data.orderMethod)
@@ -43,7 +44,7 @@ class HomeRepository @Inject constructor(
         return rowId
     }
 
-    fun insertToDetails(rowId: Long, data: OrderData) {
+    fun insertToDetails(data: OrderData) {
         val dbHelper = Database.getInstance(context)
         val db = dbHelper.writableDatabase
         var insertValue: ContentValues? = null
@@ -56,7 +57,7 @@ class HomeRepository @Inject constructor(
                 db.beginTransaction()
                 for (item in data.basketList) {
                     insertValue = ContentValues().apply {
-                        put(Database.DETAILS_ORDER_ID, rowId)
+                        put(Database.DETAILS_ORDER_ID, data.uuid)
                         put(Database.DETAILS_PRODUCT_ID, item.id)
                         put(Database.DETAILS_PRODUCT_NAME, item.name)
                         put(Database.DETAILS_QUANTITY, item.count)

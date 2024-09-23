@@ -11,7 +11,7 @@ import com.example.holybean.report.dto.ReportDetailItem
 class ReportDetailAdapter(private var detailData: ArrayList<ReportDetailItem>) : RecyclerView.Adapter<ReportDetailAdapter.ReportDetailHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ReportDetailHolder {
-        val view = LayoutInflater.from(parent.context).inflate(R.layout.basket_recycler_view, parent, false)
+        val view = LayoutInflater.from(parent.context).inflate(R.layout.list_item_basket, parent, false)
         return ReportDetailHolder(view)
     }
 

@@ -31,11 +31,11 @@ class OrdersService @Inject constructor(
         return repository.readOrderList(date)
     }
 
-    fun getOrderDetail(id: Long): ArrayList<OrdersDetailItem> {
+    fun getOrderDetail(id: String): ArrayList<OrdersDetailItem> {
         return repository.readOrderDetail(id)
     }
 
-    fun deleteOrder(id: Long, num: Int){
+    fun deleteOrder(id: String, num: Int){
         val date = getCurrentDate()
         repository.deleteOrder(id, num, date)
     }

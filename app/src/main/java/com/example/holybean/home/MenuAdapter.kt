@@ -12,7 +12,7 @@ import com.example.holybean.common.MenuItem
 class MenuAdapter(private val itemList: ArrayList<MenuItem>, private val mainListner : HomeFunctions) : RecyclerView.Adapter<MenuAdapter.MenuViewHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MenuViewHolder {
-        val view = LayoutInflater.from(parent.context).inflate(R.layout.menu_recycler_view, parent, false)
+        val view = LayoutInflater.from(parent.context).inflate(R.layout.list_item_menu, parent, false)
         return MenuViewHolder(view)
     }
 

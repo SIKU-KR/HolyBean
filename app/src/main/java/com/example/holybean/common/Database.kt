@@ -12,7 +12,7 @@ class Database private constructor(
 
         // db info
         const val DATABASE_NAME = "databaseV2.db"
-        const val DATABASE_VERSION = 2
+        const val DATABASE_VERSION = 3
 
         // tables
         const val ORDERS = "Orders"
@@ -20,6 +20,7 @@ class Database private constructor(
 
         // ORDERS
         const val ORDERS_ID = "id"
+        const val ORDERS_UUID = "uuid"
         const val ORDERS_NUM = "number"
         const val ORDERS_DATE = "date"
         const val ORDERS_TOTAL_AMOUNT = "total_amount"
@@ -27,7 +28,7 @@ class Database private constructor(
         const val ORDERS_CUSTOMER = "customer"
 
         // DETAILS
-        const val DETAILS_ORDER_ID = "order_id"
+        const val DETAILS_ORDER_ID = "uuid"
         const val DETAILS_PRODUCT_ID = "product_id"
         const val DETAILS_PRODUCT_NAME = "product_name"
         const val DETAILS_QUANTITY = "quantity"
@@ -46,6 +47,7 @@ class Database private constructor(
         val createOrdersTable = """
         CREATE TABLE $ORDERS (
             $ORDERS_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+            $ORDERS_UUID TEXT NOT NULL,
             $ORDERS_NUM INTEGER NOT NULL,
             $ORDERS_DATE TEXT NOT NULL,
             $ORDERS_TOTAL_AMOUNT INTEGER NOT NULL,
@@ -61,10 +63,9 @@ class Database private constructor(
             $DETAILS_PRODUCT_NAME TEXT NOT NULL,
             $DETAILS_QUANTITY INTEGER NOT NULL,
             $DETAILS_PRICE INTEGER NOT NULL,
-            FOREIGN KEY($DETAILS_ORDER_ID) REFERENCES $ORDERS($ORDERS_ID)
+            FOREIGN KEY($DETAILS_ORDER_ID) REFERENCES $ORDERS($ORDERS_UUID)
         )
     """.trimIndent()
-
         db?.execSQL(createOrdersTable)
         db?.execSQL(createDetailsTable)
     }

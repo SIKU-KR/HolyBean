@@ -11,7 +11,7 @@ import com.example.holybean.orders.dto.OrdersDetailItem
 class OrdersDetailAdapter(private var basketList: ArrayList<OrdersDetailItem>) : RecyclerView.Adapter<OrdersDetailAdapter.OrdersDetailHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): OrdersDetailHolder {
-        val view = LayoutInflater.from(parent.context).inflate(R.layout.basket_recycler_view, parent, false)
+        val view = LayoutInflater.from(parent.context).inflate(R.layout.list_item_basket, parent, false)
         return OrdersDetailHolder(view)
     }
 

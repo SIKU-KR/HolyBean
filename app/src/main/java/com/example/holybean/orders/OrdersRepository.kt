@@ -22,12 +22,12 @@ class OrdersRepository @Inject constructor(
         val cursor: Cursor = db.rawQuery(query, arrayOf(date))
         cursor.use {
             while(it.moveToNext()) {
-                val rowId = it.getLong(it.getColumnIndex(Database.ORDERS_ID))
+                val uuid = it.getString(it.getColumnIndex(Database.ORDERS_UUID))
                 val num = it.getInt(it.getColumnIndex(Database.ORDERS_NUM))
                 val totalAmount = it.getInt(it.getColumnIndex(Database.ORDERS_TOTAL_AMOUNT))
                 val method = it.getString(it.getColumnIndex(Database.ORDERS_METHOD))
                 val customer = it.getString(it.getColumnIndex(Database.ORDERS_CUSTOMER))
-                orderList.add(OrderItem(rowId, num, totalAmount, method, customer))
+                orderList.add(OrderItem(uuid, num, totalAmount, method, customer))
             }
         }
         db.close()
@@ -35,12 +35,12 @@ class OrdersRepository @Inject constructor(
     }
 
     @SuppressLint("Range")
-    fun readOrderDetail(id: Long): ArrayList<OrdersDetailItem> {
+    fun readOrderDetail(id: String): ArrayList<OrdersDetailItem> {
         val orderDetailList = ArrayList<OrdersDetailItem>()
         val dbHelper = Database.getInstance(context)
         val db = dbHelper.readableDatabase
         val query = "SELECT * FROM ${Database.DETAILS} WHERE ${Database.DETAILS_ORDER_ID} = ?"
-        val cursor: Cursor = db.rawQuery(query, arrayOf(id.toString()))
+        val cursor: Cursor = db.rawQuery(query, arrayOf(id))
         cursor.use {
             while(it.moveToNext()) {
                 val id = it.getInt(it.getColumnIndex(Database.DETAILS_PRODUCT_ID))
@@ -56,7 +56,7 @@ class OrdersRepository @Inject constructor(
         return orderDetailList
     }
 
-    fun deleteOrder(id: Long, num: Int, date: String){
+    fun deleteOrder(id: String, num: Int, date: String){
         val dbHelper = Database.getInstance(context)
         val db = dbHelper.writableDatabase
         val whereClause1 = "${Database.ORDERS_NUM} = ? AND ${Database.ORDERS_DATE} = ?"
@@ -69,7 +69,7 @@ class OrdersRepository @Inject constructor(
             try {
                 db.beginTransaction()
                 db.delete(Database.ORDERS, whereClause1, arrayOf(num.toString(), date))
-                db.delete(Database.DETAILS, whereClause2, arrayOf(id.toString()))
+                db.delete(Database.DETAILS, whereClause2, arrayOf(id))
                 db.setTransactionSuccessful()
                 break
             } catch (e: Exception) {
