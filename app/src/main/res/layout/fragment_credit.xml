@@ -84,16 +84,13 @@
         android:layout_height="0dp"
         android:layout_marginBottom="30dp"
         android:layout_marginStart="50dp"
-        android:background="#71C56E"
-        android:fontFamily="@font/pretendard_bold"
+        style="@style/PrimaryButtonStyle"
         android:text="조 회"
-        android:textColor="#FFFFFF"
         android:textSize="24sp"
-        android:textStyle="bold"
         app:layout_constraintBottom_toBottomOf="@id/basket"
         app:layout_constraintHeight_percent="0.07"
         app:layout_constraintStart_toStartOf="@id/basket"
-        app:layout_constraintWidth_percent="0.13" />
+        app:layout_constraintWidth_percent="0.15" />
 
     <android.widget.Button
         android:id="@+id/deleteCredit"
@@ -101,15 +98,12 @@
         android:layout_height="0dp"
         android:layout_marginBottom="30dp"
         android:layout_marginEnd="50dp"
-        android:background="#CA3433"
-        android:fontFamily="@font/pretendard_bold"
+        style="@style/SecondaryButtonStyle"
         android:text="삭 제"
-        android:textColor="#FFFFFF"
         android:textSize="24sp"
-        android:textStyle="bold"
         app:layout_constraintBottom_toBottomOf="@id/basket"
         app:layout_constraintEnd_toEndOf="@id/basket"
         app:layout_constraintHeight_percent="0.07"
-        app:layout_constraintWidth_percent="0.13" />
+        app:layout_constraintWidth_percent="0.15" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

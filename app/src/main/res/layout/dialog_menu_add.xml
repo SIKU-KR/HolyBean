@@ -1,0 +1,173 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fontFamily="@font/pretendard_extrabold"
+        android:gravity="center"
+        android:text="메뉴 등록"
+        android:textSize="28sp"
+        android:textStyle="bold" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:minHeight="48dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:fontFamily="@font/pretendard_bold"
+            android:gravity="right"
+            android:paddingEnd="5dp"
+            android:text="메뉴 id:"
+            android:textColor="#A9A9A9"
+            android:textSize="20sp" />
+
+        <TextView
+            android:id="@+id/editMenuid"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:fontFamily="@font/pretendard_bold"
+            android:gravity="left"
+            android:paddingStart="5dp"
+            android:text="1001"
+            android:textColor="#A9A9A9"
+            android:textSize="20sp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:minHeight="48dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:fontFamily="@font/pretendard_bold"
+            android:gravity="right"
+            android:paddingEnd="5dp"
+            android:text="순서:"
+            android:textColor="#A9A9A9"
+            android:textSize="20sp" />
+
+        <TextView
+            android:id="@+id/editMenuOrder"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:fontFamily="@font/pretendard_bold"
+            android:gravity="left"
+            android:paddingStart="5dp"
+            android:text="1001"
+            android:textColor="#A9A9A9"
+            android:textSize="20sp" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:fontFamily="@font/pretendard_bold"
+            android:gravity="right"
+            android:paddingEnd="5dp"
+            android:text="메뉴 이름:"
+            android:textSize="20sp" />
+
+        <EditText
+            android:id="@+id/editMenuName"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:fontFamily="@font/pretendard_bold"
+            android:hint="메뉴 이름을 입력하세요"
+            android:inputType="text"
+            android:minHeight="48dp" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:fontFamily="@font/pretendard_bold"
+            android:gravity="right"
+            android:paddingEnd="5dp"
+            android:text="메뉴 가격:"
+            android:textSize="20sp" />
+
+        <EditText
+            android:id="@+id/editMenuPrice"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:fontFamily="@font/pretendard_bold"
+            android:hint="메뉴 가격을 입력하세요"
+            android:inputType="number"
+            android:minHeight="48dp" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:orientation="horizontal">
+
+        <!-- 오른쪽 정렬을 위한 빈 공간 -->
+        <View
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"/>
+
+        <!-- 저장 버튼 -->
+        <android.widget.Button
+            android:id="@+id/saveEditButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            style="@style/TextButton"
+            android:textSize="18sp"
+            android:padding="15dp"
+            android:minHeight="48dp"
+            android:text="저장"/>
+
+        <!-- 취소 버튼 -->
+        <android.widget.Button
+            android:id="@+id/cancelEditButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            style="@style/TextButton"
+            android:textSize="18sp"
+            android:padding="15dp"
+            android:minHeight="48dp"
+            android:text="취소"/>
+
+    </LinearLayout>
+
+</LinearLayout>

@@ -15,7 +15,7 @@ android:paddingVertical="20dp">
         android:fontFamily="@font/pretendard_semibold"
         android:gravity="center"
         android:text="아이스 아메리카노"
-        android:textAppearance="@style/TextAppearance.AppCompat.Body2" />
+        android:textSize="16sp" />
 
     <TextView
         android:id="@+id/menu_price"
@@ -25,5 +25,5 @@ android:paddingVertical="20dp">
         android:fontFamily="@font/pretendard_regular"
         android:gravity="end"
         android:text="2000"
-        android:textAppearance="@style/TextAppearance.AppCompat.Small" />
+        android:textSize="16sp" />
 </LinearLayout>

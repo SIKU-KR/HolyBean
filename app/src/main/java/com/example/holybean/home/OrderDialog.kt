@@ -56,7 +56,7 @@ class OrderDialog(val data: OrderDialogData) : DialogFragment() {
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val builder = AlertDialog.Builder(requireActivity())
         val inflater = requireActivity().layoutInflater
-        val view = inflater.inflate(R.layout.activity_process_order, null)
+        val view = inflater.inflate(R.layout.dialog_process_order, null)
 
         takeOptionGroup = view.findViewById(R.id.takeOptionGroup)
         orderMethodGroup = view.findViewById(R.id.orderMethodGroup)

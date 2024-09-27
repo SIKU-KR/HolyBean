@@ -4,4 +4,5 @@
     <color name="white">#FFFFFFFF</color>
     <color name="lightOrange">#FFD699</color> <!-- Replace with your desired light orange color -->
     <color name="darkOrange">#FFA347</color>  <!-- Replace with your desired dark orange color -->
+    <color name="disabledGray">#e0e0e0</color>
 </resources>

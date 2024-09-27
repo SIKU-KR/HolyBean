@@ -14,6 +14,7 @@ import androidx.fragment.app.Fragment
 import com.example.holybean.common.MainActivityListener
 import com.example.holybean.credits.CreditsController
 import com.example.holybean.home.HomeController
+import com.example.holybean.menumanagement.MenuManagementController
 import com.example.holybean.orders.OrdersController
 import com.example.holybean.report.ReportController
 import com.google.android.material.navigation.NavigationView
@@ -51,6 +52,13 @@ class MainActivity : AppCompatActivity(), MainActivityListener {
             .commit()
     }
 
+    override fun replaceMenuManagementFragment() {
+        val menuManagementController = MenuManagementController()
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.fragment_container, menuManagementController)
+            .commit()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -78,6 +86,7 @@ class MainActivity : AppCompatActivity(), MainActivityListener {
                 R.id.nav_orders -> loadFragment(OrdersController())
                 R.id.nav_report -> loadFragment(ReportController())
                 R.id.nav_credit -> loadFragment(CreditsController())
+                R.id.menu_management -> loadFragment(MenuManagementController())
                 // 다른 메뉴 아이템에 대한 처리를 여기에 추가
             }
             drawerItem.isChecked = true

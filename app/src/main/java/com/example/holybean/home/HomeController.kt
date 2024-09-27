@@ -14,12 +14,12 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.example.holybean.common.Menu
 import com.example.holybean.common.MainActivityListener
+import com.example.holybean.common.MenuDB
 import com.example.holybean.common.RvCustomDesign
 import com.example.holybean.databinding.FragmentHomeBinding
 import com.example.holybean.home.dto.BasketItem
-import com.example.holybean.common.MenuItem
+import com.example.holybean.common.dto.MenuItem
 import com.example.holybean.home.dto.OrderDialogData
 import com.google.android.material.tabs.TabLayout
 import dagger.hilt.android.AndroidEntryPoint
@@ -70,12 +70,14 @@ class HomeController : Fragment(), HomeFunctions {
             throw IllegalStateException("MainActivityListener is not set")
         }
 
-        itemList = Menu.getMenuList()
+        itemList = MenuDB.getMenuList(context).filter {
+            it.inuse == true
+        }.toCollection(ArrayList())
+
         itemList.sortBy { it.placement }
         basketList = ArrayList()
 
         val orderNumTextView: TextView = binding.orderNum
-
         this.orderId = service.getCurrentOrderNum()
         orderNumTextView.text = orderId.toString()
 
