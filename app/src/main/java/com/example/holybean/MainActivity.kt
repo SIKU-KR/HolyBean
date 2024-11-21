@@ -11,12 +11,12 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
-import com.example.holybean.common.MainActivityListener
-import com.example.holybean.credits.CreditsController
-import com.example.holybean.home.HomeController
-import com.example.holybean.menumanagement.MenuManagementController
-import com.example.holybean.orders.OrdersController
-import com.example.holybean.report.ReportController
+import com.example.holybean.interfaces.MainActivityListener
+import com.example.holybean.ui.credits.CreditsController
+import com.example.holybean.ui.home.HomeFragment
+import com.example.holybean.ui.menumanagement.MenuManagementFragment
+import com.example.holybean.ui.orderlist.OrdersController
+import com.example.holybean.ui.report.ReportController
 import com.google.android.material.navigation.NavigationView
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -32,9 +32,9 @@ class MainActivity : AppCompatActivity(), MainActivityListener {
     private lateinit var drawerLayout: DrawerLayout
 
     override fun replaceHomeFragment() {
-        val homeController = HomeController()
+        val homeFragment = HomeFragment()
         supportFragmentManager.beginTransaction()
-            .replace(R.id.fragment_container, homeController)
+            .replace(R.id.fragment_container, homeFragment)
             .commit()
     }
 
@@ -53,9 +53,9 @@ class MainActivity : AppCompatActivity(), MainActivityListener {
     }
 
     override fun replaceMenuManagementFragment() {
-        val menuManagementController = MenuManagementController()
+        val menuManagementFragment = MenuManagementFragment()
         supportFragmentManager.beginTransaction()
-            .replace(R.id.fragment_container, menuManagementController)
+            .replace(R.id.fragment_container, menuManagementFragment)
             .commit()
     }
 
@@ -76,17 +76,17 @@ class MainActivity : AppCompatActivity(), MainActivityListener {
 
         if (savedInstanceState == null) {
             supportFragmentManager.beginTransaction()
-                .replace(R.id.fragment_container, HomeController())
+                .replace(R.id.fragment_container, HomeFragment())
                 .commit()
         }
         navigationView.setNavigationItemSelectedListener { drawerItem ->
             // 드로어 메뉴 아이템 클릭 시 해당 Fragment로 전환
             when (drawerItem.itemId) {
-                R.id.nav_home -> loadFragment(HomeController())
+                R.id.nav_home -> loadFragment(HomeFragment())
                 R.id.nav_orders -> loadFragment(OrdersController())
                 R.id.nav_report -> loadFragment(ReportController())
                 R.id.nav_credit -> loadFragment(CreditsController())
-                R.id.menu_management -> loadFragment(MenuManagementController())
+                R.id.menu_management -> loadFragment(MenuManagementFragment())
                 // 다른 메뉴 아이템에 대한 처리를 여기에 추가
             }
             drawerItem.isChecked = true
