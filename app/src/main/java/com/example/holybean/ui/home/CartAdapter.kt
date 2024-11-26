@@ -6,10 +6,10 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.example.holybean.R
-import com.example.holybean.data.model.BasketItem
+import com.example.holybean.data.model.CartItem
 
 // 메뉴목록 (RecyclerView)의 어댑터 정의
-class BasketAdapter(private var basketList: ArrayList<BasketItem>, private val mainListener: HomeFragment) : RecyclerView.Adapter<BasketAdapter.BasketHolder>() {
+class CartAdapter(private var basketList: ArrayList<CartItem>, private val mainListener: HomeFragment) : RecyclerView.Adapter<CartAdapter.BasketHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): BasketHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.list_item_basket, parent, false)

@@ -1,7 +1,7 @@
 package com.example.holybean.data.model
 
 data class OrderDataWithDualMethod(
-    val basketList: ArrayList<BasketItem>,
+    val basketList: List<CartItem>,
     val orderNum: Int,
     val totalPrice: Int,
     val takeOption: String,
