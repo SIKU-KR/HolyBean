@@ -197,21 +197,21 @@ class OrderDialog(val data: OrderDialogData) : DialogFragment() {
                 data.cartItems,
                 methodList,
                 data.totalPrice
-            )
+            ), selectedTakeOption
         )
 
-        orderDialogListener?.onOrderConfirmed(
-            OrderData(
-                data.cartItems,
-                data.orderNum,
-                data.totalPrice,
-                selectedTakeOption,
-                ordererName,
-                selectedOrderMethod,
-                data.date,
-                UUID.randomUUID().toString()
-            )
-        )
+//        orderDialogListener?.onOrderConfirmed(
+//            OrderData(
+//                data.cartItems,
+//                data.orderNum,
+//                data.totalPrice,
+//                selectedTakeOption,
+//                ordererName,
+//                selectedOrderMethod,
+//                data.date,
+//                UUID.randomUUID().toString()
+//            )
+//        )
         dismiss()
     }
 
@@ -264,22 +264,23 @@ class OrderDialog(val data: OrderDialogData) : DialogFragment() {
                         data.cartItems,
                         methodList,
                         data.totalPrice
-                    )
+                    ),
+                    selectedTakeOption
                 )
-                orderDialogListener?.onOrderConfirmed(
-                    OrderDataWithDualMethod(
-                        data.cartItems,
-                        data.orderNum,
-                        data.totalPrice,
-                        selectedTakeOption,
-                        ordererName,
-                        selectedOrderMethod,
-                        selectedExtraMethod,
-                        totalPrice - secondAmount,
-                        secondAmount,
-                        data.date
-                    )
-                )
+//                orderDialogListener?.onOrderConfirmed(
+//                    OrderDataWithDualMethod(
+//                        data.cartItems,
+//                        data.orderNum,
+//                        data.totalPrice,
+//                        selectedTakeOption,
+//                        ordererName,
+//                        selectedOrderMethod,
+//                        selectedExtraMethod,
+//                        totalPrice - secondAmount,
+//                        secondAmount,
+//                        data.date
+//                    )
+//                )
                 dismiss()
             }.setNegativeButton("취소") { _, _ -> }.show()
     }
