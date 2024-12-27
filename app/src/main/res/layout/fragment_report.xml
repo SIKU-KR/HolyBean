@@ -88,6 +88,18 @@
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintTop_toTopOf="@id/transferSell" />
 
+        <TextView
+            android:id="@+id/freelyOut"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="40dp"
+            android:fontFamily="@font/nanum_gothic_extrabold"
+            android:gravity="center"
+            android:text="무료제공 금액 : 00,000"
+            android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintTop_toTopOf="@id/creditSell" />
+
         <Button
             android:id="@+id/tocsvbutton"
             android:layout_width="wrap_content"

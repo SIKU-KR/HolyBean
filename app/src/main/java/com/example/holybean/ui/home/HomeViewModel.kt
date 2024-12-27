@@ -2,23 +2,21 @@ package com.example.holybean.ui.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.holybean.interfaces.MainActivityListener
-import com.example.holybean.printer.HomePrinter
-import com.example.holybean.interfaces.OrderDialogListener
 import com.example.holybean.data.model.CartItem
 import com.example.holybean.data.model.Order
+import com.example.holybean.interfaces.MainActivityListener
+import com.example.holybean.interfaces.OrderDialogListener
 import com.example.holybean.network.LambdaConnection
 import com.example.holybean.network.RetrofitClient
+import com.example.holybean.printer.HomePrinter
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.UUID
-import javax.inject.Inject
-import kotlin.concurrent.thread
+import kotlinx.coroutines.withContext
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
-class HomeViewModel @Inject constructor(
-) : OrderDialogListener, ViewModel() {
+class HomeViewModel : OrderDialogListener, ViewModel() {
 
     private var mainListener: MainActivityListener? = null
     private val lambdaConnection = RetrofitClient.retrofit.create(LambdaConnection::class.java)
@@ -28,24 +26,13 @@ class HomeViewModel @Inject constructor(
     }
 
     fun getCurrentDate(): String {
-        val dateFormat = SimpleDateFormat("yyyy-MM-dd")
-        val currentDate = Date()
-        return dateFormat.format(currentDate)
+        val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+        return LocalDate.now().format(formatter)
     }
 
-    // Calculating total price business logic
     fun getTotal(basketList: ArrayList<CartItem>): Int {
-        var totalPrice = 0
-        for (item in basketList) {
-            item.total = item.count * item.price
-            totalPrice += item.total
-        }
-        return totalPrice
-    }
-
-    fun getUUID(): String {
-        val uuid = UUID.randomUUID().toString()
-        return uuid
+        basketList.forEach { it.total = it.count * it.price }
+        return basketList.sumOf { it.total }
     }
 
     suspend fun getCurrentOrderNum(): Int {
@@ -71,13 +58,15 @@ class HomeViewModel @Inject constructor(
                 // 2. 영수증 출력
                 printReceipt(data, takeOption)
                 // 3. 홈 프래그먼트 전환
-                mainListener?.replaceHomeFragment()
+                withContext(Dispatchers.Main) {
+                    mainListener?.replaceHomeFragment()
+                }
             } catch (e: Exception) {
-                // 예외 처리
                 e.printStackTrace()
             }
         }
     }
+
 
     private suspend fun requestPostOrder(data: Order) {
         try {
@@ -92,17 +81,21 @@ class HomeViewModel @Inject constructor(
             e.printStackTrace()
         }
     }
-    private fun printReceipt(data: Order, takeOption: String) {
-        val printer = HomePrinter()
-        val receiptForCustomer = printer.receiptTextForCustomer(data)
-        val receiptForPOS = printer.receiptTextForPOS(data, takeOption)
 
-        thread {
-            printer.print(receiptForCustomer)
-            Thread.sleep(500)
-            printer.print(receiptForPOS)
-            Thread.sleep(2000)
-            printer.disconnect()
+    private suspend fun printReceipt(data: Order, takeOption: String) {
+        withContext(Dispatchers.IO) {
+            val printer = HomePrinter()
+            val receiptForCustomer = printer.receiptTextForCustomer(data)
+            val receiptForPOS = printer.receiptTextForPOS(data, takeOption)
+
+            try {
+                printer.print(receiptForCustomer)
+                delay(500) // 500ms 대기
+                printer.print(receiptForPOS)
+                delay(2000) // 2000ms 대기
+            } finally {
+                printer.disconnect()
+            }
         }
     }
 }

@@ -20,7 +20,7 @@ class CreditsAdapter(private var creditsList: ArrayList<CreditItem>, private val
         val item = creditsList[position]
         holder.ordersId.text = "주문번호: ${item.orderId}"
         holder.ordersAmount.text = "주문금액: ${item.totalAmount}"
-        holder.ordersDate.text = "주문방식: ${item.date}"
+        holder.ordersDate.text = "주문일: ${item.date}"
         holder.ordersOrderer.text = "주문자: ${item.orderer}"
         holder.itemView.setOnClickListener {
             creditsListener.newOrderSelected(item.rowId, item.orderId, item.totalAmount, item.date)

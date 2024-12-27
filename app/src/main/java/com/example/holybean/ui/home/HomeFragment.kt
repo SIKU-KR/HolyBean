@@ -12,29 +12,27 @@ import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.viewModelScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.example.holybean.interfaces.MainActivityListener
-import com.example.holybean.data.repository.MenuDB
-import com.example.holybean.ui.RvCustomDesign
-import com.example.holybean.databinding.FragmentHomeBinding
 import com.example.holybean.data.model.CartItem
 import com.example.holybean.data.model.MenuItem
 import com.example.holybean.data.model.OrderDialogData
+import com.example.holybean.data.repository.MenuDB
+import com.example.holybean.databinding.FragmentHomeBinding
 import com.example.holybean.interfaces.HomeFunctions
+import com.example.holybean.interfaces.MainActivityListener
+import com.example.holybean.ui.RvCustomDesign
 import com.example.holybean.ui.dialog.OrderDialog
 import com.google.android.material.tabs.TabLayout
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 @AndroidEntryPoint
 class HomeFragment : Fragment(), HomeFunctions {
 
-    @Inject
-    lateinit var viewModel: HomeViewModel
+    private val viewModel: HomeViewModel by viewModels()
     private lateinit var binding: FragmentHomeBinding
     private lateinit var context: Context
     private var mainListener: MainActivityListener? = null
@@ -57,7 +55,7 @@ class HomeFragment : Fragment(), HomeFunctions {
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         binding = FragmentHomeBinding.inflate(inflater, container, false)
         val view = binding.root
         context = view.context
@@ -111,12 +109,10 @@ class HomeFragment : Fragment(), HomeFunctions {
     // Menu tabs init
     private fun initTabs() {
         menuTab = binding.menuTab
-        menuTab.addTab(menuTab.newTab().setText("전체"))
-        menuTab.addTab(menuTab.newTab().setText("ICE커피"))
-        menuTab.addTab(menuTab.newTab().setText("HOT커피"))
-        menuTab.addTab(menuTab.newTab().setText("에이드/스무디"))
-        menuTab.addTab(menuTab.newTab().setText("티/음료"))
-        menuTab.addTab(menuTab.newTab().setText("베이커리"))
+        val categories = listOf("전체", "ICE커피", "HOT커피", "에이드/스무디", "티/음료", "베이커리")
+        categories.forEach { category ->
+            menuTab.addTab(menuTab.newTab().setText(category))
+        }
 
         menuTab.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
             override fun onTabSelected(tab: TabLayout.Tab) {
@@ -128,12 +124,19 @@ class HomeFragment : Fragment(), HomeFunctions {
         })
     }
 
+
     private fun initOrderNumAsync() {
         lifecycleScope.launch {
-            orderId = viewModel.getCurrentOrderNum()
-            binding.orderNum.text = orderId.toString()
+            try {
+                orderId = viewModel.getCurrentOrderNum()
+                binding.orderNum.text = orderId.toString()
+            } catch (e: Exception) {
+                e.printStackTrace()
+                Toast.makeText(context, "주문 번호를 불러오는 중 오류가 발생했습니다.", Toast.LENGTH_SHORT).show()
+            }
         }
     }
+
 
     private fun initCouponAddButton() {
         binding.couponButton.setOnClickListener {
@@ -141,15 +144,15 @@ class HomeFragment : Fragment(), HomeFunctions {
             editText.inputType = InputType.TYPE_CLASS_NUMBER
             val builder = AlertDialog.Builder(context)
             builder.setTitle("쿠폰 금액을 입력하세요:").setView(editText).setPositiveButton("확인") { _, _ ->
-                    val enteredAmount = editText.text.toString().toIntOrNull()
-                    if (enteredAmount != null && enteredAmount > 0) {
-                        basketList.add(CartItem(999, "쿠폰", enteredAmount, 1, enteredAmount))
-                        basket.adapter?.notifyDataSetChanged()
-                        updateTotal()
-                    } else {
-                        Toast.makeText(view?.context ?: context, "올바른 금액이 아닙니다", Toast.LENGTH_SHORT).show()
-                    }
-                }.setNegativeButton("취소") { _, _ -> }.show()
+                val enteredAmount = editText.text.toString().toIntOrNull()
+                if (enteredAmount != null && enteredAmount > 0) {
+                    basketList.add(CartItem(999, "쿠폰", enteredAmount, 1, enteredAmount))
+                    basket.adapter?.notifyDataSetChanged()
+                    updateTotal()
+                } else {
+                    Toast.makeText(view?.context ?: context, "올바른 금액이 아닙니다", Toast.LENGTH_SHORT).show()
+                }
+            }.setNegativeButton("취소") { _, _ -> }.show()
         }
     }
 
@@ -175,37 +178,40 @@ class HomeFragment : Fragment(), HomeFunctions {
         menuBoard.adapter = MenuAdapter(filteredItems as ArrayList<MenuItem>, this)
     }
 
-    // Add item to basket
     @SuppressLint("NotifyDataSetChanged")
     override fun addToBasket(id: Int) {
         val item = basketList.find { it.id == id }
-        // item이 basketList에 존재하지 않는 경우
         if (item == null) {
             val target = itemList.find { it.id == id } ?: return
             basketList.add(CartItem(id, target.name, target.price, 1, target.price))
-        }
-        // item이 basketList에 존재하는 경우
-        else {
+            basket.adapter?.notifyItemInserted(basketList.size - 1)
+        } else {
             item.count++
+            item.total = item.count * item.price
+            val index = basketList.indexOf(item)
+            basket.adapter?.notifyItemChanged(index)
         }
-        basket.adapter?.notifyDataSetChanged()
         updateTotal()
     }
 
-    // Remove item from basket
     @SuppressLint("NotifyDataSetChanged")
     override fun deleteFromBasket(id: Int) {
         val item = basketList.find { it.id == id }
         if (item != null) {
             if (item.count == 1) {
+                val index = basketList.indexOf(item)
                 basketList.remove(item)
+                basket.adapter?.notifyItemRemoved(index)
             } else {
                 item.count--
+                item.total = item.count * item.price
+                val index = basketList.indexOf(item)
+                basket.adapter?.notifyItemChanged(index)
             }
+            updateTotal()
         }
-        basket.adapter?.notifyDataSetChanged()
-        updateTotal()
     }
+
 
     // Update total textview
     private fun updateTotal() {

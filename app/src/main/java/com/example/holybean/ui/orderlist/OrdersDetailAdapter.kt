@@ -8,7 +8,8 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.holybean.R
 import com.example.holybean.data.model.OrdersDetailItem
 
-class OrdersDetailAdapter(private var basketList: ArrayList<OrdersDetailItem>) : RecyclerView.Adapter<OrdersDetailAdapter.OrdersDetailHolder>() {
+class OrdersDetailAdapter(private var basketList: ArrayList<OrdersDetailItem>) :
+    RecyclerView.Adapter<OrdersDetailAdapter.OrdersDetailHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): OrdersDetailHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.list_item_basket, parent, false)
@@ -24,6 +25,13 @@ class OrdersDetailAdapter(private var basketList: ArrayList<OrdersDetailItem>) :
 
     override fun getItemCount(): Int {
         return basketList.size
+    }
+
+    // 데이터 갱신 메서드 추가
+    fun updateData(newBasketList: List<OrdersDetailItem>) {
+        basketList.clear()
+        basketList.addAll(newBasketList)
+        notifyDataSetChanged() // UI 갱신
     }
 
     inner class OrdersDetailHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {

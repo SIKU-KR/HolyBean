@@ -52,22 +52,22 @@ class CreditsRepository @Inject constructor(
     @SuppressLint("Range")
     fun readOrderDetail(id: String): ArrayList<OrdersDetailItem> {
         val orderDetailList = ArrayList<OrdersDetailItem>()
-        val dbHelper = Database.getInstance(context)
-        val db = dbHelper.readableDatabase
-        val query = "SELECT * FROM ${Database.DETAILS} WHERE ${Database.DETAILS_ORDER_ID} = ?"
-        val cursor: Cursor = db.rawQuery(query, arrayOf(id.toString()))
-        cursor.use {
-            while(it.moveToNext()) {
-                val id = it.getInt(it.getColumnIndex(Database.DETAILS_PRODUCT_ID))
-                val name = it.getString(it.getColumnIndex(Database.DETAILS_PRODUCT_NAME))
-                val quantity = it.getInt(it.getColumnIndex(Database.DETAILS_QUANTITY))
-                val price = it.getInt(it.getColumnIndex(Database.DETAILS_PRICE))
-                val subtotal = price * quantity
-                orderDetailList.add(OrdersDetailItem(id, name, quantity, subtotal))
-            }
-        }
-        db.close()
-        orderDetailList.sortBy { it.id }
+//        val dbHelper = Database.getInstance(context)
+//        val db = dbHelper.readableDatabase
+//        val query = "SELECT * FROM ${Database.DETAILS} WHERE ${Database.DETAILS_ORDER_ID} = ?"
+//        val cursor: Cursor = db.rawQuery(query, arrayOf(id.toString()))
+//        cursor.use {
+//            while(it.moveToNext()) {
+//                val id = it.getInt(it.getColumnIndex(Database.DETAILS_PRODUCT_ID))
+//                val name = it.getString(it.getColumnIndex(Database.DETAILS_PRODUCT_NAME))
+//                val quantity = it.getInt(it.getColumnIndex(Database.DETAILS_QUANTITY))
+//                val price = it.getInt(it.getColumnIndex(Database.DETAILS_PRICE))
+//                val subtotal = price * quantity
+//                orderDetailList.add(OrdersDetailItem(id, name, quantity, subtotal))
+//            }
+//        }
+//        db.close()
+//        orderDetailList.sortBy { it.id }
         return orderDetailList
     }
 }

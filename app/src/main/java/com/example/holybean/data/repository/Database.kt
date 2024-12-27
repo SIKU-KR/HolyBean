@@ -1,6 +1,7 @@
 package com.example.holybean.data.repository
 
 import android.content.Context
+import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 
@@ -75,6 +76,22 @@ class Database private constructor(
         db?.execSQL("DROP TABLE IF EXISTS $ORDERS")
         db?.execSQL("DROP TABLE IF EXISTS $DETAILS")
         onCreate(db)
+    }
+
+    /**
+     * 모든 ORDERS 데이터를 조회합니다.
+     */
+    fun getAllOrders(): Cursor {
+        val db = this.readableDatabase
+        return db.rawQuery("SELECT * FROM $ORDERS", null)
+    }
+
+    /**
+     * 모든 DETAILS 데이터를 조회합니다.
+     */
+    fun getAllDetails(): Cursor {
+        val db = this.readableDatabase
+        return db.rawQuery("SELECT * FROM $DETAILS", null)
     }
 
 }

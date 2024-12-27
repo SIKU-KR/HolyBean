@@ -8,7 +8,9 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.holybean.R
 import com.example.holybean.data.model.ReportDetailItem
 
-class ReportDetailAdapter(private var detailData: ArrayList<ReportDetailItem>) : RecyclerView.Adapter<ReportDetailAdapter.ReportDetailHolder>() {
+class ReportDetailAdapter(
+    private var detailData: MutableList<ReportDetailItem> = mutableListOf()
+) : RecyclerView.Adapter<ReportDetailAdapter.ReportDetailHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ReportDetailHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.list_item_basket, parent, false)
@@ -17,18 +19,36 @@ class ReportDetailAdapter(private var detailData: ArrayList<ReportDetailItem>) :
 
     override fun onBindViewHolder(holder: ReportDetailHolder, position: Int) {
         val item = detailData[position]
-        holder.basketName.text = item.name
-        holder.basketCount.text = item.quantity.toString()
-        holder.basketTotal.text = item.subtotal.toString()
+        holder.bind(item)
     }
 
-    override fun getItemCount(): Int {
-        return detailData.size
+    override fun getItemCount(): Int = detailData.size
+
+    /**
+     * Updates the adapter's data with a new list of [ReportDetailItem] and refreshes the RecyclerView.
+     *
+     * @param newDetailData The new list of [ReportDetailItem] to display.
+     */
+    fun updateData(newDetailData: List<ReportDetailItem>) {
+        detailData.clear()
+        detailData.addAll(newDetailData)
+        notifyDataSetChanged()
     }
 
     inner class ReportDetailHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        val basketName: TextView = itemView.findViewById(R.id.basket_name)
-        val basketCount: TextView = itemView.findViewById(R.id.basket_count)
-        val basketTotal: TextView = itemView.findViewById(R.id.basket_price)
+        private val basketName: TextView = itemView.findViewById(R.id.basket_name)
+        private val basketCount: TextView = itemView.findViewById(R.id.basket_count)
+        private val basketTotal: TextView = itemView.findViewById(R.id.basket_price)
+
+        /**
+         * Binds the [ReportDetailItem] data to the views.
+         *
+         * @param item The [ReportDetailItem] to bind.
+         */
+        fun bind(item: ReportDetailItem) {
+            basketName.text = item.name
+            basketCount.text = item.quantity.toString()
+            basketTotal.text = item.subtotal.toString()
+        }
     }
 }

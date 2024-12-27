@@ -23,7 +23,7 @@ class OrdersAdapter(private var ordersList: ArrayList<OrderItem>, private val or
         holder.ordersMethod.text = "주문방식: ${item.method}"
         holder.ordersOrderer.text = "주문자: ${item.orderer}"
         holder.itemView.setOnClickListener {
-            ordersListener.newOrderSelected(item.rowId, item.orderId, item.totalAmount)
+            ordersListener.newOrderSelected(item.orderId, item.totalAmount)
         }
     }
 
@@ -36,5 +36,11 @@ class OrdersAdapter(private var ordersList: ArrayList<OrderItem>, private val or
         val ordersAmount: TextView = itemView.findViewById(R.id.orders_amount)
         val ordersMethod: TextView = itemView.findViewById(R.id.orders_method)
         val ordersOrderer: TextView = itemView.findViewById(R.id.orders_orderer)
+    }
+
+    fun updateData(newOrders: List<OrderItem>) {
+        ordersList.clear() // 기존 데이터 초기화
+        ordersList.addAll(newOrders) // 새로운 데이터 추가
+        notifyDataSetChanged() // RecyclerView 갱신
     }
 }
