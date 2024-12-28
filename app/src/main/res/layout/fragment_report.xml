@@ -21,20 +21,22 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="100dp"
+            android:paddingStart="16dp"
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             android:text="기간 설정 후 조회"
-            android:gravity="center"
-            android:textAppearance="@style/TextAppearance.AppCompat.Large"
-            android:fontFamily="@font/nanum_gothic_extrabold" />
+            android:gravity="start"
+            android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+            android:fontFamily="@font/pretendard_extrabold" />
 
         <TextView
             android:id="@+id/totalSell"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="80dp"
-            android:fontFamily="@font/nanum_gothic_extrabold"
-            android:gravity="center"
+            android:paddingStart="16dp"
+            android:fontFamily="@font/pretendard_extrabold"
+            android:gravity="start"
             android:text="총 판매금액 : 00,000"
             android:textAppearance="@style/TextAppearance.AppCompat.Medium"
             app:layout_constraintLeft_toLeftOf="parent"
@@ -45,8 +47,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="40dp"
-            android:fontFamily="@font/nanum_gothic_extrabold"
-            android:gravity="center"
+            android:paddingStart="16dp"
+            android:fontFamily="@font/pretendard_extrabold"
+            android:gravity="start"
             android:text="쿠폰 판매액 : 00,000"
             android:textAppearance="@style/TextAppearance.AppCompat.Medium"
             app:layout_constraintLeft_toLeftOf="parent"
@@ -57,8 +60,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="40dp"
-            android:fontFamily="@font/nanum_gothic_extrabold"
-            android:gravity="center"
+            android:paddingStart="16dp"
+            android:fontFamily="@font/pretendard_extrabold"
+            android:gravity="start"
             android:text="현금 판매액 : 00,000"
             android:textAppearance="@style/TextAppearance.AppCompat.Medium"
             app:layout_constraintLeft_toLeftOf="parent"
@@ -69,8 +73,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="40dp"
-            android:fontFamily="@font/nanum_gothic_extrabold"
-            android:gravity="center"
+            android:paddingStart="16dp"
+            android:fontFamily="@font/pretendard_extrabold"
+            android:gravity="start"
             android:text="이체 판매액 : 00,000"
             android:textAppearance="@style/TextAppearance.AppCompat.Medium"
             app:layout_constraintLeft_toLeftOf="parent"
@@ -81,22 +86,29 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="40dp"
-            android:fontFamily="@font/nanum_gothic_extrabold"
-            android:gravity="center"
+            android:paddingStart="16dp"
+            android:fontFamily="@font/pretendard_extrabold"
+            android:gravity="start"
             android:text="외상 판매액 : 00,000"
             android:textAppearance="@style/TextAppearance.AppCompat.Medium"
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintTop_toTopOf="@id/transferSell" />
 
-        <Button
-            android:id="@+id/tocsvbutton"
-            android:layout_width="wrap_content"
+        <TextView
+            android:id="@+id/freelyOut"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="실험실(to csv)"
+            android:layout_marginTop="40dp"
+            android:paddingStart="16dp"
+            android:fontFamily="@font/pretendard_extrabold"
+            android:gravity="start"
+            android:text="무료제공 금액 : 00,000"
+            android:textAppearance="@style/TextAppearance.AppCompat.Medium"
             app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent"/>
+            app:layout_constraintTop_toTopOf="@id/creditSell" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
+
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="0dp"
@@ -142,33 +154,38 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintWidth_percent="0.3">
 
+        <!-- 옵션 제목 -->
         <TextView
             android:id="@+id/optionTitle"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="100dp"
-            android:fontFamily="@font/nanum_gothic_extrabold"
+            android:fontFamily="@font/pretendard_extrabold"
             android:gravity="center"
             android:text="매출 조회 옵션"
             android:textAppearance="@style/TextAppearance.AppCompat.Large"
+            android:textColor="#000000"
             app:layout_constraintTop_toTopOf="parent"
-            android:textColor="#000000"/>
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginTop="100dp"/>
 
         <!-- 시작일 부분 -->
-
         <LinearLayout
             android:id="@+id/start_date"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="50dp"
-            app:layout_constraintTop_toBottomOf="@id/optionTitle">
+            android:orientation="horizontal"
+            app:layout_constraintTop_toBottomOf="@id/optionTitle"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center"
+                android:layout_gravity="center_vertical"
                 android:layout_marginStart="40dp"
-                android:fontFamily="@font/nanum_gothic_extrabold"
+                android:fontFamily="@font/pretendard_extrabold"
                 android:text="시작일"
                 android:textAppearance="@style/TextAppearance.AppCompat.Medium"
                 android:textColor="#000000" />
@@ -179,7 +196,8 @@
                 android:layout_height="45dp"
                 android:layout_marginStart="15dp"
                 android:background="@drawable/date_selector_border"
-                android:clickable="true">
+                android:clickable="true"
+                android:orientation="horizontal">
 
                 <ImageView
                     android:layout_width="40dp"
@@ -194,7 +212,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="match_parent"
                     android:layout_marginStart="5dp"
-                    android:fontFamily="@font/nanum_gothic_extrabold"
+                    android:fontFamily="@font/pretendard_extrabold"
                     android:gravity="center"
                     android:text="2024-01-01"
                     android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
@@ -204,19 +222,21 @@
         </LinearLayout>
 
         <!-- 종료일 부분 -->
-
         <LinearLayout
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="5dp"
-            app:layout_constraintTop_toBottomOf="@id/start_date">
+            android:orientation="horizontal"
+            app:layout_constraintTop_toBottomOf="@id/start_date"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center"
+                android:layout_gravity="center_vertical"
                 android:layout_marginStart="40dp"
-                android:fontFamily="@font/nanum_gothic_extrabold"
+                android:fontFamily="@font/pretendard_extrabold"
                 android:text="종료일"
                 android:textAppearance="@style/TextAppearance.AppCompat.Medium"
                 android:textColor="#000000" />
@@ -227,7 +247,8 @@
                 android:layout_height="45dp"
                 android:layout_marginStart="15dp"
                 android:background="@drawable/date_selector_border"
-                android:clickable="true">
+                android:clickable="true"
+                android:orientation="horizontal">
 
                 <ImageView
                     android:layout_width="40dp"
@@ -242,7 +263,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="match_parent"
                     android:layout_marginStart="5dp"
-                    android:fontFamily="@font/nanum_gothic_extrabold"
+                    android:fontFamily="@font/pretendard_extrabold"
                     android:gravity="center"
                     android:text="2024-01-01"
                     android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
@@ -251,6 +272,7 @@
 
         </LinearLayout>
 
+        <!-- 조회 버튼 -->
         <android.widget.Button
             android:id="@+id/load_button"
             android:layout_width="match_parent"
@@ -264,5 +286,6 @@
             app:layout_constraintHeight_percent="0.07" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>
