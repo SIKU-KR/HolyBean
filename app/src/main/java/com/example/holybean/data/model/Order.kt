@@ -7,7 +7,7 @@ data class Order(
     val orderDate: String,
     val orderNum: Int,
     val creditStatus: Int,
-    val cumstomerName: String,
+    val customerName: String,
     val orderItems: List<CartItem>,
     val paymentMethods: List<PaymentMethod>,
     val totalAmount: Int

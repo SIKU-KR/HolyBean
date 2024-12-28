@@ -87,9 +87,8 @@ class MainActivity : AppCompatActivity(), MainActivityListener {
                 R.id.nav_orders -> loadFragment(OrdersFragment())
                 R.id.nav_report -> loadFragment(ReportFragment())
 //                R.id.nav_credit -> loadFragment(CreditsController())
-//                R.id.menu_management -> loadFragment(MenuManagementFragment())
+                R.id.menu_management -> loadFragment(MenuManagementFragment())
                 R.id.nav_credit -> Toast.makeText(this, "업데이트 중 입니다.", Toast.LENGTH_SHORT).show()
-                R.id.menu_management -> Toast.makeText(this, "업데이트 중 입니다.", Toast.LENGTH_SHORT).show()
                 // 다른 메뉴 아이템에 대한 처리를 여기에 추가
             }
             drawerItem.isChecked = true

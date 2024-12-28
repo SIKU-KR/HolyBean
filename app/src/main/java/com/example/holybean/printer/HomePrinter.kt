@@ -25,7 +25,7 @@ class HomePrinter : Printer() {
         result += "[L]\n"
         result += "[L]<font size='big'>${option}</font>\n"
         result += "[L]\n"
-        result += "[R]주문자 : ${data.cumstomerName}\n"
+        result += "[R]주문자 : ${data.customerName}\n"
         result += "[C]-------------------------------------\n"
         result += "[L]\n"
         for (item in data.orderItems) {

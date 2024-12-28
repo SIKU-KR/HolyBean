@@ -6,19 +6,12 @@ import android.os.Bundle
 import android.text.InputType
 import android.text.TextUtils
 import android.view.View
-import android.widget.Button
-import android.widget.CheckBox
-import android.widget.EditText
-import android.widget.LinearLayout
-import android.widget.RadioGroup
-import android.widget.TextView
-import android.widget.Toast
+import android.widget.*
 import androidx.fragment.app.DialogFragment
 import com.example.holybean.R
 import com.example.holybean.data.model.*
 import com.example.holybean.interfaces.OrderDialogListener
 import java.lang.Exception
-import java.util.UUID
 
 class OrderDialog(val data: OrderDialogData) : DialogFragment() {
     private var orderDialogListener: OrderDialogListener? = null
@@ -43,11 +36,7 @@ class OrderDialog(val data: OrderDialogData) : DialogFragment() {
 
     companion object {
         fun newInstance(data: OrderDialogData): OrderDialog {
-            val fragment = OrderDialog(data)
-            val args = Bundle()
-            args.putInt("amount", data.totalPrice)
-            fragment.arguments = args
-            return fragment
+            return OrderDialog(data)
         }
     }
 
@@ -58,7 +47,7 @@ class OrderDialog(val data: OrderDialogData) : DialogFragment() {
 
         bindView(view)
 
-        totalPrice = arguments?.getInt("amount", 0) ?: 0
+        totalPrice = data.totalPrice // arguments를 사용하지 않고 data에서 직접 가져옴
 
         // 무료제공 버튼 클릭 시에 듀얼 메소드 옵션 비활성화
         orderMethodGroup.setOnCheckedChangeListener { group, checkedId ->
@@ -138,7 +127,7 @@ class OrderDialog(val data: OrderDialogData) : DialogFragment() {
     }
 
     private fun getFirstOption(): String {
-        val value = when (orderMethodGroup.checkedRadioButtonId) {
+        return when (orderMethodGroup.checkedRadioButtonId) {
             R.id.Button1 -> "현금"
             R.id.Button2 -> "쿠폰"
             R.id.Button3 -> "계좌이체"
@@ -146,32 +135,24 @@ class OrderDialog(val data: OrderDialogData) : DialogFragment() {
             R.id.Button5 -> "무료제공"
             else -> ""
         }
-        return value
     }
 
     private fun getSecondOption(): String {
-        val value = when (extraMethodGroup.checkedRadioButtonId) {
+        return when (extraMethodGroup.checkedRadioButtonId) {
             R.id.extraButton1 -> "현금"
             R.id.extraButton2 -> "쿠폰"
             R.id.extraButton3 -> "계좌이체"
             R.id.extraButton4 -> "외상"
             else -> ""
         }
-        return value
     }
 
     private fun getCredit(option: String): Int{
-        if(option.equals("외상")){
-            return 1
-        }
-        return 0;
+        return if(option == "외상") 1 else 0
     }
 
     private fun getCredit(option1: String, option2: String): Int{
-        if(option1.equals("외상") || option2.equals("외상")){
-            return 1
-        }
-        return 0;
+        return if(option1 == "외상" || option2 == "외상") 1 else 0
     }
 
     private fun showToastText(text: String) {
@@ -181,12 +162,14 @@ class OrderDialog(val data: OrderDialogData) : DialogFragment() {
     private fun processSingleMethod() {
         val selectedTakeOption = getTakeOption()
         val selectedOrderMethod = getFirstOption()
-        if (checkMethodIfOrdererNeeded(selectedOrderMethod) && TextUtils.isEmpty(orderNameEditText.text.toString())) {
+        val ordererName = orderNameEditText.text.toString()
+
+        if (checkMethodIfOrdererNeeded(selectedOrderMethod) && TextUtils.isEmpty(ordererName)) {
             showToastText("주문자를 입력하세요")
             return
         }
+
         val methodList = listOf(PaymentMethod(selectedOrderMethod, data.totalPrice))
-        val ordererName = orderNameEditText.text.toString()
 
         orderDialogListener?.onOrderConfirmed(
             Order(
@@ -200,18 +183,6 @@ class OrderDialog(val data: OrderDialogData) : DialogFragment() {
             ), selectedTakeOption
         )
 
-//        orderDialogListener?.onOrderConfirmed(
-//            OrderData(
-//                data.cartItems,
-//                data.orderNum,
-//                data.totalPrice,
-//                selectedTakeOption,
-//                ordererName,
-//                selectedOrderMethod,
-//                data.date,
-//                UUID.randomUUID().toString()
-//            )
-//        )
         dismiss()
     }
 
@@ -220,21 +191,23 @@ class OrderDialog(val data: OrderDialogData) : DialogFragment() {
         val selectedOrderMethod = getFirstOption()
         val selectedExtraMethod = getSecondOption()
 
+        val ordererName = orderNameEditText.text.toString()
+
         try {
-            secondAmount = Integer.parseInt(extraMethodAmount.text.toString())
+            secondAmount = extraMethodAmount.text.toString().toInt()
         } catch (e: Exception) {
             showToastText("올바른 결제금액이 아닙니다")
             return
         }
 
         if (checkMethodIfOrdererNeeded(selectedOrderMethod, selectedExtraMethod)
-            && TextUtils.isEmpty(orderNameEditText.getText().toString())
+            && TextUtils.isEmpty(ordererName)
         ) {
             showToastText("주문자를 입력하세요")
             return
         }
 
-        if (TextUtils.isEmpty(extraMethodAmount.getText().toString())) {
+        if (TextUtils.isEmpty(extraMethodAmount.text.toString())) {
             showToastText("분할 결제 금액을 입력하세요")
             return
         }
@@ -244,12 +217,11 @@ class OrderDialog(val data: OrderDialogData) : DialogFragment() {
             return
         }
 
-        val ordererName = orderNameEditText.text.toString()
-
         val methodList = listOf(
             PaymentMethod(selectedOrderMethod, totalPrice - secondAmount),
             PaymentMethod(selectedExtraMethod, secondAmount)
         )
+
         // 결제금액 확인
         val builder = AlertDialog.Builder(context)
         builder.setTitle("결제금액 확인")
@@ -267,32 +239,15 @@ class OrderDialog(val data: OrderDialogData) : DialogFragment() {
                     ),
                     selectedTakeOption
                 )
-//                orderDialogListener?.onOrderConfirmed(
-//                    OrderDataWithDualMethod(
-//                        data.cartItems,
-//                        data.orderNum,
-//                        data.totalPrice,
-//                        selectedTakeOption,
-//                        ordererName,
-//                        selectedOrderMethod,
-//                        selectedExtraMethod,
-//                        totalPrice - secondAmount,
-//                        secondAmount,
-//                        data.date
-//                    )
-//                )
                 dismiss()
             }.setNegativeButton("취소") { _, _ -> }.show()
     }
 
     private fun getTakeOption(): String {
-        val value = when (takeOptionGroup.checkedRadioButtonId) {
+        return when (takeOptionGroup.checkedRadioButtonId) {
             R.id.togo -> "일회용컵"
             R.id.eatin -> "머그컵"
             else -> ""
         }
-        return value
     }
-
-
 }

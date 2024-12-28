@@ -2,6 +2,7 @@ package com.example.holybean.ui.home
 
 import android.annotation.SuppressLint
 import android.app.AlertDialog
+import android.app.ProgressDialog
 import android.content.Context
 import android.os.Bundle
 import android.text.InputType
@@ -44,6 +45,8 @@ class HomeFragment : Fragment(), HomeFunctions {
     private var orderId: Int = 0
     private var totalPrice: Int = 0
 
+    private lateinit var progressDialog: ProgressDialog // 로딩 다이얼로그
+
     override fun onAttach(context: Context) {
         super.onAttach(context)
         if (context is MainActivityListener) {
@@ -69,6 +72,7 @@ class HomeFragment : Fragment(), HomeFunctions {
         initOrderProcessButton()
         initCouponAddButton()
         initOrderNumAsync()
+        initObservers() // LiveData 관찰 초기화
 
         return view
     }
@@ -83,8 +87,41 @@ class HomeFragment : Fragment(), HomeFunctions {
             .toCollection(ArrayList())
     }
 
+    // LiveData 관찰 초기화
+    private fun initObservers() {
+        viewModel.loadingState.observe(viewLifecycleOwner) { isLoading ->
+            if (isLoading) {
+                showLoading()
+            } else {
+                hideLoading()
+            }
+        }
 
-    // Menu recycler view init
+        viewModel.errorMessage.observe(viewLifecycleOwner) { error ->
+            error?.let {
+                Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+                // 에러 메시지 일회성 처리를 위해 null로 설정
+                viewModel.clearErrorMessage()
+            }
+        }
+    }
+
+    private fun showLoading() {
+        if (!::progressDialog.isInitialized) {
+            progressDialog = ProgressDialog(context).apply {
+                setMessage("주문을 처리 중입니다...")
+                setCancelable(false)
+            }
+        }
+        progressDialog.show()
+    }
+
+    private fun hideLoading() {
+        if (::progressDialog.isInitialized && progressDialog.isShowing) {
+            progressDialog.dismiss()
+        }
+    }
+
     private fun initMenuBoard() {
         menuBoard = binding.menuBoard
         val boardAdapter = MenuAdapter(itemList, this)
@@ -95,7 +132,6 @@ class HomeFragment : Fragment(), HomeFunctions {
         }
     }
 
-    // Basket recycler view init
     private fun initBasket() {
         basket = binding.basket
         val cartAdapter = CartAdapter(basketList, this)
@@ -106,7 +142,6 @@ class HomeFragment : Fragment(), HomeFunctions {
         }
     }
 
-    // Menu tabs init
     private fun initTabs() {
         menuTab = binding.menuTab
         val categories = listOf("전체", "ICE커피", "HOT커피", "에이드/스무디", "티/음료", "베이커리")
@@ -124,7 +159,6 @@ class HomeFragment : Fragment(), HomeFunctions {
         })
     }
 
-
     private fun initOrderNumAsync() {
         lifecycleScope.launch {
             try {
@@ -136,7 +170,6 @@ class HomeFragment : Fragment(), HomeFunctions {
             }
         }
     }
-
 
     private fun initCouponAddButton() {
         binding.couponButton.setOnClickListener {
@@ -212,7 +245,6 @@ class HomeFragment : Fragment(), HomeFunctions {
         }
     }
 
-
     // Update total textview
     private fun updateTotal() {
         this.totalPrice = viewModel.getTotal(this.basketList)
@@ -220,4 +252,11 @@ class HomeFragment : Fragment(), HomeFunctions {
         totalPriceNumTextView.text = this.totalPrice.toString()
     }
 
+    override fun onDestroyView() {
+        super.onDestroyView()
+        // ProgressDialog 해제
+        if (::progressDialog.isInitialized && progressDialog.isShowing) {
+            progressDialog.dismiss()
+        }
+    }
 }

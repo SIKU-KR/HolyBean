@@ -9,7 +9,6 @@ import com.example.holybean.data.model.ReportDetailItem
 import com.example.holybean.network.LambdaConnection
 import com.example.holybean.network.RetrofitClient
 import com.example.holybean.printer.ReportPrinter
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
