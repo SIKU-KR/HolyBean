@@ -20,10 +20,7 @@ class HomeViewModel : OrderDialogListener, ViewModel() {
     private var mainListener: MainActivityListener? = null
     private val lambdaConnection = RetrofitClient.retrofit.create(LambdaConnection::class.java)
 
-    // LiveData for loading state and error messages
-    private val _loadingState = MutableLiveData<Boolean>()
-    val loadingState: LiveData<Boolean> get() = _loadingState
-
+    // LiveData for error messages
     private val _errorMessage = MutableLiveData<String?>()
     val errorMessage: LiveData<String?> get() = _errorMessage
 
@@ -57,34 +54,31 @@ class HomeViewModel : OrderDialogListener, ViewModel() {
     }
 
     override fun onOrderConfirmed(data: Order, takeOption: String) {
-        viewModelScope.launch {
-            _loadingState.postValue(true) // 로딩 시작
+        // 주문 POST 요청은 별도의 스레드에서 동기적으로 처리
+        viewModelScope.launch(Dispatchers.IO) {
             try {
-                withTimeout(5000) { // 5초 타임아웃 설정
-                    // 1. POST 요청
-                    requestPostOrder(data)
-                    // 2. 영수증 출력
-                    printReceipt(data, takeOption)
-                    // 3. 홈 프래그먼트 전환
-                    withContext(Dispatchers.Main) {
-                        mainListener?.replaceHomeFragment()
-                    }
+                // 1. POST 요청
+                requestPostOrder(data)
+
+                // 주문 완료 후 바로 홈 프래그먼트 전환 (UI 스레드에서)
+                withContext(Dispatchers.Main) {
+                    mainListener?.replaceHomeFragment()
                 }
-            } catch (e: TimeoutCancellationException) {
-                e.printStackTrace()
-                _errorMessage.postValue("주문 처리 시간이 초과되었습니다.")
+
+                // 2. 영수증 출력은 비동기적으로 요청만 보냄
+                printReceipt(data, takeOption)
+
             } catch (e: Exception) {
                 e.printStackTrace()
                 _errorMessage.postValue("주문 처리 중 오류가 발생했습니다.")
-            } finally {
-                _loadingState.postValue(false) // 로딩 종료
             }
         }
     }
 
+    // 동기적으로 POST 요청 처리
     private suspend fun requestPostOrder(data: Order) {
         try {
-            println("uploading order: " + data.toString())
+            println("uploading order: $data")
             val response = lambdaConnection.postOrder(data)
             if (response.isSuccessful) {
                 println("Order posted successfully with status: ${response.code()}")
@@ -99,6 +93,7 @@ class HomeViewModel : OrderDialogListener, ViewModel() {
         }
     }
 
+    // 영수증 출력은 요청만 보낸 후 완료 여부는 기다리지 않음
     private suspend fun printReceipt(data: Order, takeOption: String) {
         withContext(Dispatchers.IO) {
             val printer = HomePrinter()
@@ -106,11 +101,15 @@ class HomeViewModel : OrderDialogListener, ViewModel() {
             val receiptForPOS = printer.receiptTextForPOS(data, takeOption)
 
             try {
+                // 고객용 영수증 출력 요청
                 printer.print(receiptForCustomer)
-                delay(500) // 500ms 대기
+                // POS용 영수증 출력 요청
                 printer.print(receiptForPOS)
-                delay(2000) // 2000ms 대기
+            } catch (e: Exception) {
+                // 영수증 출력 중 오류가 발생하면 로그로 기록하거나 처리할 수 있습니다.
+                e.printStackTrace()
             } finally {
+                // 프린터 연결 해제
                 printer.disconnect()
             }
         }

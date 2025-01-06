@@ -2,7 +2,6 @@ package com.example.holybean.ui.home
 
 import android.annotation.SuppressLint
 import android.app.AlertDialog
-import android.app.ProgressDialog
 import android.content.Context
 import android.os.Bundle
 import android.text.InputType
@@ -10,7 +9,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
-import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -45,14 +43,12 @@ class HomeFragment : Fragment(), HomeFunctions {
     private var orderId: Int = 0
     private var totalPrice: Int = 0
 
-    private lateinit var progressDialog: ProgressDialog // 로딩 다이얼로그
-
     override fun onAttach(context: Context) {
         super.onAttach(context)
         if (context is MainActivityListener) {
             mainListener = context
         } else {
-            throw RuntimeException("$context must implement OnFragmentInteractionListener")
+            throw RuntimeException("$context must implement MainActivityListener")
         }
     }
 
@@ -60,89 +56,54 @@ class HomeFragment : Fragment(), HomeFunctions {
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
         binding = FragmentHomeBinding.inflate(inflater, container, false)
-        val view = binding.root
-        context = view.context
+        context = binding.root.context
 
         mainListener?.let { viewModel.setMainActivityListener(it) }
-        getItemList()
 
-        initTabs()
-        initMenuBoard()
-        initBasket()
-        initOrderProcessButton()
-        initCouponAddButton()
-        initOrderNumAsync()
-        initObservers() // LiveData 관찰 초기화
+        initItemList()
+        initView()
+        initObservers()
 
-        return view
+        return binding.root
     }
 
-    override fun onDetach() {
-        super.onDetach()
-        mainListener = null
-    }
-
-    private fun getItemList() {
-        itemList = MenuDB.getMenuList(context).asSequence().filter { it.inuse }.sortedBy { it.placement }
+    private fun initItemList() {
+        itemList = MenuDB.getMenuList(context).asSequence()
+            .filter { it.inuse }
+            .sortedBy { it.placement }
             .toCollection(ArrayList())
     }
 
-    // LiveData 관찰 초기화
-    private fun initObservers() {
-        viewModel.loadingState.observe(viewLifecycleOwner) { isLoading ->
-            if (isLoading) {
-                showLoading()
-            } else {
-                hideLoading()
-            }
-        }
-
-        viewModel.errorMessage.observe(viewLifecycleOwner) { error ->
-            error?.let {
-                Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
-                // 에러 메시지 일회성 처리를 위해 null로 설정
-                viewModel.clearErrorMessage()
-            }
-        }
+    private fun initView() {
+        setupMenuBoard()
+        setupBasket()
+        setupTabs()
+        setupOrderProcessButton()
+        setupCouponAddButton()
+        setupOrderNumAsync()
     }
 
-    private fun showLoading() {
-        if (!::progressDialog.isInitialized) {
-            progressDialog = ProgressDialog(context).apply {
-                setMessage("주문을 처리 중입니다...")
-                setCancelable(false)
-            }
-        }
-        progressDialog.show()
-    }
-
-    private fun hideLoading() {
-        if (::progressDialog.isInitialized && progressDialog.isShowing) {
-            progressDialog.dismiss()
-        }
-    }
-
-    private fun initMenuBoard() {
+    private fun setupMenuBoard() {
         menuBoard = binding.menuBoard
         val boardAdapter = MenuAdapter(itemList, this)
         menuBoard.apply {
             adapter = boardAdapter
             layoutManager = GridLayoutManager(context, 3)
-            addItemDecoration(RvCustomDesign(10, 10, 15, 15)) // 20dp의 여백
+            addItemDecoration(RvCustomDesign(10, 10, 15, 15))
         }
     }
 
-    private fun initBasket() {
+    private fun setupBasket() {
         basket = binding.basket
         val cartAdapter = CartAdapter(basketList, this)
         basket.apply {
             adapter = cartAdapter
             layoutManager = GridLayoutManager(context, 1)
-            addItemDecoration(RvCustomDesign(15, 15, 0, 0)) // 20dp의 여백
+            addItemDecoration(RvCustomDesign(15, 15, 0, 0))
         }
     }
 
-    private fun initTabs() {
+    private fun setupTabs() {
         menuTab = binding.menuTab
         val categories = listOf("전체", "ICE커피", "HOT커피", "에이드/스무디", "티/음료", "베이커리")
         categories.forEach { category ->
@@ -159,7 +120,44 @@ class HomeFragment : Fragment(), HomeFunctions {
         })
     }
 
-    private fun initOrderNumAsync() {
+    private fun setupOrderProcessButton() {
+        binding.orderProcess.setOnClickListener {
+            if (basketList.isNotEmpty()) {
+                val orderDialog = OrderDialog.newInstance(
+                    OrderDialogData(basketList, orderId, totalPrice, viewModel.getCurrentDate())
+                )
+                orderDialog.setOrderDialogListener(viewModel)
+                orderDialog.show(parentFragmentManager, "OrderDialog")
+            }
+        }
+    }
+
+    private fun setupCouponAddButton() {
+        binding.couponButton.setOnClickListener {
+            val editText = EditText(context).apply {
+                inputType = InputType.TYPE_CLASS_NUMBER
+            }
+            AlertDialog.Builder(context)
+                .setTitle("쿠폰 금액을 입력하세요:")
+                .setView(editText)
+                .setPositiveButton("확인") { _, _ -> handleCouponInput(editText) }
+                .setNegativeButton("취소", null)
+                .show()
+        }
+    }
+
+    private fun handleCouponInput(editText: EditText) {
+        val enteredAmount = editText.text.toString().toIntOrNull()
+        if (enteredAmount != null && enteredAmount > 0) {
+            basketList.add(CartItem(999, "쿠폰", enteredAmount, 1, enteredAmount))
+            basket.adapter?.notifyDataSetChanged()
+            updateTotal()
+        } else {
+            Toast.makeText(context, "올바른 금액이 아닙니다", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun setupOrderNumAsync() {
         lifecycleScope.launch {
             try {
                 orderId = viewModel.getCurrentOrderNum()
@@ -171,37 +169,15 @@ class HomeFragment : Fragment(), HomeFunctions {
         }
     }
 
-    private fun initCouponAddButton() {
-        binding.couponButton.setOnClickListener {
-            val editText = EditText(context)
-            editText.inputType = InputType.TYPE_CLASS_NUMBER
-            val builder = AlertDialog.Builder(context)
-            builder.setTitle("쿠폰 금액을 입력하세요:").setView(editText).setPositiveButton("확인") { _, _ ->
-                val enteredAmount = editText.text.toString().toIntOrNull()
-                if (enteredAmount != null && enteredAmount > 0) {
-                    basketList.add(CartItem(999, "쿠폰", enteredAmount, 1, enteredAmount))
-                    basket.adapter?.notifyDataSetChanged()
-                    updateTotal()
-                } else {
-                    Toast.makeText(view?.context ?: context, "올바른 금액이 아닙니다", Toast.LENGTH_SHORT).show()
-                }
-            }.setNegativeButton("취소") { _, _ -> }.show()
-        }
-    }
-
-    private fun initOrderProcessButton() {
-        binding.orderProcess.setOnClickListener {
-            if (basketList.isNotEmpty()) {
-                val orderDialog = OrderDialog.newInstance(
-                    OrderDialogData(this.basketList, this.orderId, this.totalPrice, viewModel.getCurrentDate())
-                )
-                orderDialog.setOrderDialogListener(viewModel)
-                orderDialog.show(parentFragmentManager, "OrderDialog")
+    private fun initObservers() {
+        viewModel.errorMessage.observe(viewLifecycleOwner) { error ->
+            error?.let {
+                Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+                viewModel.clearErrorMessage()
             }
         }
     }
 
-    // Function to set recycler view by categories(tab)
     private fun updateRecyclerViewForCategory(category: Int) {
         val filteredItems = if (category == 0) {
             itemList // 전체
@@ -245,18 +221,13 @@ class HomeFragment : Fragment(), HomeFunctions {
         }
     }
 
-    // Update total textview
     private fun updateTotal() {
-        this.totalPrice = viewModel.getTotal(this.basketList)
-        val totalPriceNumTextView: TextView = binding.totalPriceNum
-        totalPriceNumTextView.text = this.totalPrice.toString()
+        totalPrice = viewModel.getTotal(basketList)
+        binding.totalPriceNum.text = totalPrice.toString()
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
-        // ProgressDialog 해제
-        if (::progressDialog.isInitialized && progressDialog.isShowing) {
-            progressDialog.dismiss()
-        }
+        // ProgressDialog 해제는 더 이상 필요하지 않음
     }
 }
