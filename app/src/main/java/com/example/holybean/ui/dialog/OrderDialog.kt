@@ -50,7 +50,7 @@ class OrderDialog(val data: OrderDialogData) : DialogFragment() {
         totalPrice = data.totalPrice // arguments를 사용하지 않고 data에서 직접 가져옴
 
         // 무료제공 버튼 클릭 시에 듀얼 메소드 옵션 비활성화
-        orderMethodGroup.setOnCheckedChangeListener { group, checkedId ->
+        orderMethodGroup.setOnCheckedChangeListener { _, _ ->
             val selectedOrderMethod = getFirstOption()
             if (selectedOrderMethod == "무료제공") {
                 deactivateDualOption()
@@ -61,7 +61,7 @@ class OrderDialog(val data: OrderDialogData) : DialogFragment() {
             }
         }
 
-        extraMethodGroup.setOnCheckedChangeListener { group, checkedId ->
+        extraMethodGroup.setOnCheckedChangeListener { _, _ ->
             val selectedOrderMethod = getSecondOption()
             extraMethodTitle.text = "$selectedOrderMethod 결제금액"
         }
@@ -75,7 +75,7 @@ class OrderDialog(val data: OrderDialogData) : DialogFragment() {
             dismiss()
         }
 
-        extraMethodCB.setOnCheckedChangeListener { buttonView, isChecked ->
+        extraMethodCB.setOnCheckedChangeListener { _, isChecked ->
             if (isChecked) {
                 activateDualOption()
             } else {
@@ -132,7 +132,8 @@ class OrderDialog(val data: OrderDialogData) : DialogFragment() {
             R.id.Button2 -> "쿠폰"
             R.id.Button3 -> "계좌이체"
             R.id.Button4 -> "외상"
-            R.id.Button5 -> "무료제공"
+            R.id.Button5 -> "무료쿠폰"
+            R.id.Button6 -> "무료제공"
             else -> ""
         }
     }
@@ -143,6 +144,7 @@ class OrderDialog(val data: OrderDialogData) : DialogFragment() {
             R.id.extraButton2 -> "쿠폰"
             R.id.extraButton3 -> "계좌이체"
             R.id.extraButton4 -> "외상"
+            R.id.extraButton5 -> "무료쿠폰"
             else -> ""
         }
     }
