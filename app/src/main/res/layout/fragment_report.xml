@@ -95,6 +95,19 @@
             app:layout_constraintTop_toTopOf="@id/transferSell" />
 
         <TextView
+            android:id="@+id/freeCouponSell"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="40dp"
+            android:paddingStart="16dp"
+            android:fontFamily="@font/pretendard_extrabold"
+            android:gravity="start"
+            android:text="무료쿠폰 판매액 : 00,000"
+            android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintTop_toTopOf="@id/creditSell" />
+
+        <TextView
             android:id="@+id/freelyOut"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -105,7 +118,7 @@
             android:text="무료제공 금액 : 00,000"
             android:textAppearance="@style/TextAppearance.AppCompat.Medium"
             app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintTop_toTopOf="@id/creditSell" />
+            app:layout_constraintTop_toTopOf="@id/freeCouponSell" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

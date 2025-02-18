@@ -142,6 +142,7 @@ class ReportFragment : Fragment() {
             transferSell.text = "계좌이체 판매금액 : ${numberFormatter.format(data["계좌이체"] ?: 0)}"
             creditSell.text = "외상 판매금액 : ${numberFormatter.format(data["외상"] ?: 0)}"
             freelyOut.text = "무료제공 금액 : ${numberFormatter.format(data["무료제공"] ?: 0)}"
+            freeCouponSell.text = "무료쿠폰 금액 : ${numberFormatter.format(data["무료쿠폰"] ?: 0)}"
         }
     }
 }
