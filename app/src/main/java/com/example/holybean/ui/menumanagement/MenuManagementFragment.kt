@@ -124,24 +124,24 @@ class MenuManagementFragment : Fragment() {
             ): Boolean {
                 val fromPosition = viewHolder.adapterPosition
                 val toPosition = target.adapterPosition
-                val filteredItems = itemList.filter { it.id / 1000 == category } as ArrayList<MenuItem>
+
+                // 현재 카테고리의 메뉴 아이템들을 새 ArrayList로 생성
+                val filteredItems = ArrayList(itemList.filter { it.id / 1000 == category })
                 moveItem(filteredItems, fromPosition, toPosition)
 
-                // update the placement information for the filtered items
+                // 변경된 순서에 맞춰 placement 값 업데이트
                 filteredItems.forEachIndexed { index, menuItem ->
                     menuItem.placement = (category * 1000) + (index + 1)
                 }
 
-                // Directly reflect the changes back to the original itemList
-                filteredItems.forEach { updatedItem ->
-                    val originalItemIndex = itemList.indexOfFirst { it.id == updatedItem.id }
-                    if (originalItemIndex != -1) {
-                        itemList[originalItemIndex] = updatedItem // Update original list
-                    }
-                }
+                // 다른 카테고리의 아이템들과 합쳐서 전체 리스트를 재정렬 후 ArrayList로 생성
+                val otherItems = itemList.filter { it.id / 1000 != category }
+                itemList = ArrayList((otherItems + filteredItems).sortedBy { it.placement })
+
                 recyclerView.adapter?.notifyItemMoved(fromPosition, toPosition)
                 return true
             }
+
 
             override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
                 val position = viewHolder.adapterPosition
@@ -158,7 +158,6 @@ class MenuManagementFragment : Fragment() {
                 isCurrentlyActive: Boolean
             ) {
                 val itemView = viewHolder.itemView
-                // Set Left Swipe Limitation
                 val limitedDX = if (dX < -maxSwipeDistance) -maxSwipeDistance else dX
 
                 if (limitedDX < 0) {
@@ -169,12 +168,10 @@ class MenuManagementFragment : Fragment() {
                         itemView.bottom
                     )
                     editBackground.draw(c)
-                    // Text Location
                     val textX = itemView.right - 50f
                     val fontMetrics = paint.fontMetrics
                     val textY =
                         (itemView.top + itemView.bottom) / 2f - (fontMetrics.ascent + fontMetrics.descent) / 2
-                    // Draw Text
                     c.drawText("수정", textX, textY, paint)
                 }
 
@@ -204,6 +201,7 @@ class MenuManagementFragment : Fragment() {
         itemTouchHelper.attachToRecyclerView(menuBoard)
     }
 
+
     private fun showSwipeMenuDialog(position: Int) {
         val filteredItems = itemList.filter { it.id / 1000 == category }
         val menuItem = filteredItems[position]
@@ -231,8 +229,8 @@ class MenuManagementFragment : Fragment() {
     }
 
     private fun updateRecyclerViewForCategory() {
-        val filteredItems = itemList.filter { it.id / 1000 == this.category }
-        menuBoard.adapter = MenuAdapter(filteredItems as ArrayList<MenuItem>)
+        val filteredItems = ArrayList(itemList.filter { it.id / 1000 == this.category })
+        menuBoard.adapter = MenuAdapter(filteredItems)
     }
 
     // 아이템을 이동시키는 로직
