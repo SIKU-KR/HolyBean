@@ -71,7 +71,7 @@ class HomeFragment : Fragment(), HomeFunctions {
         MenuDB.printAllMenus(context)
         itemList = MenuDB.getMenuList(context).asSequence()
             .filter { it.inuse }
-            .sortedBy { it.placement }
+            .sortedBy { it.order }
             .toCollection(ArrayList())
     }
 
