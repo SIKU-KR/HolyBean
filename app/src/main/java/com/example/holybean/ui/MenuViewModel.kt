@@ -3,18 +3,19 @@ package com.example.holybean.ui
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.holybean.data.model.Menu
+import com.example.holybean.data.model.MenuItem
 import com.example.holybean.network.LambdaConnection
 import com.example.holybean.network.RetrofitClient
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.launch
 
 @HiltViewModel
-class MenuViewModel: ViewModel() {
+class MenuViewModel @Inject constructor() : ViewModel() {
 
     private val lambdaConnection = RetrofitClient.retrofit.create(LambdaConnection::class.java)
 
-    private val _menulist = MutableLiveData<List<Menu>?>()
+    private val _menulist = MutableLiveData<List<MenuItem>?>()
     val menulist get() = _menulist
 
     fun fetchData(){

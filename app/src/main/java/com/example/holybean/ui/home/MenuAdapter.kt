@@ -30,6 +30,12 @@ class MenuAdapter(private val itemList: ArrayList<MenuItem>, private val mainLis
         return itemList.size
     }
 
+    fun updateList(newItemList: ArrayList<MenuItem>) {
+        itemList.clear()
+        itemList.addAll(newItemList)
+        notifyDataSetChanged()
+    }
+
     inner class MenuViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val menuName: TextView = itemView.findViewById(R.id.menu_name)
         val menuPrice: TextView = itemView.findViewById(R.id.menu_price)

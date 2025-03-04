@@ -1,7 +1,7 @@
 package com.example.holybean.network.dto
 
-import com.example.holybean.data.model.Menu
+import com.example.holybean.data.model.MenuItem
 
 data class ResponseMenuList(
-    val menulist: List<Menu>
+    val menulist: List<MenuItem>
 )
