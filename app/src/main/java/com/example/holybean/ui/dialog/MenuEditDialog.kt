@@ -43,7 +43,7 @@ class MenuEditDialog(private val item: MenuItem, private val mainListener: MainA
         menuNameEditText.setText(item.name)
         menuPriceEditText.setText(item.price.toString())
         menuIdTextView.text = item.id.toString()
-        menuOrderTextView.text = item.placement.toString()
+        menuOrderTextView.text = item.order.toString()
 
         // 버튼 설정
         val disableButton: Button = binding.disableEditButton

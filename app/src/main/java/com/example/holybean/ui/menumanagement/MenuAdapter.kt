@@ -17,7 +17,7 @@ class MenuAdapter(private val itemList: ArrayList<MenuItem>) : RecyclerView.Adap
     override fun onBindViewHolder(holder: MenuViewHolder, position: Int) {
         val item = itemList[position]
         holder.menuCode.text = "id:"+item.id.toString()
-        holder.menuPlacement.text = "placement:"+item.placement.toString()
+        holder.menuPlacement.text = "placement:"+item.order.toString()
         holder.menuName.text = item.name
         holder.menuPrice.text = item.price.toString()
         if(!item.inuse){

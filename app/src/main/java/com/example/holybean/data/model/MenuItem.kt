@@ -4,6 +4,6 @@ data class MenuItem(
     val id:Int,
     var name:String,
     var price:Int,
-    var placement:Int,
+    var order:Int,
     var inuse:Boolean
 )

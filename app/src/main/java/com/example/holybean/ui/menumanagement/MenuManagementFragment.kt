@@ -62,7 +62,7 @@ class MenuManagementFragment : Fragment() {
         val view = binding.root
 
         itemList = MenuDB.getMenuList(view.context)
-        itemList.sortBy { it.placement }
+        itemList.sortBy { it.order }
 
         initMenuBoard()
         initTabs()
@@ -131,12 +131,12 @@ class MenuManagementFragment : Fragment() {
 
                 // 변경된 순서에 맞춰 placement 값 업데이트
                 filteredItems.forEachIndexed { index, menuItem ->
-                    menuItem.placement = (category * 1000) + (index + 1)
+                    menuItem.order = (category * 1000) + (index + 1)
                 }
 
                 // 다른 카테고리의 아이템들과 합쳐서 전체 리스트를 재정렬 후 ArrayList로 생성
                 val otherItems = itemList.filter { it.id / 1000 != category }
-                itemList = ArrayList((otherItems + filteredItems).sortedBy { it.placement })
+                itemList = ArrayList((otherItems + filteredItems).sortedBy { it.order })
 
                 recyclerView.adapter?.notifyItemMoved(fromPosition, toPosition)
                 return true

@@ -29,7 +29,7 @@ class MenuManagementViewModel @Inject constructor(
         try {
             items.forEach { item ->
                 val contentValues = ContentValues().apply {
-                    put(MenuDB.MENU_PLACEMENT, item.placement)
+                    put(MenuDB.MENU_PLACEMENT, item.order)
                 }
                 db.update(
                     MenuDB.MENUDB_TABLE,
@@ -56,7 +56,7 @@ class MenuManagementViewModel @Inject constructor(
         val contentValues = ContentValues().apply {
             put(MenuDB.MENU_NAME, item.name)
             put(MenuDB.MENU_PRICE, item.price)
-            put(MenuDB.MENU_PLACEMENT, item.placement)
+            put(MenuDB.MENU_PLACEMENT, item.order)
             put(MenuDB.MENU_INUSE, if (item.inuse) 1 else 0)
         }
 
@@ -126,7 +126,7 @@ class MenuManagementViewModel @Inject constructor(
             put(MenuDB.MENU_ID, item.id)
             put(MenuDB.MENU_NAME, item.name)
             put(MenuDB.MENU_PRICE, item.price)
-            put(MenuDB.MENU_PLACEMENT, item.placement)
+            put(MenuDB.MENU_PLACEMENT, item.order)
             put(MenuDB.MENU_INUSE, if (item.inuse) 1 else 0)
         }
         val newRowId = db.insert(MenuDB.MENUDB_TABLE, null, contentValues)
