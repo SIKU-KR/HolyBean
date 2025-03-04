@@ -27,4 +27,10 @@ interface LambdaConnection {
 
     @GET("/menu")
     suspend fun getMenuList(): Response<ResponseMenuList>
+
+    @GET("/credit")
+    suspend fun getAllCreditOrders(): Response<ResponseCredit>
+
+    @POST("/credit")
+    suspend fun updateCreditStatus(@Body orderNum: Int, @Body orderDate: String): Response<Unit>
 }
