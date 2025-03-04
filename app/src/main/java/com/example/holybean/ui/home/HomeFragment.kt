@@ -68,6 +68,7 @@ class HomeFragment : Fragment(), HomeFunctions {
     }
 
     private fun initItemList() {
+        MenuDB.printAllMenus(context)
         itemList = MenuDB.getMenuList(context).asSequence()
             .filter { it.inuse }
             .sortedBy { it.placement }

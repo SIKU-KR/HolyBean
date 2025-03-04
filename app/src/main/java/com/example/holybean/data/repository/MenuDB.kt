@@ -58,6 +58,26 @@ class MenuDB private constructor(
             menuList.sortBy { it.id }
             return menuList
         }
+
+        fun printAllMenus(context: Context) {
+            val db = getInstance(context).readableDatabase
+            val query = "SELECT * FROM $MENUDB_TABLE"
+            val cursor = db.rawQuery(query, null)
+            if (cursor.moveToFirst()) {
+                do {
+                    val id = cursor.getInt(cursor.getColumnIndexOrThrow(MENU_ID))
+                    val name = cursor.getString(cursor.getColumnIndexOrThrow(MENU_NAME))
+                    val price = cursor.getInt(cursor.getColumnIndexOrThrow(MENU_PRICE))
+                    val placement = cursor.getInt(cursor.getColumnIndexOrThrow(MENU_PLACEMENT))
+                    val inuse = cursor.getInt(cursor.getColumnIndexOrThrow(MENU_INUSE))
+                    println("MenuItem: id=$id, name=$name, price=$price, placement=$placement, inuse=$inuse")
+                } while (cursor.moveToNext())
+            } else {
+                println("메뉴 항목이 없습니다.")
+            }
+            cursor.close()
+            db.close()
+        }
     }
 
     override fun onCreate(db: SQLiteDatabase?) {

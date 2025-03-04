@@ -1,10 +1,7 @@
 package com.example.holybean.network
 
 import com.example.holybean.data.model.Order
-import com.example.holybean.network.dto.ResponseOrder
-import com.example.holybean.network.dto.ResponseOrderDetail
-import com.example.holybean.network.dto.ResponseOrderNum
-import com.example.holybean.network.dto.ResponseSalesReport
+import com.example.holybean.network.dto.*
 import retrofit2.Response
 import retrofit2.http.*
 
@@ -27,4 +24,7 @@ interface LambdaConnection {
 
     @GET("report")
     suspend fun getReport(@Query("start") startDate: String, @Query("end") endDate: String): Response<ResponseSalesReport>
+
+    @GET("/menu")
+    suspend fun getMenuList(): Response<ResponseMenuList>
 }
