@@ -8,6 +8,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.holybean.interfaces.MainActivityListener
@@ -22,14 +23,13 @@ import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
 @AndroidEntryPoint
-class CreditsController : Fragment(), CreditsFragmentFunction {
+class CreditsFragment : Fragment(), CreditsFragmentFunction {
 
     @Inject
     lateinit var repository: CreditsRepository
 
     private lateinit var binding: FragmentCreditBinding
     private lateinit var context: Context
-
     private var mainListener: MainActivityListener? = null
 
     private var orderNumber = 1
@@ -38,12 +38,10 @@ class CreditsController : Fragment(), CreditsFragmentFunction {
 
     private lateinit var orderNum: TextView
     private lateinit var totalPrice: TextView
-
     private lateinit var ordersBoard: RecyclerView
     private lateinit var creditsList: ArrayList<CreditItem>
-
     private lateinit var basket: RecyclerView
-    private lateinit var basketList: ArrayList<OrdersDetailItem>
+    private var basketList = arrayListOf<OrdersDetailItem>()
 
     @SuppressLint("NotifyDataSetChanged")
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle? ): View? {
@@ -51,56 +49,13 @@ class CreditsController : Fragment(), CreditsFragmentFunction {
         val view = binding.root
         context = view.context
 
-        orderNum = binding.orderNum
-        totalPrice = binding.totalPriceNum
-
-        creditsList = repository.readCredits()
-        basketList = ArrayList()
-
+        initUi()
         initBasket()
+        initOrdersBoard()
+        initViewButton()
+        initDeleteButton()
 
-        ordersBoard = binding.orderBoard
-        val boardAdapter = CreditsAdapter(creditsList, this)
-        ordersBoard.apply{
-            adapter = boardAdapter
-            layoutManager = GridLayoutManager(context, 1)
-            addItemDecoration(RvCustomDesign(0,0,0,20))
-        }
-
-        binding.viewThisOrder.setOnClickListener{
-            activity?.runOnUiThread {
-                basketList.clear()
-                basketList = repository.readOrderDetail(this.rowId)
-                initBasket()
-            }
-        }
-
-        binding.deleteCredit.setOnClickListener{
-            repository.deleteCredits(this.rowId)
-            mainListener?.replaceCreditsFragment()
-        }
         return view
-    }
-
-    private fun initBasket(){
-        basket = binding.basket
-        val ordersDetailAdapter = OrdersDetailAdapter(basketList)
-        basket.apply{
-            adapter = ordersDetailAdapter
-            layoutManager = GridLayoutManager(context, 1)
-            addItemDecoration(RvCustomDesign(15,15,0,0)) // 20dp의 여백
-        }
-    }
-
-    @SuppressLint("NotifyDataSetChanged")
-    override fun newOrderSelected(rowId: String, num: Int, total: Int, date:String) {
-        this.rowId = rowId
-        this.orderNumber = num
-        this.orderDate = date
-        orderNum.text = num.toString()
-        totalPrice.text = total.toString()
-        basketList.clear()
-        basket.adapter?.notifyDataSetChanged()
     }
 
     override fun onAttach(context: Context) {
@@ -115,5 +70,58 @@ class CreditsController : Fragment(), CreditsFragmentFunction {
     override fun onDetach() {
         super.onDetach()
         mainListener = null
+    }
+
+    private fun initUi() {
+        orderNum = binding.orderNum
+        totalPrice = binding.totalPriceNum
+    }
+
+    private fun initDeleteButton() {
+        binding.deleteCredit.setOnClickListener {
+            repository.deleteCredits(this.rowId)
+            mainListener?.replaceCreditsFragment()
+        }
+    }
+
+    private fun initViewButton() {
+        binding.viewThisOrder.setOnClickListener {
+            activity?.runOnUiThread {
+                basketList.clear()
+                basketList = repository.readOrderDetail(this.rowId)
+                initBasket()
+            }
+        }
+    }
+
+    private fun initOrdersBoard() {
+        creditsList = repository.readCredits()
+        ordersBoard = binding.orderBoard
+        val boardAdapter = CreditsAdapter(creditsList, this)
+        ordersBoard.apply {
+            adapter = boardAdapter
+            layoutManager = GridLayoutManager(context, 1)
+            addItemDecoration(RvCustomDesign(0, 0, 0, 20))
+        }
+    }
+
+    private fun initBasket(){
+        basket = binding.basket
+        val ordersDetailAdapter = OrdersDetailAdapter(basketList)
+        basket.apply{
+            adapter = ordersDetailAdapter
+            layoutManager = GridLayoutManager(context, 1)
+            addItemDecoration(RvCustomDesign(15,15,0,0)) // 20dp의 여백
+        }
+    }
+
+    override fun newOrderSelected(rowId: String, num: Int, total: Int, date:String) {
+        this.rowId = rowId
+        this.orderNumber = num
+        this.orderDate = date
+        orderNum.text = num.toString()
+        totalPrice.text = total.toString()
+        basketList.clear()
+        basket.adapter?.notifyDataSetChanged()
     }
 }

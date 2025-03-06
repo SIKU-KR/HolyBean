@@ -6,14 +6,13 @@ import android.os.Build
 import android.os.Bundle
 import android.view.WindowInsets
 import android.view.WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
 import com.example.holybean.interfaces.MainActivityListener
-import com.example.holybean.ui.credits.CreditsController
+import com.example.holybean.ui.credits.CreditsFragment
 import com.example.holybean.ui.home.HomeFragment
 import com.example.holybean.ui.menumanagement.MenuManagementFragment
 import com.example.holybean.ui.orderlist.OrdersFragment
@@ -47,7 +46,7 @@ class MainActivity : AppCompatActivity(), MainActivityListener {
     }
 
     override fun replaceCreditsFragment() {
-        val creditsController = CreditsController()
+        val creditsController = CreditsFragment()
         supportFragmentManager.beginTransaction()
             .replace(R.id.fragment_container, creditsController)
             .commit()
@@ -86,9 +85,9 @@ class MainActivity : AppCompatActivity(), MainActivityListener {
                 R.id.nav_home -> loadFragment(HomeFragment())
                 R.id.nav_orders -> loadFragment(OrdersFragment())
                 R.id.nav_report -> loadFragment(ReportFragment())
-//                R.id.nav_credit -> loadFragment(CreditsController())
+                R.id.nav_credit -> loadFragment(CreditsFragment())
                 R.id.menu_management -> loadFragment(MenuManagementFragment())
-                R.id.nav_credit -> Toast.makeText(this, "업데이트 중 입니다.", Toast.LENGTH_SHORT).show()
+//                R.id.nav_credit -> Toast.makeText(this, "업데이트 중 입니다.", Toast.LENGTH_SHORT).show()
                 // 다른 메뉴 아이템에 대한 처리를 여기에 추가
             }
             drawerItem.isChecked = true
