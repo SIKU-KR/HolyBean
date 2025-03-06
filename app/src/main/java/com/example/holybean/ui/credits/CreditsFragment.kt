@@ -28,6 +28,8 @@ class CreditsFragment : Fragment(), CreditsFragmentFunction {
     @Inject
     lateinit var repository: CreditsRepository
 
+    private val viewModel by viewModels<CreditsViewModel>()
+
     private lateinit var binding: FragmentCreditBinding
     private lateinit var context: Context
     private var mainListener: MainActivityListener? = null

@@ -29,7 +29,7 @@ interface ApiService {
     suspend fun getMenuList(): Response<ResponseMenuList>
 
     @GET("/credit")
-    suspend fun getAllCreditOrders(): Response<ResponseCredit>
+    suspend fun getAllCreditOrders(): Response<List<ResponseCredit>>
 
     @POST("/credit")
     suspend fun updateCreditStatus(@Body orderNum: Int, @Body orderDate: String): Response<Unit>
