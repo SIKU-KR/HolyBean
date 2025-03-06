@@ -5,7 +5,7 @@ import com.example.holybean.network.dto.*
 import retrofit2.Response
 import retrofit2.http.*
 
-interface LambdaConnection {
+interface ApiService {
 
     @GET("ordernum")
     suspend fun getOrderNumber(): Response<ResponseOrderNum>

@@ -6,7 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.holybean.data.model.OrderItem
 import com.example.holybean.data.model.OrdersDetailItem
-import com.example.holybean.network.LambdaConnection
+import com.example.holybean.network.ApiService
 import com.example.holybean.network.RetrofitClient
 import com.example.holybean.network.dto.ResponseOrder
 import com.example.holybean.network.dto.ResponseOrderItem
@@ -20,7 +20,7 @@ import java.util.*
 
 class OrdersViewModel : ViewModel() {
 
-    private val lambdaConnection = RetrofitClient.retrofit.create(LambdaConnection::class.java)
+    private val apiService = RetrofitClient.retrofit.create(ApiService::class.java)
 
     // LiveData 추가
     private val _orderDetails = MutableLiveData<List<OrdersDetailItem>>()
@@ -48,7 +48,7 @@ class OrdersViewModel : ViewModel() {
     suspend fun getOrderList(): ArrayList<OrderItem> {
         val listOrders: ArrayList<OrderItem> = ArrayList()
         try {
-            val response = lambdaConnection.getOrderOfDay(getCurrentDate())
+            val response = apiService.getOrderOfDay(getCurrentDate())
             if (response.isSuccessful) {
                 val orders: List<ResponseOrder>? = response.body()
                 orders?.forEach { order ->
@@ -84,7 +84,7 @@ class OrdersViewModel : ViewModel() {
     private suspend fun getOrderDetailFromNetwork(orderNumber: Int): List<OrdersDetailItem> {
         val ordersDetail = ArrayList<OrdersDetailItem>()
         try {
-            val response = lambdaConnection.getSpecificOrder(getCurrentDate(), orderNumber)
+            val response = apiService.getSpecificOrder(getCurrentDate(), orderNumber)
             if (response.isSuccessful) {
                 val items: List<ResponseOrderItem>? = response.body()?.orderItems
                 items?.forEach { item ->
@@ -102,7 +102,7 @@ class OrdersViewModel : ViewModel() {
 
     suspend fun deleteOrder(num: Int): Boolean {
         return try {
-            val response = lambdaConnection.deleteOrder(getCurrentDate(), num)
+            val response = apiService.deleteOrder(getCurrentDate(), num)
             println(response.message())
             response.isSuccessful
         } catch (e: Exception) {

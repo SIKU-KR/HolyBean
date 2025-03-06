@@ -8,7 +8,7 @@ import com.example.holybean.data.model.CartItem
 import com.example.holybean.data.model.Order
 import com.example.holybean.interfaces.MainActivityListener
 import com.example.holybean.interfaces.OrderDialogListener
-import com.example.holybean.network.LambdaConnection
+import com.example.holybean.network.ApiService
 import com.example.holybean.network.RetrofitClient
 import com.example.holybean.printer.HomePrinter
 import kotlinx.coroutines.*
@@ -18,7 +18,7 @@ import java.time.format.DateTimeFormatter
 class HomeViewModel : OrderDialogListener, ViewModel() {
 
     private var mainListener: MainActivityListener? = null
-    private val lambdaConnection = RetrofitClient.retrofit.create(LambdaConnection::class.java)
+    private val apiService = RetrofitClient.retrofit.create(ApiService::class.java)
 
     // LiveData for error messages
     private val _errorMessage = MutableLiveData<String?>()
@@ -40,7 +40,7 @@ class HomeViewModel : OrderDialogListener, ViewModel() {
 
     suspend fun getCurrentOrderNum(): Int {
         return try {
-            val response = lambdaConnection.getOrderNumber()
+            val response = apiService.getOrderNumber()
             if (response.isSuccessful) {
                 response.body()?.nextOrderNum ?: -1
             } else {
@@ -79,7 +79,7 @@ class HomeViewModel : OrderDialogListener, ViewModel() {
     private suspend fun requestPostOrder(data: Order) {
         try {
             println("uploading order: $data")
-            val response = lambdaConnection.postOrder(data)
+            val response = apiService.postOrder(data)
             if (response.isSuccessful) {
                 println("Order posted successfully with status: ${response.code()}")
             } else {

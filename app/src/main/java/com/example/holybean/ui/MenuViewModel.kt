@@ -4,7 +4,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.holybean.data.model.MenuItem
-import com.example.holybean.network.LambdaConnection
+import com.example.holybean.network.ApiService
 import com.example.holybean.network.RetrofitClient
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -13,7 +13,7 @@ import kotlinx.coroutines.launch
 @HiltViewModel
 class MenuViewModel @Inject constructor() : ViewModel() {
 
-    private val lambdaConnection = RetrofitClient.retrofit.create(LambdaConnection::class.java)
+    private val apiService = RetrofitClient.retrofit.create(ApiService::class.java)
 
     private val _menulist = MutableLiveData<List<MenuItem>?>()
     val menulist get() = _menulist
@@ -37,7 +37,7 @@ class MenuViewModel @Inject constructor() : ViewModel() {
     private suspend fun fetchMenuList(){
         try{
             println("fetchMenuList")
-            val response = lambdaConnection.getMenuList()
+            val response = apiService.getMenuList()
             if(response.isSuccessful){
                 println("fetchMenuList success")
                 val body = response.body()

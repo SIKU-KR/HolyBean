@@ -6,7 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.holybean.data.model.PrinterDTO
 import com.example.holybean.data.model.ReportDetailItem
-import com.example.holybean.network.LambdaConnection
+import com.example.holybean.network.ApiService
 import com.example.holybean.network.RetrofitClient
 import com.example.holybean.printer.ReportPrinter
 import kotlinx.coroutines.Dispatchers
@@ -18,7 +18,7 @@ import java.util.*
 
 class ReportViewModel : ViewModel() {
 
-    private val lambdaConnection = RetrofitClient.retrofit.create(LambdaConnection::class.java)
+    private val apiService = RetrofitClient.retrofit.create(ApiService::class.java)
 
     private val _reportData = MutableLiveData<Map<String, Int>>()
     val reportData: LiveData<Map<String, Int>> get() = _reportData
@@ -41,7 +41,7 @@ class ReportViewModel : ViewModel() {
             if (isValidDateRange(startDate, endDate)) {
                 _reportTitle.value = "$startDate ~ $endDate"
                 try {
-                    val response = lambdaConnection.getReport(startDate, endDate)
+                    val response = apiService.getReport(startDate, endDate)
                     if (response.isSuccessful) {
                         val saleslist = response.body()?.menuSales
                         saleslist?.forEach { info ->
