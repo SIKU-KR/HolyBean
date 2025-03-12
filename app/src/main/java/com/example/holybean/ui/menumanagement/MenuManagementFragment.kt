@@ -62,7 +62,7 @@ class MenuManagementFragment : Fragment() {
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         binding = FragmentMenuManagementBinding.inflate(inflater, container, false)
         val view = binding.root
         itemList = readMenuList()
@@ -99,6 +99,35 @@ class MenuManagementFragment : Fragment() {
             val placement = menuDB.getNextAvailablePlacementForCategory(this.category)
             val dialog = MenuAddDialog(id, placement, mainListener)
             dialog.show(parentFragmentManager, "MenuAddDialog")
+        }
+    }
+
+    private fun initSaveToServerButton() {
+        binding.deviceToServer.setOnClickListener {
+            val passwordDialog = PasswordDialog(requireContext()) {
+                lifecycleScope.launch {
+                    lambdaRepository.saveMenuListToServer(readMenuList())
+                    Toast.makeText(binding.root.context, "서버에 저장 완료", Toast.LENGTH_SHORT).show()
+                }
+            }
+            passwordDialog.show()
+        }
+    }
+
+    private fun initGetFromServerButton() {
+        binding.serverToDevice.setOnClickListener {
+            val passwordDialog = PasswordDialog(requireContext()) {
+                lifecycleScope.launch {
+                    val response = lambdaRepository.getLastedSavedMenuList()
+                    if (response.size == 0) {
+                        throw Exception("데이터가 올바르지 않습니다.")
+                    }
+                    menuDB.overwriteMenuList(response)
+                    Toast.makeText(binding.root.context, "태블릿에 저장 완료", Toast.LENGTH_SHORT).show()
+                    mainListener?.replaceMenuManagementFragment()
+                }
+            }
+            passwordDialog.show()
         }
     }
 
@@ -238,37 +267,9 @@ class MenuManagementFragment : Fragment() {
         list.add(toPosition, item)
     }
 
-    fun readMenuList(): ArrayList<MenuItem> {
+    private fun readMenuList(): ArrayList<MenuItem> {
         return ArrayList(menuDB.getMenuList().sortedBy { it.order })
     }
 
-    fun initSaveToServerButton() {
-        binding.deviceToServer.setOnClickListener {
-            val passwordDialog = PasswordDialog(requireContext()) {
-                lifecycleScope.launch {
-                    lambdaRepository.saveMenuListToServer(readMenuList())
-                    Toast.makeText(binding.root.context, "서버에 저장 완료", Toast.LENGTH_SHORT).show()
-                }
-            }
-            passwordDialog.show()
-        }
-    }
-
-    fun initGetFromServerButton() {
-        binding.serverToDevice.setOnClickListener {
-            val passwordDialog = PasswordDialog(requireContext()) {
-                lifecycleScope.launch {
-                    val response = lambdaRepository.getLastedSavedMenuList()
-                    if (response.size == 0) {
-                        throw Exception("데이터가 올바르지 않습니다.")
-                    }
-                    menuDB.overwriteMenuList(response)
-                    Toast.makeText(binding.root.context, "태블릿에 저장 완료", Toast.LENGTH_SHORT).show()
-                    mainListener?.replaceMenuManagementFragment()
-                }
-            }
-            passwordDialog.show()
-        }
-    }
 
 }
