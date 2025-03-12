@@ -11,6 +11,7 @@ import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
@@ -18,6 +19,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.holybean.data.model.CartItem
 import com.example.holybean.data.model.MenuItem
 import com.example.holybean.data.model.OrderDialogData
+import com.example.holybean.data.repository.LambdaRepository
 import com.example.holybean.data.repository.MenuDB
 import com.example.holybean.databinding.FragmentHomeBinding
 import com.example.holybean.interfaces.HomeFunctions
@@ -27,10 +29,13 @@ import com.example.holybean.ui.dialog.OrderDialog
 import com.google.android.material.tabs.TabLayout
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class HomeFragment : Fragment(), HomeFunctions {
 
+    @Inject
+    lateinit var lambdaRepository: LambdaRepository
     private val viewModel: HomeViewModel by viewModels()
     private lateinit var binding: FragmentHomeBinding
     private lateinit var context: Context
@@ -38,7 +43,7 @@ class HomeFragment : Fragment(), HomeFunctions {
     private lateinit var menuBoard: RecyclerView
     private lateinit var menuTab: TabLayout
     private lateinit var basket: RecyclerView
-    private lateinit var itemList: ArrayList<MenuItem>
+    private var itemList: ArrayList<MenuItem> = ArrayList()
     private var basketList: ArrayList<CartItem> = ArrayList()
     private var orderId: Int = 0
     private var totalPrice: Int = 0
@@ -59,19 +64,12 @@ class HomeFragment : Fragment(), HomeFunctions {
         context = binding.root.context
 
         mainListener?.let { viewModel.setMainActivityListener(it) }
+        itemList = viewModel.getMenuList()
 
-        initItemList()
         initView()
         initObservers()
 
         return binding.root
-    }
-
-    private fun initItemList() {
-        itemList = MenuDB.getMenuList(context).asSequence()
-            .filter { it.inuse }
-            .sortedBy { it.placement }
-            .toCollection(ArrayList())
     }
 
     private fun initView() {
@@ -85,6 +83,7 @@ class HomeFragment : Fragment(), HomeFunctions {
 
     private fun setupMenuBoard() {
         menuBoard = binding.menuBoard
+        // 초기 어댑터 생성 (빈 리스트로 시작)
         val boardAdapter = MenuAdapter(itemList, this)
         menuBoard.apply {
             adapter = boardAdapter
@@ -114,7 +113,6 @@ class HomeFragment : Fragment(), HomeFunctions {
             override fun onTabSelected(tab: TabLayout.Tab) {
                 updateRecyclerViewForCategory(tab.position)
             }
-
             override fun onTabUnselected(tab: TabLayout.Tab) {}
             override fun onTabReselected(tab: TabLayout.Tab) {}
         })
@@ -159,13 +157,8 @@ class HomeFragment : Fragment(), HomeFunctions {
 
     private fun setupOrderNumAsync() {
         lifecycleScope.launch {
-            try {
-                orderId = viewModel.getCurrentOrderNum()
-                binding.orderNum.text = orderId.toString()
-            } catch (e: Exception) {
-                e.printStackTrace()
-                Toast.makeText(context, "주문 번호를 불러오는 중 오류가 발생했습니다.", Toast.LENGTH_SHORT).show()
-            }
+            orderId = lambdaRepository.getOrderNumber()
+            binding.orderNum.text = orderId.toString()
         }
     }
 
@@ -178,12 +171,14 @@ class HomeFragment : Fragment(), HomeFunctions {
         }
     }
 
+    // 카테고리 별로 필터링하여 리사이클러뷰 갱신
     private fun updateRecyclerViewForCategory(category: Int) {
         val filteredItems = if (category == 0) {
             itemList // 전체
         } else {
-            itemList.filter { it.id / 1000 == category } // 카테고리
+            itemList.filter { it.id / 1000 == category }
         }
+        // 새로운 어댑터를 생성하거나, 기존 어댑터에 업데이트를 요청
         menuBoard.adapter = MenuAdapter(filteredItems as ArrayList<MenuItem>, this)
     }
 
@@ -228,6 +223,7 @@ class HomeFragment : Fragment(), HomeFunctions {
 
     override fun onDestroyView() {
         super.onDestroyView()
-        // ProgressDialog 해제는 더 이상 필요하지 않음
+        // 필요한 리소스 해제 등 처리
     }
 }
+

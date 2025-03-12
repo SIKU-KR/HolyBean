@@ -10,8 +10,8 @@ import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.lifecycleScope
 import com.example.holybean.interfaces.MainActivityListener
 import com.example.holybean.data.model.MenuItem
+import com.example.holybean.data.repository.MenuDB
 import com.example.holybean.databinding.DialogMenuAddBinding
-import com.example.holybean.ui.menumanagement.MenuManagementViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -22,7 +22,7 @@ import javax.inject.Inject
 class MenuAddDialog(private val id: Int, private val placement: Int, private val mainListener: MainActivityListener?) : DialogFragment() {
 
     @Inject
-    lateinit var service: MenuManagementViewModel
+    lateinit var menuDB: MenuDB
 
     private lateinit var binding: DialogMenuAddBinding
 
@@ -90,7 +90,7 @@ class MenuAddDialog(private val id: Int, private val placement: Int, private val
 
     private fun validateAndSaveMenu(newName: String, newPrice: Int) {
         lifecycleScope.launch {
-            val isNameValid = withContext(Dispatchers.IO) { service.isValidMenuName(newName) }
+            val isNameValid = withContext(Dispatchers.IO) { menuDB.isValidMenuName(newName) }
             if (!isNameValid) {
                 Toast.makeText(requireContext(), "존재하는 메뉴입니다.", Toast.LENGTH_SHORT).show()
             } else {
@@ -102,7 +102,7 @@ class MenuAddDialog(private val id: Int, private val placement: Int, private val
     private fun saveMenu(newName: String, newPrice: Int) {
         val item = MenuItem(id, newName, newPrice, placement, true)
         val passwordDialog = PasswordDialog(requireContext()) {
-            service.addMenu(item)
+            menuDB.addMenu(item)
             mainListener?.replaceMenuManagementFragment()
             dismiss()
         }

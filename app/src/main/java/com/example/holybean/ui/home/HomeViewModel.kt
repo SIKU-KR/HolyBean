@@ -5,20 +5,30 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.holybean.data.model.CartItem
+import com.example.holybean.data.model.MenuItem
 import com.example.holybean.data.model.Order
+import com.example.holybean.data.repository.LambdaRepository
+import com.example.holybean.data.repository.MenuDB
 import com.example.holybean.interfaces.MainActivityListener
 import com.example.holybean.interfaces.OrderDialogListener
-import com.example.holybean.network.LambdaConnection
+import com.example.holybean.network.ApiService
 import com.example.holybean.network.RetrofitClient
 import com.example.holybean.printer.HomePrinter
-import kotlinx.coroutines.*
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import javax.inject.Inject
 
-class HomeViewModel : OrderDialogListener, ViewModel() {
+@HiltViewModel
+class HomeViewModel @Inject constructor(
+    private val lambdaRepository: LambdaRepository,
+    private val menudb: MenuDB
+) : OrderDialogListener, ViewModel() {
 
     private var mainListener: MainActivityListener? = null
-    private val lambdaConnection = RetrofitClient.retrofit.create(LambdaConnection::class.java)
 
     // LiveData for error messages
     private val _errorMessage = MutableLiveData<String?>()
@@ -38,19 +48,8 @@ class HomeViewModel : OrderDialogListener, ViewModel() {
         return basketList.sumOf { it.total }
     }
 
-    suspend fun getCurrentOrderNum(): Int {
-        return try {
-            val response = lambdaConnection.getOrderNumber()
-            if (response.isSuccessful) {
-                response.body()?.nextOrderNum ?: -1
-            } else {
-                println("Error: ${response.code()} - ${response.message()}")
-                -1
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            -1
-        }
+    fun getMenuList(): ArrayList<MenuItem> {
+        return ArrayList(menudb.getMenuList())
     }
 
     override fun onOrderConfirmed(data: Order, takeOption: String) {
@@ -58,7 +57,7 @@ class HomeViewModel : OrderDialogListener, ViewModel() {
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 // 1. POST 요청
-                requestPostOrder(data)
+                lambdaRepository.postOrder(data)
 
                 // 주문 완료 후 바로 홈 프래그먼트 전환 (UI 스레드에서)
                 withContext(Dispatchers.Main) {
@@ -72,24 +71,6 @@ class HomeViewModel : OrderDialogListener, ViewModel() {
                 e.printStackTrace()
                 _errorMessage.postValue("주문 처리 중 오류가 발생했습니다.")
             }
-        }
-    }
-
-    // 동기적으로 POST 요청 처리
-    private suspend fun requestPostOrder(data: Order) {
-        try {
-            println("uploading order: $data")
-            val response = lambdaConnection.postOrder(data)
-            if (response.isSuccessful) {
-                println("Order posted successfully with status: ${response.code()}")
-            } else {
-                println("Error: ${response.code()} - ${response.message()}")
-                throw Exception("주문 서버 응답 실패")
-            }
-        } catch (e: Exception) {
-            println("Network error occurred: ${e.localizedMessage}")
-            e.printStackTrace()
-            throw e
         }
     }
 
