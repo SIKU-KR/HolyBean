@@ -17,13 +17,17 @@ interface ApiService {
     suspend fun getOrderOfDay(@Path("orderDate") orderdate: String): Response<List<ResponseOrder>>
 
     @GET("order")
-    suspend fun getSpecificOrder(@Query("orderDate") orderDate: String, @Query("orderNum") orderNum: Int): Response<ResponseOrderDetail>
+    suspend fun getSpecificOrder(
+        @Query("orderDate") orderDate: String, @Query("orderNum") orderNum: Int
+    ): Response<ResponseOrderDetail>
 
     @DELETE("order")
     suspend fun deleteOrder(@Query("orderDate") orderDate: String, @Query("orderNum") orderNum: Int): Response<Unit>
 
     @GET("report")
-    suspend fun getReport(@Query("start") startDate: String, @Query("end") endDate: String): Response<ResponseSalesReport>
+    suspend fun getReport(
+        @Query("start") startDate: String, @Query("end") endDate: String
+    ): Response<ResponseSalesReport>
 
     @GET("/menu")
     suspend fun getMenuList(): Response<ResponseMenuList>
@@ -31,6 +35,8 @@ interface ApiService {
     @GET("/credit")
     suspend fun getAllCreditOrders(): Response<List<ResponseCredit>>
 
-    @POST("/credit")
-    suspend fun updateCreditStatus(@Body orderNum: Int, @Body orderDate: String): Response<Unit>
+    @PUT("/credit/{orderDate}/{number}")
+    suspend fun updateCreditStatus(
+        @Path("orderDate") orderDate: String, @Path("number") orderNum: Int
+    ): Response<Unit>
 }

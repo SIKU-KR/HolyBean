@@ -16,16 +16,20 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.holybean.data.model.OrderItem
 import com.example.holybean.data.model.OrdersDetailItem
+import com.example.holybean.data.repository.LambdaRepository
 import com.example.holybean.databinding.FragmentOrdersBinding
 import com.example.holybean.interfaces.MainActivityListener
 import com.example.holybean.interfaces.OrdersFragmentFunction
 import com.example.holybean.ui.RvCustomDesign
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 @AndroidEntryPoint
-class OrdersFragment : Fragment(), OrdersFragmentFunction {
+class OrdersFragment: Fragment(), OrdersFragmentFunction {
 
+    @Inject
+    lateinit var lambdaRepository: LambdaRepository
     private val viewModel: OrdersViewModel by viewModels()
 
     private lateinit var binding: FragmentOrdersBinding
@@ -89,7 +93,7 @@ class OrdersFragment : Fragment(), OrdersFragmentFunction {
 
         // Fetch data and update adapter
         lifecycleScope.launch {
-            ordersList = viewModel.getOrderList()
+            ordersList = lambdaRepository.getOrdersOfDay()
             boardAdapter.updateData(ordersList)
         }
     }
@@ -134,7 +138,7 @@ class OrdersFragment : Fragment(), OrdersFragmentFunction {
                         lifecycleScope.launch {
                             try {
                                 Toast.makeText(context, "주문 삭제 중...기다려주세요", Toast.LENGTH_SHORT).show()
-                                val result = viewModel.deleteOrder(orderNumber)
+                                val result = lambdaRepository.deleteOrder(viewModel.getCurrentDate(), orderNumber)
                                 if (result == true) {
                                     Toast.makeText(context, "주문이 성공적으로 삭제되었습니다.", Toast.LENGTH_SHORT).show()
                                     mainListener?.replaceOrdersFragment()

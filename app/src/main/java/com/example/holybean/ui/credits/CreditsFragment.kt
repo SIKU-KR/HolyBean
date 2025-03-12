@@ -19,6 +19,7 @@ import com.example.holybean.data.model.CreditItem
 import com.example.holybean.databinding.FragmentCreditBinding
 import com.example.holybean.interfaces.CreditsFragmentFunction
 import com.example.holybean.data.model.OrdersDetailItem
+import com.example.holybean.data.repository.LambdaRepository
 import com.example.holybean.ui.orderlist.OrdersDetailAdapter
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -29,6 +30,9 @@ class CreditsFragment : Fragment(), CreditsFragmentFunction {
 
     @Inject
     lateinit var repository: CreditsRepository
+
+    @Inject
+    lateinit var lambdaRepository: LambdaRepository
 
     private val viewModel by viewModels<CreditsViewModel>()
 
@@ -59,6 +63,8 @@ class CreditsFragment : Fragment(), CreditsFragmentFunction {
         initViewButton()
         initDeleteButton()
 
+        observeViewModel()
+
         return view
     }
 
@@ -83,8 +89,7 @@ class CreditsFragment : Fragment(), CreditsFragmentFunction {
 
     private fun initDeleteButton() {
         binding.deleteCredit.setOnClickListener {
-            repository.deleteCredits(this.rowId)
-            mainListener?.replaceCreditsFragment()
+            viewModel.handleDeleteButton(this.orderDate, this.orderNumber)
         }
     }
 
@@ -100,8 +105,8 @@ class CreditsFragment : Fragment(), CreditsFragmentFunction {
 
     private fun initOrdersBoard() {
         ordersBoard = binding.orderBoard
-        viewLifecycleOwner.lifecycleScope.launch {
-            creditsList = viewModel.fetchCreditsOrders()
+        lifecycleScope.launch {
+            creditsList = lambdaRepository.getCreditsList()
             val boardAdapter = CreditsAdapter(creditsList, this@CreditsFragment)
             ordersBoard.apply {
                 adapter = boardAdapter
@@ -128,5 +133,11 @@ class CreditsFragment : Fragment(), CreditsFragmentFunction {
         totalPrice.text = total.toString()
         basketList.clear()
         basket.adapter?.notifyDataSetChanged()
+    }
+
+    private fun observeViewModel() {
+        viewModel.deleteState.observe(viewLifecycleOwner) {
+            mainListener?.replaceCreditsFragment()
+        }
     }
 }

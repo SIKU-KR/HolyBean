@@ -19,6 +19,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.holybean.data.model.CartItem
 import com.example.holybean.data.model.MenuItem
 import com.example.holybean.data.model.OrderDialogData
+import com.example.holybean.data.repository.LambdaRepository
 import com.example.holybean.data.repository.MenuDB
 import com.example.holybean.databinding.FragmentHomeBinding
 import com.example.holybean.interfaces.HomeFunctions
@@ -29,10 +30,13 @@ import com.example.holybean.ui.dialog.OrderDialog
 import com.google.android.material.tabs.TabLayout
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class HomeFragment : Fragment(), HomeFunctions {
 
+    @Inject
+    lateinit var lambdaRepository: LambdaRepository
     // Activity 범위의 MenuViewModel 사용 (서버에서 메뉴 데이터를 가져옴)
     private val menuViewModel: MenuViewModel by activityViewModels()
     private val viewModel: HomeViewModel by viewModels()
@@ -157,13 +161,8 @@ class HomeFragment : Fragment(), HomeFunctions {
 
     private fun setupOrderNumAsync() {
         lifecycleScope.launch {
-            try {
-                orderId = viewModel.getCurrentOrderNum()
-                binding.orderNum.text = orderId.toString()
-            } catch (e: Exception) {
-                e.printStackTrace()
-                Toast.makeText(context, "주문 번호를 불러오는 중 오류가 발생했습니다.", Toast.LENGTH_SHORT).show()
-            }
+            orderId = lambdaRepository.getOrderNumber()
+            binding.orderNum.text = orderId.toString()
         }
     }
 
