@@ -9,6 +9,7 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.holybean.interfaces.MainActivityListener
@@ -20,6 +21,7 @@ import com.example.holybean.interfaces.CreditsFragmentFunction
 import com.example.holybean.data.model.OrdersDetailItem
 import com.example.holybean.ui.orderlist.OrdersDetailAdapter
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -97,13 +99,15 @@ class CreditsFragment : Fragment(), CreditsFragmentFunction {
     }
 
     private fun initOrdersBoard() {
-        creditsList = repository.readCredits()
         ordersBoard = binding.orderBoard
-        val boardAdapter = CreditsAdapter(creditsList, this)
-        ordersBoard.apply {
-            adapter = boardAdapter
-            layoutManager = GridLayoutManager(context, 1)
-            addItemDecoration(RvCustomDesign(0, 0, 0, 20))
+        viewLifecycleOwner.lifecycleScope.launch {
+            creditsList = viewModel.fetchCreditsOrders()
+            val boardAdapter = CreditsAdapter(creditsList, this@CreditsFragment)
+            ordersBoard.apply {
+                adapter = boardAdapter
+                layoutManager = GridLayoutManager(context, 1)
+                addItemDecoration(RvCustomDesign(0, 0, 0, 20))
+            }
         }
     }
 
@@ -117,8 +121,7 @@ class CreditsFragment : Fragment(), CreditsFragmentFunction {
         }
     }
 
-    override fun newOrderSelected(rowId: String, num: Int, total: Int, date:String) {
-        this.rowId = rowId
+    override fun newOrderSelected(num: Int, total: Int, date:String) {
         this.orderNumber = num
         this.orderDate = date
         orderNum.text = num.toString()
