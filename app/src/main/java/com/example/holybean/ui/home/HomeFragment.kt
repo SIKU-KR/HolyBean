@@ -24,7 +24,6 @@ import com.example.holybean.data.repository.MenuDB
 import com.example.holybean.databinding.FragmentHomeBinding
 import com.example.holybean.interfaces.HomeFunctions
 import com.example.holybean.interfaces.MainActivityListener
-import com.example.holybean.ui.MenuViewModel
 import com.example.holybean.ui.RvCustomDesign
 import com.example.holybean.ui.dialog.OrderDialog
 import com.google.android.material.tabs.TabLayout
@@ -37,8 +36,6 @@ class HomeFragment : Fragment(), HomeFunctions {
 
     @Inject
     lateinit var lambdaRepository: LambdaRepository
-    // Activity 범위의 MenuViewModel 사용 (서버에서 메뉴 데이터를 가져옴)
-    private val menuViewModel: MenuViewModel by activityViewModels()
     private val viewModel: HomeViewModel by viewModels()
     private lateinit var binding: FragmentHomeBinding
     private lateinit var context: Context
@@ -67,11 +64,10 @@ class HomeFragment : Fragment(), HomeFunctions {
         context = binding.root.context
 
         mainListener?.let { viewModel.setMainActivityListener(it) }
+        itemList = MenuDB.getMenuList(context)
 
         initView()
         initObservers()
-
-        menuViewModel.fetchData()
 
         return binding.root
     }
@@ -171,14 +167,6 @@ class HomeFragment : Fragment(), HomeFunctions {
             error?.let {
                 Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
                 viewModel.clearErrorMessage()
-            }
-        }
-        menuViewModel.menulist.observe(viewLifecycleOwner) { menuList ->
-            if (menuList != null) {
-                itemList = menuList.filter { it.inuse }
-                    .sortedBy { it.order }
-                    .toCollection(ArrayList())
-                (menuBoard.adapter as? MenuAdapter)?.updateList(itemList)
             }
         }
     }

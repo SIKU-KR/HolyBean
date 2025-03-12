@@ -61,6 +61,7 @@ class MenuManagementFragment : Fragment() {
         binding = FragmentMenuManagementBinding.inflate(inflater, container, false)
         val view = binding.root
 
+        // TODO ("여기서 메뉴를 가져오는 로직을 DB가 아닌 다른 것으로 분리")
         itemList = MenuDB.getMenuList(view.context)
         itemList.sortBy { it.order }
 

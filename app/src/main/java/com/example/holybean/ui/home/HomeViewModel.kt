@@ -26,7 +26,6 @@ class HomeViewModel @Inject constructor(
 ) : OrderDialogListener, ViewModel() {
 
     private var mainListener: MainActivityListener? = null
-    private val apiService = RetrofitClient.retrofit.create(ApiService::class.java)
 
     // LiveData for error messages
     private val _errorMessage = MutableLiveData<String?>()
