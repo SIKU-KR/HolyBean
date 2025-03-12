@@ -14,7 +14,6 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.holybean.interfaces.MainActivityListener
 import com.example.holybean.ui.RvCustomDesign
-import com.example.holybean.data.repository.CreditsRepository
 import com.example.holybean.data.model.CreditItem
 import com.example.holybean.databinding.FragmentCreditBinding
 import com.example.holybean.interfaces.CreditsFragmentFunction
@@ -22,14 +21,14 @@ import com.example.holybean.data.model.OrdersDetailItem
 import com.example.holybean.data.repository.LambdaRepository
 import com.example.holybean.ui.orderlist.OrdersDetailAdapter
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @AndroidEntryPoint
+@SuppressLint("notifyDataSetChanged")
 class CreditsFragment : Fragment(), CreditsFragmentFunction {
-
-    @Inject
-    lateinit var repository: CreditsRepository
 
     @Inject
     lateinit var lambdaRepository: LambdaRepository
@@ -51,7 +50,6 @@ class CreditsFragment : Fragment(), CreditsFragmentFunction {
     private lateinit var basket: RecyclerView
     private var basketList = arrayListOf<OrdersDetailItem>()
 
-    @SuppressLint("NotifyDataSetChanged")
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle? ): View? {
         binding = FragmentCreditBinding.inflate(inflater, container, false)
         val view = binding.root
@@ -95,10 +93,13 @@ class CreditsFragment : Fragment(), CreditsFragmentFunction {
 
     private fun initViewButton() {
         binding.viewThisOrder.setOnClickListener {
-            activity?.runOnUiThread {
+            lifecycleScope.launch {
+                val newItems = withContext(Dispatchers.IO) {
+                    lambdaRepository.getOrderDetail(orderDate, orderNumber)
+                }
                 basketList.clear()
-                basketList = repository.readOrderDetail(this.rowId)
-                initBasket()
+                basketList.addAll(newItems)
+                basket.adapter?.notifyDataSetChanged()
             }
         }
     }
