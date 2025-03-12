@@ -64,7 +64,7 @@ class HomeFragment : Fragment(), HomeFunctions {
         context = binding.root.context
 
         mainListener?.let { viewModel.setMainActivityListener(it) }
-        itemList = MenuDB.getMenuList(context)
+        itemList = viewModel.getMenuList()
 
         initView()
         initObservers()

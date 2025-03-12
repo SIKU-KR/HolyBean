@@ -86,18 +86,6 @@ class LambdaRepository @Inject constructor() {
         }
     }
 
-    suspend fun getMenuList(): List<MenuItem> {
-        return try {
-            val response = validateResponse(apiService.getMenuList())
-            ArrayList(response.menulist.map {
-                MenuItem(it.id, it.name, it.price, it.order, it.inuse)
-            })
-        } catch (e: Exception) {
-            handleException(e)
-            listOf()
-        }
-    }
-
     suspend fun getCreditsList(): ArrayList<CreditItem>{
         return try {
             val response = validateResponse(apiService.getAllCreditOrders())
@@ -115,6 +103,26 @@ class LambdaRepository @Inject constructor() {
             validateResponse(apiService.updateCreditStatus(date, num))
         }catch (e: Exception){
             handleException(e)
+        }
+    }
+
+    suspend fun saveMenuListToServer(menulist: ArrayList<MenuItem>) {
+        try{
+            validateResponse(apiService.postMenuList(menulist))
+        } catch(e: Exception){
+            handleException(e)
+        }
+    }
+
+    suspend fun getLastedSavedMenuList(): ArrayList<MenuItem> {
+        return try {
+            val response = validateResponse(apiService.getMenuList())
+            ArrayList(response.menulist.map {
+                MenuItem(it.id, it.name, it.price, it.order, it.inuse)
+            } )
+        } catch (e: Exception) {
+            handleException(e)
+            arrayListOf()
         }
     }
 

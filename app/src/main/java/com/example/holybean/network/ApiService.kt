@@ -1,5 +1,6 @@
 package com.example.holybean.network
 
+import com.example.holybean.data.model.MenuItem
 import com.example.holybean.data.model.Order
 import com.example.holybean.network.dto.*
 import retrofit2.Response
@@ -29,9 +30,6 @@ interface ApiService {
         @Query("start") startDate: String, @Query("end") endDate: String
     ): Response<ResponseSalesReport>
 
-    @GET("/menu")
-    suspend fun getMenuList(): Response<ResponseMenuList>
-
     @GET("/credit")
     suspend fun getAllCreditOrders(): Response<List<ResponseCredit>>
 
@@ -39,4 +37,10 @@ interface ApiService {
     suspend fun updateCreditStatus(
         @Path("orderDate") orderDate: String, @Path("number") orderNum: Int
     ): Response<Unit>
+
+    @GET("/menu")
+    suspend fun getMenuList(): Response<ResponseMenuList>
+
+    @POST("/menu")
+    suspend fun postMenuList(@Body menuList: ArrayList<MenuItem>): Response<Unit>
 }

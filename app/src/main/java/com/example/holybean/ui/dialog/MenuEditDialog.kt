@@ -10,8 +10,8 @@ import android.widget.TextView
 import androidx.fragment.app.DialogFragment
 import com.example.holybean.interfaces.MainActivityListener
 import com.example.holybean.data.model.MenuItem
+import com.example.holybean.data.repository.MenuDB
 import com.example.holybean.databinding.DialogMenuEditBinding
-import com.example.holybean.ui.menumanagement.MenuManagementViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -19,7 +19,7 @@ import javax.inject.Inject
 class MenuEditDialog(private val item: MenuItem, private val mainListener: MainActivityListener?) : DialogFragment() {
 
     @Inject
-    lateinit var service: MenuManagementViewModel
+    lateinit var menuDB: MenuDB
 
     private lateinit var binding: DialogMenuEditBinding
 
@@ -55,7 +55,7 @@ class MenuEditDialog(private val item: MenuItem, private val mainListener: MainA
         }
 
         disableButton.setOnClickListener {
-            service.disableMenu(item)
+            disableMenu(item)
             mainListener?.replaceMenuManagementFragment()
             dismiss()
         }
@@ -64,7 +64,7 @@ class MenuEditDialog(private val item: MenuItem, private val mainListener: MainA
             val newName = menuNameEditText.text.toString().trim()
             val newPrice = menuPriceEditText.text.toString().trim().toIntOrNull() ?: item.price
             val passwordDialog = PasswordDialog(requireContext()) {
-                service.saveMenuChanges(item, newName, newPrice)
+                saveMenuChanges(item, newName, newPrice)
                 mainListener?.replaceMenuManagementFragment()
                 dismiss()
             }
@@ -78,5 +78,16 @@ class MenuEditDialog(private val item: MenuItem, private val mainListener: MainA
 
         builder.setView(binding.root)
         return builder.create()
+    }
+
+    fun disableMenu(item: MenuItem) {
+        item.inuse = !item.inuse
+        menuDB.updateSpecificMenu(item)
+    }
+
+    fun saveMenuChanges(item: MenuItem, newName: String, newPrice: Int) {
+        item.name = newName
+        item.price = newPrice
+        menuDB.updateSpecificMenu(item)
     }
 }

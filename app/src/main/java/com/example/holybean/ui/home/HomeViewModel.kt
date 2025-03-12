@@ -5,8 +5,10 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.holybean.data.model.CartItem
+import com.example.holybean.data.model.MenuItem
 import com.example.holybean.data.model.Order
 import com.example.holybean.data.repository.LambdaRepository
+import com.example.holybean.data.repository.MenuDB
 import com.example.holybean.interfaces.MainActivityListener
 import com.example.holybean.interfaces.OrderDialogListener
 import com.example.holybean.network.ApiService
@@ -22,7 +24,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val lambdaRepository: LambdaRepository
+    private val lambdaRepository: LambdaRepository,
+    private val menudb: MenuDB
 ) : OrderDialogListener, ViewModel() {
 
     private var mainListener: MainActivityListener? = null
@@ -43,6 +46,10 @@ class HomeViewModel @Inject constructor(
     fun getTotal(basketList: ArrayList<CartItem>): Int {
         basketList.forEach { it.total = it.count * it.price }
         return basketList.sumOf { it.total }
+    }
+
+    fun getMenuList(): ArrayList<MenuItem> {
+        return ArrayList(menudb.getMenuList())
     }
 
     override fun onOrderConfirmed(data: Order, takeOption: String) {

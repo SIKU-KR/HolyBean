@@ -10,29 +10,36 @@ import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
 import com.example.holybean.R
-import com.example.holybean.interfaces.MainActivityListener
-import com.example.holybean.data.repository.MenuDB
 import com.example.holybean.data.model.MenuItem
-import com.example.holybean.ui.dialog.PasswordDialog
-import com.example.holybean.ui.RvCustomDesign
+import com.example.holybean.data.repository.LambdaRepository
+import com.example.holybean.data.repository.MenuDB
 import com.example.holybean.databinding.FragmentMenuManagementBinding
+import com.example.holybean.interfaces.MainActivityListener
+import com.example.holybean.ui.RvCustomDesign
 import com.example.holybean.ui.dialog.MenuAddDialog
 import com.example.holybean.ui.dialog.MenuEditDialog
+import com.example.holybean.ui.dialog.PasswordDialog
 import com.google.android.material.tabs.TabLayout
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @AndroidEntryPoint
 class MenuManagementFragment : Fragment() {
 
     @Inject
-    lateinit var service: MenuManagementViewModel
+    lateinit var menuDB: MenuDB
+
+    @Inject
+    lateinit var lambdaRepository: LambdaRepository
 
     private var mainListener: MainActivityListener? = null
 
@@ -54,41 +61,45 @@ class MenuManagementFragment : Fragment() {
     }
 
     override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
+        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View? {
         binding = FragmentMenuManagementBinding.inflate(inflater, container, false)
         val view = binding.root
-
-        // TODO ("여기서 메뉴를 가져오는 로직을 DB가 아닌 다른 것으로 분리")
-        itemList = MenuDB.getMenuList(view.context)
-        itemList.sortBy { it.order }
-
+        itemList = readMenuList()
         initMenuBoard()
         initTabs()
+        initAddButton()
+        initSaveButton()
+        initReturnButton()
+        initSaveToServerButton()
+        initGetFromServerButton()
         updateRecyclerViewForCategory()
+        return view
+    }
 
-        binding.addButton.setOnClickListener{
-            val id = service.getNextAvailableIdForCategory(this.category)
-            val placement = service.getNextAvailablePlacementForCategory(this.category)
-            val dialog = MenuAddDialog(id, placement, mainListener)
-            dialog.show(parentFragmentManager, "MenuAddDialog")
+    private fun initReturnButton() {
+        binding.returnButton.setOnClickListener {
+            mainListener?.replaceMenuManagementFragment()
         }
+    }
 
-        binding.saveButton.setOnClickListener{
+    private fun initSaveButton() {
+        binding.saveButton.setOnClickListener {
             val passwordDialog = PasswordDialog(requireContext()) {
-                service.saveMenuOrders(itemList.filter { it.id / 1000 == category })
+                menuDB.saveMenuOrders(itemList.filter { it.id / 1000 == category })
                 mainListener?.replaceMenuManagementFragment()
             }
             passwordDialog.show()
         }
+    }
 
-        binding.returnButton.setOnClickListener{
-            mainListener?.replaceMenuManagementFragment()
+    private fun initAddButton() {
+        binding.addButton.setOnClickListener {
+            val id = menuDB.getNextAvailableIdForCategory(this.category)
+            val placement = menuDB.getNextAvailablePlacementForCategory(this.category)
+            val dialog = MenuAddDialog(id, placement, mainListener)
+            dialog.show(parentFragmentManager, "MenuAddDialog")
         }
-
-        return view
     }
 
     override fun onDetach() {
@@ -119,9 +130,7 @@ class MenuManagementFragment : Fragment() {
             private val maxSwipeDistance = 120f
 
             override fun onMove(
-                recyclerView: RecyclerView,
-                viewHolder: RecyclerView.ViewHolder,
-                target: RecyclerView.ViewHolder
+                recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder, target: RecyclerView.ViewHolder
             ): Boolean {
                 val fromPosition = viewHolder.adapterPosition
                 val toPosition = target.adapterPosition
@@ -163,33 +172,22 @@ class MenuManagementFragment : Fragment() {
 
                 if (limitedDX < 0) {
                     editBackground.setBounds(
-                        itemView.right + limitedDX.toInt(),
-                        itemView.top,
-                        itemView.right,
-                        itemView.bottom
+                        itemView.right + limitedDX.toInt(), itemView.top, itemView.right, itemView.bottom
                     )
                     editBackground.draw(c)
                     val textX = itemView.right - 50f
                     val fontMetrics = paint.fontMetrics
-                    val textY =
-                        (itemView.top + itemView.bottom) / 2f - (fontMetrics.ascent + fontMetrics.descent) / 2
+                    val textY = (itemView.top + itemView.bottom) / 2f - (fontMetrics.ascent + fontMetrics.descent) / 2
                     c.drawText("수정", textX, textY, paint)
                 }
 
                 super.onChildDraw(
-                    c,
-                    recyclerView,
-                    viewHolder,
-                    limitedDX,
-                    dY,
-                    actionState,
-                    isCurrentlyActive
+                    c, recyclerView, viewHolder, limitedDX, dY, actionState, isCurrentlyActive
                 )
             }
 
             override fun getMovementFlags(
-                recyclerView: RecyclerView,
-                viewHolder: RecyclerView.ViewHolder
+                recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder
             ): Int {
                 val dragFlags = ItemTouchHelper.UP or ItemTouchHelper.DOWN
                 val swipeFlags = ItemTouchHelper.LEFT
@@ -238,6 +236,39 @@ class MenuManagementFragment : Fragment() {
     private fun moveItem(list: MutableList<MenuItem>, fromPosition: Int, toPosition: Int) {
         val item = list.removeAt(fromPosition)
         list.add(toPosition, item)
+    }
+
+    fun readMenuList(): ArrayList<MenuItem> {
+        return ArrayList(menuDB.getMenuList().sortedBy { it.order })
+    }
+
+    fun initSaveToServerButton() {
+        binding.deviceToServer.setOnClickListener {
+            val passwordDialog = PasswordDialog(requireContext()) {
+                lifecycleScope.launch {
+                    lambdaRepository.saveMenuListToServer(readMenuList())
+                    Toast.makeText(binding.root.context, "서버에 저장 완료", Toast.LENGTH_SHORT).show()
+                }
+            }
+            passwordDialog.show()
+        }
+    }
+
+    fun initGetFromServerButton() {
+        binding.serverToDevice.setOnClickListener {
+            val passwordDialog = PasswordDialog(requireContext()) {
+                lifecycleScope.launch {
+                    val response = lambdaRepository.getLastedSavedMenuList()
+                    if (response.size == 0) {
+                        throw Exception("데이터가 올바르지 않습니다.")
+                    }
+                    menuDB.overwriteMenuList(response)
+                    Toast.makeText(binding.root.context, "태블릿에 저장 완료", Toast.LENGTH_SHORT).show()
+                    mainListener?.replaceMenuManagementFragment()
+                }
+            }
+            passwordDialog.show()
+        }
     }
 
 }
