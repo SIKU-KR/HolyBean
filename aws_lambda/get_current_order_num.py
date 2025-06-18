@@ -3,7 +3,7 @@ from datetime import datetime
 import json
 
 ddb_client = boto3.client('dynamodb', region_name='ap-northeast-2')
-TABLE_NAME = "holybean"
+TABLE_NAME = "eloom.holybean"
 
 def get_today_date():
     today = datetime.now()

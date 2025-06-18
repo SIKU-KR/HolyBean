@@ -4,7 +4,7 @@ from decimal import Decimal
 
 # Initialize DynamoDB resource (DocumentClient)
 dynamodb = boto3.resource('dynamodb', region_name='ap-northeast-2')
-TABLE_NAME = "holybean"
+TABLE_NAME = "eloom.holybean"
 table = dynamodb.Table(TABLE_NAME)
 
 # Helper function to convert Decimal types to JSON-serializable data

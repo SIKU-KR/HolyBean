@@ -13,7 +13,7 @@ def lambda_handler(event, context):
     try:
         # DynamoDB 리소스 및 테이블 참조
         dynamodb = boto3.resource('dynamodb')
-        table = dynamodb.Table("holybean-menu")
+        table = dynamodb.Table("eloom.holybean-menu")
 
         # 테이블 전체 스캔
         response = table.scan()

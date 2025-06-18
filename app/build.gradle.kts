@@ -8,11 +8,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.holybean"
+    namespace = "eloom.holybean"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.example.holybean"
+        applicationId = "eloom.holybean"
         minSdk = 26
         targetSdk = 33
         versionCode = 2

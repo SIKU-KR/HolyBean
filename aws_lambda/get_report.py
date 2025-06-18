@@ -28,7 +28,7 @@ def convert_decimals(obj):
 def lambda_handler(event, context):
     # DynamoDB 클라이언트 초기화
     dynamodb_client = boto3.client('dynamodb')
-    table_name = 'holybean'
+    table_name = 'eloom.holybean'
 
     # KST 타임존 설정
     KST = ZoneInfo('Asia/Seoul')

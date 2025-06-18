@@ -3,7 +3,7 @@ import json
 
 # DynamoDB 클라이언트 초기화
 ddb_client = boto3.client('dynamodb', region_name='ap-northeast-2')
-TABLE_NAME = "holybean"
+TABLE_NAME = "eloom.holybean"
 
 def lambda_handler(event, context):
     # 경로 파라미터에서 orderDate 가져오기
