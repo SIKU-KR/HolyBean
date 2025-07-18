@@ -62,8 +62,13 @@ class HomeViewModel @Inject constructor(
                     mainListener?.replaceHomeFragment()
                 }
 
-                // 2. 영수증 출력은 비동기적으로 요청만 보냄
-                printReceipt(data, takeOption)
+                // 2. 영수증 출력은 비동기적으로 요청만 보냄 (별도 try-catch로 격리)
+                try {
+                    printReceipt(data, takeOption)
+                } catch (e: Exception) {
+                    // 영수증 출력 실패는 주문 처리에 영향을 주지 않음
+                    e.printStackTrace()
+                }
 
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -75,21 +80,23 @@ class HomeViewModel @Inject constructor(
     // 영수증 출력은 요청만 보낸 후 완료 여부는 기다리지 않음
     private suspend fun printReceipt(data: Order, takeOption: String) {
         withContext(Dispatchers.IO) {
-            val printer = HomePrinter()
-            val receiptForCustomer = printer.receiptTextForCustomer(data)
-            val receiptForPOS = printer.receiptTextForPOS(data, takeOption)
-
             try {
-                // 고객용 영수증 출력 요청
-                printer.print(receiptForCustomer)
-                // POS용 영수증 출력 요청
-                printer.print(receiptForPOS)
+                val printer = HomePrinter()
+                val receiptForCustomer = printer.receiptTextForCustomer(data)
+                val receiptForPOS = printer.receiptTextForPOS(data, takeOption)
+
+                try {
+                    // 고객용 영수증 출력 요청
+                    printer.print(receiptForCustomer)
+                    // POS용 영수증 출력 요청
+                    printer.print(receiptForPOS)
+                } finally {
+                    // 프린터 연결 해제
+                    printer.disconnect()
+                }
             } catch (e: Exception) {
-                // 영수증 출력 중 오류가 발생하면 로그로 기록하거나 처리할 수 있습니다.
+                // 프린터 초기화 또는 출력 중 오류가 발생하면 로그로 기록
                 e.printStackTrace()
-            } finally {
-                // 프린터 연결 해제
-                printer.disconnect()
             }
         }
     }
