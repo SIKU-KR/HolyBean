@@ -11,7 +11,6 @@ import eloom.holybean.data.repository.MenuDB
 import eloom.holybean.interfaces.MainActivityListener
 import io.mockk.*
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -24,7 +23,6 @@ import org.junit.Test
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
-@ExperimentalCoroutinesApi
 class HomeViewModelTest {
 
     @get:Rule
