@@ -49,6 +49,7 @@ class CreditsFragment : Fragment(), CreditsFragmentFunction {
     private lateinit var creditsList: ArrayList<CreditItem>
     private lateinit var basket: RecyclerView
     private var basketList = arrayListOf<OrdersDetailItem>()
+    private lateinit var ordersDetailAdapter: OrdersDetailAdapter
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle? ): View? {
         binding = FragmentCreditBinding.inflate(inflater, container, false)
@@ -99,7 +100,7 @@ class CreditsFragment : Fragment(), CreditsFragmentFunction {
                 }
                 basketList.clear()
                 basketList.addAll(newItems)
-                basket.adapter?.notifyDataSetChanged()
+                ordersDetailAdapter.submitList(basketList.toList())
             }
         }
     }
@@ -119,7 +120,7 @@ class CreditsFragment : Fragment(), CreditsFragmentFunction {
 
     private fun initBasket(){
         basket = binding.basket
-        val ordersDetailAdapter = OrdersDetailAdapter(basketList)
+        ordersDetailAdapter = OrdersDetailAdapter()
         basket.apply{
             adapter = ordersDetailAdapter
             layoutManager = GridLayoutManager(context, 1)
@@ -133,7 +134,7 @@ class CreditsFragment : Fragment(), CreditsFragmentFunction {
         orderNum.text = num.toString()
         totalPrice.text = total.toString()
         basketList.clear()
-        basket.adapter?.notifyDataSetChanged()
+        ordersDetailAdapter.submitList(emptyList())
     }
 
     private fun observeViewModel() {

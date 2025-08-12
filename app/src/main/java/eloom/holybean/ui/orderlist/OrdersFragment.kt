@@ -1,69 +1,58 @@
 package eloom.holybean.ui.orderlist
 
-import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.GridLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import dagger.hilt.android.AndroidEntryPoint
-import eloom.holybean.data.model.OrderItem
-import eloom.holybean.data.model.OrdersDetailItem
-import eloom.holybean.data.repository.LambdaRepository
 import eloom.holybean.databinding.FragmentOrdersBinding
 import eloom.holybean.interfaces.MainActivityListener
-import eloom.holybean.interfaces.OrdersFragmentFunction
 import eloom.holybean.ui.RvCustomDesign
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 @AndroidEntryPoint
-class OrdersFragment : Fragment(), OrdersFragmentFunction {
+class OrdersFragment : Fragment() {
 
-    @Inject
-    lateinit var lambdaRepository: LambdaRepository
     private val viewModel: OrdersViewModel by viewModels()
 
-    private lateinit var binding: FragmentOrdersBinding
-    private lateinit var context: Context
+    private var _binding: FragmentOrdersBinding? = null
+    private val binding get() = _binding!!
 
     private var mainListener: MainActivityListener? = null
 
-    private var orderNumber = 1
-
-    private lateinit var orderNum: TextView
-    private lateinit var totalPrice: TextView
-    private lateinit var ordersBoard: RecyclerView
-    private lateinit var ordersList: ArrayList<OrderItem>
-    private lateinit var basket: RecyclerView
-    private lateinit var basketList: ArrayList<OrdersDetailItem>
-    private lateinit var ordersDetailAdapter: OrdersDetailAdapter // Declare here
+    private lateinit var ordersAdapter: OrdersAdapter
+    private lateinit var ordersDetailAdapter: OrdersDetailAdapter
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        binding = FragmentOrdersBinding.inflate(inflater, container, false)
-        val view = binding.root
-        context = view.context
+        _binding = FragmentOrdersBinding.inflate(inflater, container, false)
+        return binding.root
+    }
 
-        orderNum = binding.orderNum
-        totalPrice = binding.totalPriceNum
-        initBasket()
-        initOrderList()
-        initViewOrderDetailButton()
-        initReprintButton()
-        initDeleteOrderButton()
-        return view
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        
+        setupAdapters()
+        setupRecyclerViews()
+        setupButtons()
+        observeViewModel()
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 
     override fun onAttach(context: Context) {
@@ -80,122 +69,116 @@ class OrdersFragment : Fragment(), OrdersFragmentFunction {
         mainListener = null
     }
 
-    private fun initOrderList() {
-        ordersBoard = binding.orderBoard
-        val boardAdapter = OrdersAdapter(ArrayList(), this@OrdersFragment)
+    private fun setupAdapters() {
+        ordersAdapter = OrdersAdapter { orderNumber, totalAmount ->
+            viewModel.selectOrder(orderNumber, totalAmount)
+        }
+        
+        ordersDetailAdapter = OrdersDetailAdapter()
+    }
 
-        ordersBoard.apply {
-            adapter = boardAdapter
-            layoutManager = GridLayoutManager(context, 1)
+    private fun setupRecyclerViews() {
+        binding.orderBoard.apply {
+            adapter = ordersAdapter
+            layoutManager = GridLayoutManager(requireContext(), 1)
             addItemDecoration(RvCustomDesign(0, 0, 0, 20))
         }
 
-        lifecycleScope.launch {
-            ordersList = lambdaRepository.getOrdersOfDay()
-            boardAdapter.updateData(ordersList)
-            
-            if (ordersList.isNotEmpty()) {
-                val firstOrder = ordersList.first()
-                newOrderSelected(firstOrder.orderId, firstOrder.totalAmount)
-                viewModel.fetchOrderDetail(firstOrder.orderId)
-            }
-        }
-    }
-
-    private fun initBasket() {
-        basketList = ArrayList()
-        basket = binding.basket
-        ordersDetailAdapter = OrdersDetailAdapter(basketList)
-
-        basket.apply {
+        binding.basket.apply {
             adapter = ordersDetailAdapter
-            layoutManager = GridLayoutManager(context, 1)
+            layoutManager = GridLayoutManager(requireContext(), 1)
             addItemDecoration(RvCustomDesign(15, 15, 0, 0))
         }
     }
 
-    private fun initViewOrderDetailButton() {
+    private fun setupButtons() {
         binding.viewThisOrder.setOnClickListener {
-            viewModel.fetchOrderDetail(orderNumber)
+            val currentState = viewModel.uiState.value
+            viewModel.fetchOrderDetail(currentState.selectedOrderNumber)
         }
 
-        viewModel.orderDetails.observe(viewLifecycleOwner) { fetchedBasketList ->
-            ordersDetailAdapter.updateData(fetchedBasketList)
-        }
-        
-        viewModel.error.observe(viewLifecycleOwner) { errorMessage ->
-            showToastMessage(errorMessage)
-        }
-    }
-
-    private fun initReprintButton() {
         binding.reprint.setOnClickListener {
-            if (this.basketList.isNotEmpty()) {
-                viewModel.reprint(this.orderNumber, this.basketList)
-            } else {
-                showToastMessage("주문 조회 후 클릭해주세요")
+            viewModel.reprint()
+        }
+
+        binding.deleteButton.setOnClickListener {
+            showDeleteConfirmationDialog()
+        }
+    }
+
+    private fun observeViewModel() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    viewModel.uiState.collect { uiState ->
+                        updateUI(uiState)
+                    }
+                }
+                
+                launch {
+                    viewModel.uiEvent.collect { event ->
+                        handleUiEvent(event)
+                    }
+                }
             }
         }
     }
 
-    private fun initDeleteOrderButton() {
-        binding.deleteButton.setOnClickListener {
-            if (this.basketList.isNotEmpty()) {
-                showDeleteConfirmationDialog()
-            } else {
-                showToastMessage("주문 조회 후 클릭해주세요")
+    private fun updateUI(uiState: OrdersViewModel.OrdersUiState) {
+        // Update orders list
+        ordersAdapter.submitList(uiState.ordersList)
+        
+        // Update selected order info
+        binding.orderNum.text = uiState.selectedOrderNumber.toString()
+        binding.totalPriceNum.text = uiState.selectedOrderTotal.toString()
+        
+        // Update order details
+        ordersDetailAdapter.submitList(uiState.orderDetails)
+        
+        // Handle delete status
+        when (uiState.deleteStatus) {
+            is OrdersViewModel.DeleteStatus.Loading -> {
+                showToastMessage("주문 삭제 중...기다려주세요")
+            }
+            is OrdersViewModel.DeleteStatus.Success -> {
+                showToastMessage("주문이 성공적으로 삭제되었습니다.")
+                mainListener?.replaceOrdersFragment()
+                viewModel.resetDeleteStatus()
+            }
+            is OrdersViewModel.DeleteStatus.Error -> {
+                showToastMessage(uiState.deleteStatus.message)
+                viewModel.resetDeleteStatus()
+            }
+            is OrdersViewModel.DeleteStatus.Idle -> {
+                // Do nothing
             }
         }
-        observeDeleteStatus()
+    }
+
+    private fun handleUiEvent(event: OrdersViewModel.OrdersUiEvent) {
+        when (event) {
+            is OrdersViewModel.OrdersUiEvent.ShowToast -> {
+                showToastMessage(event.message)
+            }
+            is OrdersViewModel.OrdersUiEvent.RefreshOrders -> {
+                mainListener?.replaceOrdersFragment()
+            }
+        }
     }
 
     private fun showDeleteConfirmationDialog() {
-        AlertDialog.Builder(context)
+        val currentState = viewModel.uiState.value
+        AlertDialog.Builder(requireContext())
             .setTitle("주문 내역을 삭제하시겠습니까?")
-            .setMessage("주문번호 ${this.orderNumber}번이 삭제되며 복구할 수 없습니다")
+            .setMessage("주문번호 ${currentState.selectedOrderNumber}번이 삭제되며 복구할 수 없습니다")
             .setPositiveButton("확인") { _, _ ->
-                viewModel.deleteOrder(orderNumber)
+                viewModel.deleteOrder()
             }
             .setNegativeButton("취소") { _, _ -> }
             .show()
     }
 
-    private fun observeDeleteStatus() {
-        viewModel.deleteStatus.observe(viewLifecycleOwner) { status ->
-            when (status) {
-                is OrdersViewModel.DeleteStatus.Loading -> {
-                    showToastMessage("주문 삭제 중...기다려주세요")
-                }
-
-                is OrdersViewModel.DeleteStatus.Success -> {
-                    showToastMessage("주문이 성공적으로 삭제되었습니다.")
-                    mainListener?.replaceOrdersFragment()
-                    viewModel.resetDeleteStatus()
-                }
-
-                is OrdersViewModel.DeleteStatus.Error -> {
-                    showToastMessage(status.message)
-                    viewModel.resetDeleteStatus()
-                }
-
-                is OrdersViewModel.DeleteStatus.Idle -> {
-                    // Do nothing
-                }
-            }
-        }
-    }
-
-    fun showToastMessage(msg: String) {
-        Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
-    }
-
-    @SuppressLint("NotifyDataSetChanged")
-    override fun newOrderSelected(num: Int, total: Int) {
-        orderNumber = num
-        orderNum.text = num.toString()
-        totalPrice.text = total.toString()
-        basketList.clear()
-        basket.adapter?.notifyDataSetChanged()
-        viewModel.fetchOrderDetail(num)
+    private fun showToastMessage(msg: String) {
+        Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show()
     }
 }
