@@ -11,6 +11,7 @@ import eloom.holybean.data.repository.MenuDB
 import eloom.holybean.interfaces.OrderDialogListener
 import eloom.holybean.printer.HomePrinter
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -50,7 +51,11 @@ class HomeViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(UiState())
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
 
-    private val _uiEvent = MutableSharedFlow<UiEvent>()
+    private val _uiEvent = MutableSharedFlow<UiEvent>(
+        replay = 1,
+        extraBufferCapacity = 16,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
     val uiEvent: SharedFlow<UiEvent> = _uiEvent.asSharedFlow()
 
     init {
@@ -65,19 +70,16 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    // Kept for backward compatibility with tests
     fun getCurrentDate(): String {
         val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
         return LocalDate.now().format(formatter)
     }
 
-    // Kept for backward compatibility with tests
     fun getTotal(basketList: ArrayList<CartItem>): Int {
         basketList.forEach { it.total = it.count * it.price }
         return basketList.sumOf { it.total }
     }
 
-    // Kept for backward compatibility with tests
     fun getMenuList(): ArrayList<MenuItem> {
         return ArrayList(menuDB.getMenuList())
     }
