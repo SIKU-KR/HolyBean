@@ -9,9 +9,10 @@ import android.view.View
 import android.widget.*
 import androidx.fragment.app.DialogFragment
 import eloom.holybean.R
-import eloom.holybean.data.model.*
+import eloom.holybean.data.model.Order
+import eloom.holybean.data.model.OrderDialogData
+import eloom.holybean.data.model.PaymentMethod
 import eloom.holybean.interfaces.OrderDialogListener
-import java.lang.Exception
 
 class OrderDialog(val data: OrderDialogData) : DialogFragment() {
     private var orderDialogListener: OrderDialogListener? = null
@@ -149,12 +150,12 @@ class OrderDialog(val data: OrderDialogData) : DialogFragment() {
         }
     }
 
-    private fun getCredit(option: String): Int{
-        return if(option == "외상") 1 else 0
+    private fun getCredit(option: String): Int {
+        return if (option == "외상") 1 else 0
     }
 
-    private fun getCredit(option1: String, option2: String): Int{
-        return if(option1 == "외상" || option2 == "외상") 1 else 0
+    private fun getCredit(option1: String, option2: String): Int {
+        return if (option1 == "외상" || option2 == "외상") 1 else 0
     }
 
     private fun showToastText(text: String) {

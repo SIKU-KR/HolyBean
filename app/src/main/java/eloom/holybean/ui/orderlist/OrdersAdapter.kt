@@ -35,7 +35,7 @@ class OrdersAdapter(
             ordersAmount.text = "주문금액: ${item.totalAmount}"
             ordersMethod.text = "주문방식: ${item.method}"
             ordersOrderer.text = "주문자: ${item.orderer}"
-            
+
             itemView.setOnClickListener {
                 onOrderClick(item.orderId, item.totalAmount)
             }

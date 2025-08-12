@@ -8,11 +8,9 @@ import eloom.holybean.data.model.OrdersDetailItem
 import eloom.holybean.data.repository.LambdaRepository
 import eloom.holybean.printer.OrdersPrinter
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.channels.BufferOverflow
 import java.text.SimpleDateFormat
 import java.util.*
 import javax.inject.Inject
@@ -69,13 +67,13 @@ class OrdersViewModel @Inject constructor(
             try {
                 _uiState.update { it.copy(isLoading = true) }
                 val ordersList = lambdaRepository.getOrdersOfDay()
-                _uiState.update { 
+                _uiState.update {
                     it.copy(
                         ordersList = ordersList,
                         isLoading = false
                     )
                 }
-                
+
                 // Auto-select first order if available
                 if (ordersList.isNotEmpty()) {
                     val firstOrder = ordersList.first()
@@ -89,7 +87,7 @@ class OrdersViewModel @Inject constructor(
     }
 
     fun selectOrder(orderNumber: Int, totalAmount: Int) {
-        _uiState.update { 
+        _uiState.update {
             it.copy(
                 selectedOrderNumber = orderNumber,
                 selectedOrderTotal = totalAmount,
@@ -150,7 +148,7 @@ class OrdersViewModel @Inject constructor(
             try {
                 _uiState.update { it.copy(deleteStatus = DeleteStatus.Loading) }
                 val result = lambdaRepository.deleteOrder(getCurrentDate(), currentState.selectedOrderNumber)
-                
+
                 if (result) {
                     _uiState.update { it.copy(deleteStatus = DeleteStatus.Success) }
                     _uiEvent.tryEmit(OrdersUiEvent.ShowToast("주문이 성공적으로 삭제되었습니다."))
