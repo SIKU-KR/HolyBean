@@ -77,6 +77,26 @@ class OrdersViewModelTest {
     }
 
     @Test
+    fun `fetchOrderDetail should post error message when order list is empty`() = runTest {
+        // Given
+        val orderNumber = 123
+        val emptyOrderDetails = arrayListOf<OrdersDetailItem>()
+        val errorObserver = mockk<Observer<String>>(relaxed = true)
+        viewModel.error.observeForever(errorObserver)
+
+        val currentDate = viewModel.getCurrentDate()
+        coEvery { lambdaRepository.getOrderDetail(currentDate, orderNumber) } returns emptyOrderDetails
+
+        // When
+        viewModel.fetchOrderDetail(orderNumber)
+
+        // Then
+        coVerify { lambdaRepository.getOrderDetail(currentDate, orderNumber) }
+        verify { errorObserver.onChanged("주문 내역이 없습니다.") }
+        viewModel.error.removeObserver(errorObserver)
+    }
+
+    @Test
     fun `fetchOrderDetail should post error message on repository failure`() = runTest {
         // Given
         val orderNumber = 456
@@ -91,7 +111,7 @@ class OrdersViewModelTest {
         viewModel.fetchOrderDetail(orderNumber)
 
         // Then
-        val expectedErrorMessage = "Failed to fetch order details: $errorMessage"
+        val expectedErrorMessage = "주문 조회 중 오류가 발생했습니다: $errorMessage"
         verify { errorObserver.onChanged(expectedErrorMessage) }
         viewModel.error.removeObserver(errorObserver)
     }

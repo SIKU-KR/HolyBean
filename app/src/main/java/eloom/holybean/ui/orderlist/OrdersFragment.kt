@@ -93,6 +93,12 @@ class OrdersFragment : Fragment(), OrdersFragmentFunction {
         lifecycleScope.launch {
             ordersList = lambdaRepository.getOrdersOfDay()
             boardAdapter.updateData(ordersList)
+            
+            if (ordersList.isNotEmpty()) {
+                val firstOrder = ordersList.first()
+                newOrderSelected(firstOrder.orderId, firstOrder.totalAmount)
+                viewModel.fetchOrderDetail(firstOrder.orderId)
+            }
         }
     }
 
@@ -115,6 +121,10 @@ class OrdersFragment : Fragment(), OrdersFragmentFunction {
 
         viewModel.orderDetails.observe(viewLifecycleOwner) { fetchedBasketList ->
             ordersDetailAdapter.updateData(fetchedBasketList)
+        }
+        
+        viewModel.error.observe(viewLifecycleOwner) { errorMessage ->
+            showToastMessage(errorMessage)
         }
     }
 
@@ -186,5 +196,6 @@ class OrdersFragment : Fragment(), OrdersFragmentFunction {
         totalPrice.text = total.toString()
         basketList.clear()
         basket.adapter?.notifyDataSetChanged()
+        viewModel.fetchOrderDetail(num)
     }
 }

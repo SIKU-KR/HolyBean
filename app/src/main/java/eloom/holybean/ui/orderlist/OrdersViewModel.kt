@@ -63,9 +63,13 @@ class OrdersViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val fetchedBasketList = lambdaRepository.getOrderDetail(getCurrentDate(), orderNumber)
-                _orderDetails.postValue(fetchedBasketList)
+                if (fetchedBasketList.isEmpty()) {
+                    _error.postValue("주문 내역이 없습니다.")
+                } else {
+                    _orderDetails.postValue(fetchedBasketList)
+                }
             } catch (e: Exception) {
-                _error.postValue("Failed to fetch order details: ${e.message}")
+                _error.postValue("주문 조회 중 오류가 발생했습니다: ${e.message}")
             }
         }
     }
