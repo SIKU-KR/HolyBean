@@ -7,18 +7,18 @@ import androidx.lifecycle.viewModelScope
 import eloom.holybean.data.model.PrinterDTO
 import eloom.holybean.data.model.ReportDetailItem
 import eloom.holybean.network.ApiService
-import eloom.holybean.network.RetrofitClient
 import eloom.holybean.printer.ReportPrinter
-import kotlinx.coroutines.Dispatchers
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.*
+import javax.inject.Inject
 
-class ReportViewModel : ViewModel() {
-
-    private val apiService = RetrofitClient.retrofit.create(ApiService::class.java)
+@HiltViewModel
+class ReportViewModel @Inject constructor(
+    private val apiService: ApiService
+) : ViewModel() {
 
     private val _reportData = MutableLiveData<Map<String, Int>>()
     val reportData: LiveData<Map<String, Int>> get() = _reportData
@@ -35,26 +35,28 @@ class ReportViewModel : ViewModel() {
     private val dateFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd", Locale.ROOT)
 
     fun loadReportData(startDate: String, endDate: String) {
-
         viewModelScope.launch {
-            val details = ArrayList<ReportDetailItem>()
-            if (isValidDateRange(startDate, endDate)) {
-                _reportTitle.value = "$startDate ~ $endDate"
-                try {
-                    val response = apiService.getReport(startDate, endDate)
-                    if (response.isSuccessful) {
-                        val saleslist = response.body()?.menuSales
-                        saleslist?.forEach { info ->
-                            details.add(ReportDetailItem(info.key, info.value.quantitySold, info.value.totalSales))
-                        }
-                        _reportDetailData.value = details
-                        _reportData.value = response.body()?.paymentMethodSales
-                    }
-                } catch (e: Exception) {
-                    _errorMessage.value = "리포트를 불러오는데 실패했습니다: ${e.localizedMessage}"
-                }
-            } else {
+            if (!isValidDateRange(startDate, endDate)) {
                 _errorMessage.value = "잘못된 날짜 범위입니다"
+                return@launch
+            }
+
+            _reportTitle.value = "$startDate ~ $endDate"
+            try {
+                val response = apiService.getReport(startDate, endDate)
+                if (response.isSuccessful) {
+                    val body = response.body()
+                    val details = body?.menuSales?.map { info ->
+                        ReportDetailItem(info.key, info.value.quantitySold, info.value.totalSales)
+                    } ?: emptyList()
+
+                    _reportDetailData.value = details
+                    _reportData.value = body?.paymentMethodSales
+                } else {
+                    _errorMessage.value = "리포트를 불러오는데 실패했습니다: ${response.message()}"
+                }
+            } catch (e: Exception) {
+                _errorMessage.value = "리포트를 불러오는데 실패했습니다: ${e.localizedMessage}"
             }
         }
     }
@@ -64,22 +66,21 @@ class ReportViewModel : ViewModel() {
         val details = _reportDetailData.value
         val title = _reportTitle.value
 
-        if (summary != null && details != null && title != null) {
-            viewModelScope.launch {
-                try {
-                    val reportPrinter = ReportPrinter()
-                    val printerDTO = PrinterDTO(title.split(" ~ ")[0], title.split(" ~ ")[1], summary, details)
-                    val printText = reportPrinter.getPrintingText(printerDTO)
-                    withContext(Dispatchers.IO) {
-                        reportPrinter.print(printText)
-                        reportPrinter.disconnect()
-                    }
-                } catch (e: Exception) {
-                    _errorMessage.value = "인쇄 실패 : ${e.localizedMessage}"
-                }
+        if (summary == null || details == null || title == null) {
+            _errorMessage.value = "인쇄할 데이터가 없습니다"
+            return
+        }
+
+        viewModelScope.launch {
+            try {
+                val reportPrinter = ReportPrinter()
+                val printerDTO = PrinterDTO(title.split(" ~ ")[0], title.split(" ~ ")[1], summary, details)
+                val printText = reportPrinter.getPrintingText(printerDTO)
+                reportPrinter.print(printText)
+                reportPrinter.disconnect()
+            } catch (e: Exception) {
+                _errorMessage.value = "인쇄 실패 : ${e.localizedMessage}"
             }
-        } else {
-            _errorMessage.value = "잘못된 날짜 범위입니다"
         }
     }
 
