@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:orientation="horizontal"
-    android:background="@drawable/basketitem_design"
-    android:paddingHorizontal="0dp"
-    android:paddingVertical="8dp">
+              android:layout_width="match_parent"
+              android:layout_height="wrap_content"
+              android:orientation="horizontal"
+              android:background="@drawable/basketitem_design"
+              android:paddingHorizontal="0dp"
+              android:paddingVertical="8dp">
 
     <TextView
         android:id="@+id/basket_name"
@@ -15,7 +15,7 @@
         android:layout_weight="3"
         android:fontFamily="@font/pretendard_semibold"
         android:text="아이스 아메리카노"
-        android:textAppearance="@style/TextAppearance.AppCompat.Body2" />
+        android:textAppearance="@style/TextAppearance.AppCompat.Body2"/>
 
     <TextView
         android:id="@+id/basket_count"
@@ -26,7 +26,7 @@
         android:gravity="center"
         android:paddingHorizontal="10dp"
         android:text="1"
-        android:textAppearance="@style/TextAppearance.AppCompat.Body2" />
+        android:textAppearance="@style/TextAppearance.AppCompat.Body2"/>
 
     <TextView
         android:id="@+id/basket_price"
@@ -37,5 +37,5 @@
         android:fontFamily="@font/pretendard_semibold"
         android:gravity="center"
         android:text="2000"
-        android:textAppearance="@style/TextAppearance.AppCompat.Body2" />
+        android:textAppearance="@style/TextAppearance.AppCompat.Body2"/>
 </LinearLayout>

@@ -4,8 +4,8 @@ import android.content.ContentValues
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
-import eloom.holybean.data.model.MenuItem
 import dagger.hilt.android.qualifiers.ApplicationContext
+import eloom.holybean.data.model.MenuItem
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -118,7 +118,8 @@ class MenuDB @Inject constructor(
         val startRange = category * 1000 + 1
         val endRange = (category + 1) * 1000 - 1
 
-        val query = "SELECT ${MenuDBHelper.MENU_ID} FROM ${MenuDBHelper.MENUDB_TABLE} WHERE ${MenuDBHelper.MENU_ID} BETWEEN ? AND ? ORDER BY ${MenuDBHelper.MENU_ID} ASC"
+        val query =
+            "SELECT ${MenuDBHelper.MENU_ID} FROM ${MenuDBHelper.MENUDB_TABLE} WHERE ${MenuDBHelper.MENU_ID} BETWEEN ? AND ? ORDER BY ${MenuDBHelper.MENU_ID} ASC"
         val cursor = db.rawQuery(query, arrayOf(startRange.toString(), endRange.toString()))
         var nextId = startRange
         if (cursor.moveToFirst()) {
@@ -139,7 +140,8 @@ class MenuDB @Inject constructor(
         val db = dbHelper.readableDatabase
         val startRange = category * 1000 + 1
         val endRange = (category + 1) * 1000 - 1
-        val query = "SELECT ${MenuDBHelper.MENU_PLACEMENT} FROM ${MenuDBHelper.MENUDB_TABLE} WHERE ${MenuDBHelper.MENU_PLACEMENT} BETWEEN ? AND ? ORDER BY ${MenuDBHelper.MENU_PLACEMENT} ASC"
+        val query =
+            "SELECT ${MenuDBHelper.MENU_PLACEMENT} FROM ${MenuDBHelper.MENUDB_TABLE} WHERE ${MenuDBHelper.MENU_PLACEMENT} BETWEEN ? AND ? ORDER BY ${MenuDBHelper.MENU_PLACEMENT} ASC"
         val cursor = db.rawQuery(query, arrayOf(startRange.toString(), endRange.toString()))
         var nextPlacement = startRange
         if (cursor.moveToFirst()) {

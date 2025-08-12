@@ -1,6 +1,6 @@
 package eloom.holybean.data.model
 
-data class CreditItem (
+data class CreditItem(
     val orderId: Int,
     val totalAmount: Int,
     val date: String,

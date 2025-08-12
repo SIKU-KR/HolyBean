@@ -18,7 +18,7 @@ abstract class Printer {
         )
     }
 
-    fun print(data: String){
+    fun print(data: String) {
         printer.printFormattedTextAndCut(data, 500)
     }
 

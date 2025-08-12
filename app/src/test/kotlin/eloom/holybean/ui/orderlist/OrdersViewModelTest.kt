@@ -13,9 +13,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.*
 import org.junit.After
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertTrue
+import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -70,7 +68,7 @@ class OrdersViewModelTest {
         val mockOrderDetails = arrayListOf(
             OrdersDetailItem(name = "Americano", count = 2, subtotal = 8000)
         )
-        
+
         coEvery { lambdaRepository.getOrdersOfDay() } returns mockOrders
         coEvery { lambdaRepository.getOrderDetail(any(), any()) } returns mockOrderDetails
 
@@ -94,7 +92,7 @@ class OrdersViewModelTest {
         val mockOrderDetails = arrayListOf(
             OrdersDetailItem(name = "Latte", count = 1, subtotal = 4500)
         )
-        
+
         coEvery { lambdaRepository.getOrderDetail(any(), any()) } returns mockOrderDetails
 
         // When
@@ -145,7 +143,7 @@ class OrdersViewModelTest {
 
         // When
         testViewModel.fetchOrderDetail(orderNumber)
-        
+
         // Wait for the coroutine to complete
         advanceUntilIdle()
 
@@ -154,7 +152,7 @@ class OrdersViewModelTest {
         assertEquals(1, events.size)
         assertTrue(events.first() is OrdersViewModel.OrdersUiEvent.ShowToast)
         assertEquals("주문 내역이 없습니다.", (events.first() as OrdersViewModel.OrdersUiEvent.ShowToast).message)
-        
+
         collectJob.cancel()
     }
 
@@ -176,7 +174,7 @@ class OrdersViewModelTest {
 
         // When
         testViewModel.fetchOrderDetail(orderNumber)
-        
+
         // Wait for the coroutine to complete
         advanceUntilIdle()
 
@@ -185,7 +183,7 @@ class OrdersViewModelTest {
         assertTrue(events.first() is OrdersViewModel.OrdersUiEvent.ShowToast)
         val expectedErrorMessage = "주문 조회 중 오류가 발생했습니다: $errorMessage"
         assertEquals(expectedErrorMessage, (events.first() as OrdersViewModel.OrdersUiEvent.ShowToast).message)
-        
+
         collectJob.cancel()
     }
 
@@ -230,7 +228,7 @@ class OrdersViewModelTest {
 
         // When
         testViewModel.reprint()
-        
+
         // Wait for the coroutine to complete
         advanceUntilIdle()
 
@@ -238,7 +236,7 @@ class OrdersViewModelTest {
         assertEquals(1, events.size)
         assertTrue(events.first() is OrdersViewModel.OrdersUiEvent.ShowToast)
         assertEquals("주문 조회 후 클릭해주세요", (events.first() as OrdersViewModel.OrdersUiEvent.ShowToast).message)
-        
+
         collectJob.cancel()
     }
 
@@ -275,15 +273,15 @@ class OrdersViewModelTest {
 
         // Then
         // Find the printer error event (might be multiple events from fetchOrderDetail first)
-        val printerErrorEvent = events.find { 
-            it is OrdersViewModel.OrdersUiEvent.ShowToast && 
-            it.message.contains("Printer error")
+        val printerErrorEvent = events.find {
+            it is OrdersViewModel.OrdersUiEvent.ShowToast &&
+                    it.message.contains("Printer error")
         }
         assertNotNull(printerErrorEvent)
         val expectedErrorMessage = "Printer error: $errorMessage"
         assertEquals(expectedErrorMessage, (printerErrorEvent as OrdersViewModel.OrdersUiEvent.ShowToast).message)
         coVerify { anyConstructed<OrdersPrinter>().disconnect() }
-        
+
         collectJob.cancel()
     }
 
@@ -300,7 +298,7 @@ class OrdersViewModelTest {
 
         // When
         testViewModel.deleteOrder()
-        
+
         // Wait for the coroutine to complete
         advanceUntilIdle()
 
@@ -308,7 +306,7 @@ class OrdersViewModelTest {
         assertEquals(1, events.size)
         assertTrue(events.first() is OrdersViewModel.OrdersUiEvent.ShowToast)
         assertEquals("주문 조회 후 클릭해주세요", (events.first() as OrdersViewModel.OrdersUiEvent.ShowToast).message)
-        
+
         collectJob.cancel()
     }
 
@@ -318,12 +316,12 @@ class OrdersViewModelTest {
         val orderDetails = arrayListOf(OrdersDetailItem("Coffee", 1, 1000))
         val orderNumber = 123
         val currentDate = viewModel.getCurrentDate()
-        
+
         // Set up the UI state with order details
         viewModel.selectOrder(orderNumber, 1000)
         coEvery { lambdaRepository.getOrderDetail(any(), any()) } returns orderDetails
         viewModel.fetchOrderDetail(orderNumber)
-        
+
         coEvery { lambdaRepository.deleteOrder(currentDate, orderNumber) } returns true
 
         // When
@@ -341,12 +339,12 @@ class OrdersViewModelTest {
         val orderDetails = arrayListOf(OrdersDetailItem("Coffee", 1, 1000))
         val orderNumber = 456
         val currentDate = viewModel.getCurrentDate()
-        
+
         // Set up the UI state with order details
         viewModel.selectOrder(orderNumber, 1000)
         coEvery { lambdaRepository.getOrderDetail(any(), any()) } returns orderDetails
         viewModel.fetchOrderDetail(orderNumber)
-        
+
         coEvery { lambdaRepository.deleteOrder(currentDate, orderNumber) } returns false
 
         // When
@@ -366,12 +364,12 @@ class OrdersViewModelTest {
         val orderNumber = 789
         val errorMessage = "Network connection failed"
         val exception = RuntimeException(errorMessage)
-        
+
         // Set up the UI state with order details
         viewModel.selectOrder(orderNumber, 1000)
         coEvery { lambdaRepository.getOrderDetail(any(), any()) } returns orderDetails
         viewModel.fetchOrderDetail(orderNumber)
-        
+
         coEvery { lambdaRepository.deleteOrder(any(), any()) } throws exception
 
         // When

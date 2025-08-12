@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:background="@drawable/radius"
-    android:orientation="horizontal"
-    android:paddingHorizontal="0dp"
-    android:paddingVertical="20dp">
+              android:layout_width="match_parent"
+              android:layout_height="wrap_content"
+              android:background="@drawable/radius"
+              android:orientation="horizontal"
+              android:paddingHorizontal="0dp"
+              android:paddingVertical="20dp">
 
     <!-- 메뉴 코드 -->
     <TextView
@@ -19,7 +19,7 @@
         android:text="id:2000"
         android:textColor="#A9A9A9"
         android:textStyle="italic"
-        android:textAppearance="@style/TextAppearance.AppCompat.Body2" />
+        android:textAppearance="@style/TextAppearance.AppCompat.Body2"/>
 
     <!-- 메뉴 순서 -->
     <TextView
@@ -33,7 +33,7 @@
         android:text="순서:2000"
         android:textColor="#A9A9A9"
         android:textStyle="italic"
-        android:textAppearance="@style/TextAppearance.AppCompat.Body2" />
+        android:textAppearance="@style/TextAppearance.AppCompat.Body2"/>
 
     <!-- 메뉴 이름 -->
     <TextView
@@ -45,7 +45,7 @@
         android:textSize="16sp"
         android:gravity="center"
         android:text="아이스 아메리카노"
-        android:textAppearance="@style/TextAppearance.AppCompat.Body2" />
+        android:textAppearance="@style/TextAppearance.AppCompat.Body2"/>
 
     <!-- 메뉴 가격 -->
     <TextView
@@ -57,7 +57,7 @@
         android:textSize="16sp"
         android:gravity="center"
         android:text="2000"
-        android:textAppearance="@style/TextAppearance.AppCompat.Body2" />
+        android:textAppearance="@style/TextAppearance.AppCompat.Body2"/>
 
 
 </LinearLayout>

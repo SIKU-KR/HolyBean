@@ -2,7 +2,7 @@ package eloom.holybean.printer
 
 import eloom.holybean.data.model.PrinterDTO
 
-class ReportPrinter: Printer() {
+class ReportPrinter : Printer() {
 
     fun getPrintingText(data: PrinterDTO): String {
         var result = "[L]\n"
@@ -18,7 +18,7 @@ class ReportPrinter: Printer() {
         result += "[L]무료제공 판매금액 : ${data.reportData["무료제공"] ?: 0}\n"
         result += "[C]-------------------------------------\n"
         result += "[L]이름[R]수량[R]판매액\n"
-        for(item in data.reportDetailItem) {
+        for (item in data.reportDetailItem) {
             result += "[L]${item.name}[R]${item.quantity}[R]${item.subtotal}\n"
         }
         result += "[L]\n"
