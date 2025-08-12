@@ -8,7 +8,7 @@ import androidx.recyclerview.widget.RecyclerView
 import eloom.holybean.R
 import eloom.holybean.data.model.MenuItem
 
-class MenuAdapter(private val itemList: ArrayList<MenuItem>) : RecyclerView.Adapter<MenuAdapter.MenuViewHolder>(){
+class MenuAdapter(private val itemList: ArrayList<MenuItem>) : RecyclerView.Adapter<MenuAdapter.MenuViewHolder>() {
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MenuViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.list_item_menu_management, parent, false)
         return MenuViewHolder(view)
@@ -16,11 +16,11 @@ class MenuAdapter(private val itemList: ArrayList<MenuItem>) : RecyclerView.Adap
 
     override fun onBindViewHolder(holder: MenuViewHolder, position: Int) {
         val item = itemList[position]
-        holder.menuCode.text = "id:"+item.id.toString()
-        holder.menuPlacement.text = "placement:"+item.order.toString()
+        holder.menuCode.text = "id:" + item.id.toString()
+        holder.menuPlacement.text = "placement:" + item.order.toString()
         holder.menuName.text = item.name
         holder.menuPrice.text = item.price.toString()
-        if(!item.inuse){
+        if (!item.inuse) {
             holder.itemView.setBackgroundColor(holder.itemView.context.getColor(R.color.disabledGray))
         }
     }

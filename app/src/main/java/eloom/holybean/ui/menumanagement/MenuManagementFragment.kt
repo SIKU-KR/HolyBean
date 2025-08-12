@@ -17,6 +17,8 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.tabs.TabLayout
+import dagger.hilt.android.AndroidEntryPoint
 import eloom.holybean.R
 import eloom.holybean.data.model.MenuItem
 import eloom.holybean.data.repository.LambdaRepository
@@ -27,8 +29,6 @@ import eloom.holybean.ui.RvCustomDesign
 import eloom.holybean.ui.dialog.MenuAddDialog
 import eloom.holybean.ui.dialog.MenuEditDialog
 import eloom.holybean.ui.dialog.PasswordDialog
-import com.google.android.material.tabs.TabLayout
-import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 

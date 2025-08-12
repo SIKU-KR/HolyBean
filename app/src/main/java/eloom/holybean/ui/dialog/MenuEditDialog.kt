@@ -8,11 +8,11 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
 import androidx.fragment.app.DialogFragment
-import eloom.holybean.interfaces.MainActivityListener
+import dagger.hilt.android.AndroidEntryPoint
 import eloom.holybean.data.model.MenuItem
 import eloom.holybean.data.repository.MenuDB
 import eloom.holybean.databinding.DialogMenuEditBinding
-import dagger.hilt.android.AndroidEntryPoint
+import eloom.holybean.interfaces.MainActivityListener
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -50,7 +50,7 @@ class MenuEditDialog(private val item: MenuItem, private val mainListener: MainA
         val saveButton: Button = binding.saveEditButton
         val cancelButton: Button = binding.cancelEditButton
 
-        if(!item.inuse){
+        if (!item.inuse) {
             disableButton.text = "활성화"
         }
 

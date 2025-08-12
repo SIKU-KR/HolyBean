@@ -8,18 +8,19 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.lifecycleScope
-import eloom.holybean.interfaces.MainActivityListener
+import dagger.hilt.android.AndroidEntryPoint
 import eloom.holybean.data.model.MenuItem
 import eloom.holybean.data.repository.MenuDB
 import eloom.holybean.databinding.DialogMenuAddBinding
-import dagger.hilt.android.AndroidEntryPoint
+import eloom.holybean.interfaces.MainActivityListener
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @AndroidEntryPoint
-class MenuAddDialog(private val id: Int, private val placement: Int, private val mainListener: MainActivityListener?) : DialogFragment() {
+class MenuAddDialog(private val id: Int, private val placement: Int, private val mainListener: MainActivityListener?) :
+    DialogFragment() {
 
     @Inject
     lateinit var menuDB: MenuDB
@@ -76,14 +77,17 @@ class MenuAddDialog(private val id: Int, private val placement: Int, private val
                 Toast.makeText(requireContext(), "메뉴 이름을 입력해주세요.", Toast.LENGTH_SHORT).show()
                 false
             }
+
             newPriceText.isEmpty() -> {
                 Toast.makeText(requireContext(), "가격을 입력해주세요.", Toast.LENGTH_SHORT).show()
                 false
             }
+
             newPriceText.toIntOrNull() == null || newPriceText.toInt() < 0 -> {
                 Toast.makeText(requireContext(), "유효한 가격을 입력해주세요.", Toast.LENGTH_SHORT).show()
                 false
             }
+
             else -> true
         }
     }
