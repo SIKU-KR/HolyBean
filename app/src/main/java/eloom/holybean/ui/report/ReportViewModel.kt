@@ -1,14 +1,15 @@
 package eloom.holybean.ui.report
 
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.lifecycle.HiltViewModel
 import eloom.holybean.data.model.PrinterDTO
 import eloom.holybean.data.model.ReportDetailItem
 import eloom.holybean.network.ApiService
 import eloom.holybean.printer.ReportPrinter
-import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -17,32 +18,43 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ReportViewModel @Inject constructor(
-    private val apiService: ApiService
+    private val apiService: ApiService,
+    private val dispatcher: CoroutineDispatcher
 ) : ViewModel() {
 
-    private val _reportData = MutableLiveData<Map<String, Int>>()
-    val reportData: LiveData<Map<String, Int>> get() = _reportData
+    data class ReportUiState(
+        val reportData: Map<String, Int> = emptyMap(),
+        val reportDetailData: List<ReportDetailItem> = emptyList(),
+        val reportTitle: String = "",
+        val isLoading: Boolean = false
+    )
 
-    private val _reportDetailData = MutableLiveData<List<ReportDetailItem>>()
-    val reportDetailData: LiveData<List<ReportDetailItem>> get() = _reportDetailData
+    sealed class ReportUiEvent {
+        data class ShowToast(val message: String) : ReportUiEvent()
+        data class ShowError(val message: String) : ReportUiEvent()
+    }
 
-    private val _reportTitle = MutableLiveData<String>()
-    val reportTitle: LiveData<String> get() = _reportTitle
+    private val _uiState = MutableStateFlow(ReportUiState())
+    val uiState: StateFlow<ReportUiState> = _uiState.asStateFlow()
 
-    private val _errorMessage = MutableLiveData<String>()
-    val errorMessage: LiveData<String> get() = _errorMessage
+    private val _uiEvent = MutableSharedFlow<ReportUiEvent>(
+        replay = 1,
+        extraBufferCapacity = 16,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
+    val uiEvent: SharedFlow<ReportUiEvent> = _uiEvent.asSharedFlow()
 
     private val dateFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd", Locale.ROOT)
 
     fun loadReportData(startDate: String, endDate: String) {
-        viewModelScope.launch {
+        viewModelScope.launch(dispatcher) {
             if (!isValidDateRange(startDate, endDate)) {
-                _errorMessage.value = "잘못된 날짜 범위입니다"
+                _uiEvent.tryEmit(ReportUiEvent.ShowError("잘못된 날짜 범위입니다"))
                 return@launch
             }
 
-            _reportTitle.value = "$startDate ~ $endDate"
             try {
+                _uiState.update { it.copy(isLoading = true, reportTitle = "$startDate ~ $endDate") }
                 val response = apiService.getReport(startDate, endDate)
                 if (response.isSuccessful) {
                     val body = response.body()
@@ -50,36 +62,48 @@ class ReportViewModel @Inject constructor(
                         ReportDetailItem(info.key, info.value.quantitySold, info.value.totalSales)
                     } ?: emptyList()
 
-                    _reportDetailData.value = details
-                    _reportData.value = body?.paymentMethodSales
+                    _uiState.update {
+                        it.copy(
+                            reportDetailData = details,
+                            reportData = body?.paymentMethodSales ?: emptyMap(),
+                            isLoading = false
+                        )
+                    }
                 } else {
-                    _errorMessage.value = "리포트를 불러오는데 실패했습니다: ${response.message()}"
+                    _uiState.update { it.copy(isLoading = false) }
+                    _uiEvent.tryEmit(ReportUiEvent.ShowError("리포트를 불러오는데 실패했습니다: ${response.message()}"))
                 }
             } catch (e: Exception) {
-                _errorMessage.value = "리포트를 불러오는데 실패했습니다: ${e.localizedMessage}"
+                _uiState.update { it.copy(isLoading = false) }
+                _uiEvent.tryEmit(ReportUiEvent.ShowError("리포트를 불러오는데 실패했습니다: ${e.localizedMessage}"))
             }
         }
     }
 
     fun printReport() {
-        val summary = _reportData.value
-        val details = _reportDetailData.value
-        val title = _reportTitle.value
+        val currentState = _uiState.value
+        val summary = currentState.reportData
+        val details = currentState.reportDetailData
+        val title = currentState.reportTitle
 
-        if (summary == null || details == null || title == null) {
-            _errorMessage.value = "인쇄할 데이터가 없습니다"
+        if (summary.isEmpty() || details.isEmpty() || title.isEmpty()) {
+            viewModelScope.launch(dispatcher) {
+                _uiEvent.tryEmit(ReportUiEvent.ShowError("인쇄할 데이터가 없습니다"))
+            }
             return
         }
 
-        viewModelScope.launch {
+        viewModelScope.launch(dispatcher) {
             try {
                 val reportPrinter = ReportPrinter()
-                val printerDTO = PrinterDTO(title.split(" ~ ")[0], title.split(" ~ ")[1], summary, details)
+                val dateParts = title.split(" ~ ")
+                val printerDTO = PrinterDTO(dateParts[0], dateParts[1], summary, details)
                 val printText = reportPrinter.getPrintingText(printerDTO)
                 reportPrinter.print(printText)
                 reportPrinter.disconnect()
+                _uiEvent.tryEmit(ReportUiEvent.ShowToast("리포트 인쇄가 완료되었습니다"))
             } catch (e: Exception) {
-                _errorMessage.value = "인쇄 실패 : ${e.localizedMessage}"
+                _uiEvent.tryEmit(ReportUiEvent.ShowError("인쇄 실패 : ${e.localizedMessage}"))
             }
         }
     }

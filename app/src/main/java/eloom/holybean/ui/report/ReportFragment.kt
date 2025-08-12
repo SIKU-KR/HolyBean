@@ -8,9 +8,13 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
-import eloom.holybean.databinding.FragmentReportBinding
 import dagger.hilt.android.AndroidEntryPoint
+import eloom.holybean.databinding.FragmentReportBinding
+import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.util.*
 
@@ -64,28 +68,22 @@ class ReportFragment : Fragment() {
     }
 
     /**
-     * Sets up observers for LiveData from the ViewModel.
+     * Sets up observers for StateFlow from the ViewModel.
      */
     private fun setupObservers() {
-        // Observe report summary data
-        viewModel.reportData.observe(viewLifecycleOwner) { data ->
-            updateReportSummary(data)
-        }
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    viewModel.uiState.collect { uiState ->
+                        updateUI(uiState)
+                    }
+                }
 
-        // Observe report detail data
-        viewModel.reportDetailData.observe(viewLifecycleOwner) { details ->
-            reportDetailAdapter.updateData(details)
-        }
-
-        // Observe report title
-        viewModel.reportTitle.observe(viewLifecycleOwner) { title ->
-            binding.reportTitle.text = title
-        }
-
-        // Observe error messages
-        viewModel.errorMessage.observe(viewLifecycleOwner) { message ->
-            if (message.isNotEmpty()) {
-                Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+                launch {
+                    viewModel.uiEvent.collect { event ->
+                        handleUiEvent(event)
+                    }
+                }
             }
         }
     }
@@ -130,6 +128,29 @@ class ReportFragment : Fragment() {
             calendar.get(Calendar.MONTH),
             calendar.get(Calendar.DAY_OF_MONTH)
         ).show()
+    }
+
+    private fun updateUI(uiState: ReportViewModel.ReportUiState) {
+        // Update report title
+        binding.reportTitle.text = uiState.reportTitle
+
+        // Update report detail data
+        reportDetailAdapter.submitList(uiState.reportDetailData)
+
+        // Update report summary
+        updateReportSummary(uiState.reportData)
+    }
+
+    private fun handleUiEvent(event: ReportViewModel.ReportUiEvent) {
+        when (event) {
+            is ReportViewModel.ReportUiEvent.ShowToast -> {
+                Toast.makeText(requireContext(), event.message, Toast.LENGTH_SHORT).show()
+            }
+
+            is ReportViewModel.ReportUiEvent.ShowError -> {
+                Toast.makeText(requireContext(), event.message, Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     private fun updateReportSummary(data: Map<String, Int>) {
