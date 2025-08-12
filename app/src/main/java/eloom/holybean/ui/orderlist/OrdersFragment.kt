@@ -14,6 +14,7 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import dagger.hilt.android.AndroidEntryPoint
 import eloom.holybean.data.model.OrderItem
 import eloom.holybean.data.model.OrdersDetailItem
 import eloom.holybean.data.repository.LambdaRepository
@@ -21,12 +22,11 @@ import eloom.holybean.databinding.FragmentOrdersBinding
 import eloom.holybean.interfaces.MainActivityListener
 import eloom.holybean.interfaces.OrdersFragmentFunction
 import eloom.holybean.ui.RvCustomDesign
-import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @AndroidEntryPoint
-class OrdersFragment: Fragment(), OrdersFragmentFunction {
+class OrdersFragment : Fragment(), OrdersFragmentFunction {
 
     @Inject
     lateinit var lambdaRepository: LambdaRepository
@@ -47,7 +47,6 @@ class OrdersFragment: Fragment(), OrdersFragmentFunction {
     private lateinit var basketList: ArrayList<OrdersDetailItem>
     private lateinit var ordersDetailAdapter: OrdersDetailAdapter // Declare here
 
-    // 1. Lifecycle 관련 함수
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -72,7 +71,7 @@ class OrdersFragment: Fragment(), OrdersFragmentFunction {
         if (context is MainActivityListener) {
             mainListener = context
         } else {
-            throw RuntimeException("$context must implement OnFragmentInteractionListener")
+            throw RuntimeException("$context must implement MainActivityListener")
         }
     }
 
@@ -81,17 +80,16 @@ class OrdersFragment: Fragment(), OrdersFragmentFunction {
         mainListener = null
     }
 
-    // 2. UI 초기화 관련 함수
     private fun initOrderList() {
         ordersBoard = binding.orderBoard
-        val boardAdapter = OrdersAdapter(ArrayList(), this@OrdersFragment) // Use an empty list initially
+        val boardAdapter = OrdersAdapter(ArrayList(), this@OrdersFragment)
+
         ordersBoard.apply {
             adapter = boardAdapter
             layoutManager = GridLayoutManager(context, 1)
             addItemDecoration(RvCustomDesign(0, 0, 0, 20))
         }
 
-        // Fetch data and update adapter
         lifecycleScope.launch {
             ordersList = lambdaRepository.getOrdersOfDay()
             boardAdapter.updateData(ordersList)
@@ -102,10 +100,11 @@ class OrdersFragment: Fragment(), OrdersFragmentFunction {
         basketList = ArrayList()
         basket = binding.basket
         ordersDetailAdapter = OrdersDetailAdapter(basketList)
+
         basket.apply {
             adapter = ordersDetailAdapter
             layoutManager = GridLayoutManager(context, 1)
-            addItemDecoration(RvCustomDesign(15, 15, 0, 0)) // 20dp의 여백
+            addItemDecoration(RvCustomDesign(15, 15, 0, 0))
         }
     }
 
@@ -113,7 +112,7 @@ class OrdersFragment: Fragment(), OrdersFragmentFunction {
         binding.viewThisOrder.setOnClickListener {
             viewModel.fetchOrderDetail(orderNumber)
         }
-        // LiveData 관찰
+
         viewModel.orderDetails.observe(viewLifecycleOwner) { fetchedBasketList ->
             ordersDetailAdapter.updateData(fetchedBasketList)
         }
@@ -123,6 +122,8 @@ class OrdersFragment: Fragment(), OrdersFragmentFunction {
         binding.reprint.setOnClickListener {
             if (this.basketList.isNotEmpty()) {
                 viewModel.reprint(this.orderNumber, this.basketList)
+            } else {
+                showToastMessage("주문을 조회해주세요.")
             }
         }
     }
@@ -134,33 +135,34 @@ class OrdersFragment: Fragment(), OrdersFragmentFunction {
                 builder.setTitle("주문 내역을 삭제하시겠습니까?")
                     .setMessage("주문번호 ${this.orderNumber}번이 삭제되며 복구할 수 없습니다")
                     .setPositiveButton("확인") { _, _ ->
-                        // Launch a coroutine to call the suspend function
                         lifecycleScope.launch {
                             try {
-                                Toast.makeText(context, "주문 삭제 중...기다려주세요", Toast.LENGTH_SHORT).show()
+                                showToastMessage("주문 삭제 중...기다려주세요")
                                 val result = lambdaRepository.deleteOrder(viewModel.getCurrentDate(), orderNumber)
                                 if (result == true) {
-                                    Toast.makeText(context, "주문이 성공적으로 삭제되었습니다.", Toast.LENGTH_SHORT).show()
+                                    showToastMessage("주문이 성공적으로 삭제되었습니다.")
                                     mainListener?.replaceOrdersFragment()
                                 } else {
-                                    Toast.makeText(context, "주문 삭제에 실패했습니다.", Toast.LENGTH_SHORT).show()
+                                    showToastMessage("주문 삭제에 실패했습니다.")
                                 }
                             } catch (e: Exception) {
                                 e.printStackTrace()
-                                Toast.makeText(context, "오류가 발생했습니다. 다시 시도해주세요.", Toast.LENGTH_SHORT).show()
+                                showToastMessage("오류가 발생했습니다. 다시 시도해주세요.")
                             }
                         }
                     }
                     .setNegativeButton("취소") { _, _ -> }
                     .show()
             } else {
-                Toast.makeText(context, "주문 조회 후 클릭해주세요", Toast.LENGTH_SHORT).show()
+                showToastMessage("주문 조회 후 클릭해주세요")
             }
         }
     }
 
+    fun showToastMessage(msg: String) {
+        Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+    }
 
-    // 3. 인터페이스 함수
     @SuppressLint("NotifyDataSetChanged")
     override fun newOrderSelected(num: Int, total: Int) {
         orderNumber = num
