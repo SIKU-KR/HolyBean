@@ -4,13 +4,20 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import eloom.holybean.R
 import eloom.holybean.data.model.MenuItem
-import eloom.holybean.interfaces.HomeFunctions
 
-// 메뉴목록 (RecyclerView)의 어댑터 정의
-class MenuAdapter(private val itemList: ArrayList<MenuItem>, private val mainListner : HomeFunctions) : RecyclerView.Adapter<MenuAdapter.MenuViewHolder>() {
+class MenuAdapter(
+    private val onClick: (MenuItem) -> Unit
+) : ListAdapter<MenuItem, MenuAdapter.MenuViewHolder>(Diff) {
+
+    object Diff : DiffUtil.ItemCallback<MenuItem>() {
+        override fun areItemsTheSame(oldItem: MenuItem, newItem: MenuItem) = oldItem.id == newItem.id
+        override fun areContentsTheSame(oldItem: MenuItem, newItem: MenuItem) = oldItem == newItem
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MenuViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.list_item_menu, parent, false)
@@ -18,26 +25,17 @@ class MenuAdapter(private val itemList: ArrayList<MenuItem>, private val mainLis
     }
 
     override fun onBindViewHolder(holder: MenuViewHolder, position: Int) {
-        val item = itemList[position]
-        holder.menuName.text = item.name
-        holder.menuPrice.text = item.price.toString()
-        holder.itemView.setOnClickListener {
-            mainListner.addToBasket(item.id)
+        holder.bind(getItem(position), onClick)
+    }
+
+    class MenuViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        private val menuName: TextView = itemView.findViewById(R.id.menu_name)
+        private val menuPrice: TextView = itemView.findViewById(R.id.menu_price)
+
+        fun bind(item: MenuItem, onClick: (MenuItem) -> Unit) {
+            menuName.text = item.name
+            menuPrice.text = item.price.toString()
+            itemView.setOnClickListener { onClick(item) }
         }
-    }
-
-    override fun getItemCount(): Int {
-        return itemList.size
-    }
-
-    fun updateList(newItemList: ArrayList<MenuItem>) {
-        itemList.clear()
-        itemList.addAll(newItemList)
-        notifyDataSetChanged()
-    }
-
-    inner class MenuViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        val menuName: TextView = itemView.findViewById(R.id.menu_name)
-        val menuPrice: TextView = itemView.findViewById(R.id.menu_price)
     }
 }
