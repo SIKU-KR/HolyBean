@@ -148,4 +148,102 @@ class OrdersViewModelTest {
         coVerify { anyConstructed<OrdersPrinter>().disconnect() }
         viewModel.error.removeObserver(errorObserver)
     }
+
+    @Test
+    fun `deleteOrder should update deleteStatus to Loading then Success when deletion succeeds`() = runTest {
+        // Given
+        val orderNumber = 123
+        val currentDate = viewModel.getCurrentDate()
+        val deleteStatusObserver = mockk<Observer<OrdersViewModel.DeleteStatus>>(relaxed = true)
+        val deleteResultObserver = mockk<Observer<Boolean?>>(relaxed = true)
+        
+        viewModel.deleteStatus.observeForever(deleteStatusObserver)
+        viewModel.deleteResult.observeForever(deleteResultObserver)
+        
+        coEvery { lambdaRepository.deleteOrder(currentDate, orderNumber) } returns true
+
+        // When
+        viewModel.deleteOrder(orderNumber)
+
+        // Then
+        coVerify { lambdaRepository.deleteOrder(currentDate, orderNumber) }
+        verify { deleteStatusObserver.onChanged(OrdersViewModel.DeleteStatus.Loading) }
+        verify { deleteStatusObserver.onChanged(OrdersViewModel.DeleteStatus.Success) }
+        verify { deleteResultObserver.onChanged(true) }
+        
+        viewModel.deleteStatus.removeObserver(deleteStatusObserver)
+        viewModel.deleteResult.removeObserver(deleteResultObserver)
+    }
+
+    @Test
+    fun `deleteOrder should update deleteStatus to Loading then Error when deletion fails`() = runTest {
+        // Given
+        val orderNumber = 456
+        val currentDate = viewModel.getCurrentDate()
+        val deleteStatusObserver = mockk<Observer<OrdersViewModel.DeleteStatus>>(relaxed = true)
+        val deleteResultObserver = mockk<Observer<Boolean?>>(relaxed = true)
+        
+        viewModel.deleteStatus.observeForever(deleteStatusObserver)
+        viewModel.deleteResult.observeForever(deleteResultObserver)
+        
+        coEvery { lambdaRepository.deleteOrder(currentDate, orderNumber) } returns false
+
+        // When
+        viewModel.deleteOrder(orderNumber)
+
+        // Then
+        coVerify { lambdaRepository.deleteOrder(currentDate, orderNumber) }
+        verify { deleteStatusObserver.onChanged(OrdersViewModel.DeleteStatus.Loading) }
+        verify { deleteStatusObserver.onChanged(match { it is OrdersViewModel.DeleteStatus.Error && it.message == "주문 삭제에 실패했습니다." }) }
+        verify { deleteResultObserver.onChanged(false) }
+        
+        viewModel.deleteStatus.removeObserver(deleteStatusObserver)
+        viewModel.deleteResult.removeObserver(deleteResultObserver)
+    }
+
+    @Test
+    fun `deleteOrder should update deleteStatus to Error when repository throws exception`() = runTest {
+        // Given
+        val orderNumber = 789
+        val errorMessage = "Network connection failed"
+        val exception = RuntimeException(errorMessage)
+        val deleteStatusObserver = mockk<Observer<OrdersViewModel.DeleteStatus>>(relaxed = true)
+        val deleteResultObserver = mockk<Observer<Boolean?>>(relaxed = true)
+        
+        viewModel.deleteStatus.observeForever(deleteStatusObserver)
+        viewModel.deleteResult.observeForever(deleteResultObserver)
+        
+        coEvery { lambdaRepository.deleteOrder(any(), any()) } throws exception
+
+        // When
+        viewModel.deleteOrder(orderNumber)
+
+        // Then
+        verify { deleteStatusObserver.onChanged(OrdersViewModel.DeleteStatus.Loading) }
+        verify { deleteStatusObserver.onChanged(match { it is OrdersViewModel.DeleteStatus.Error && it.message == "오류가 발생했습니다. 다시 시도해주세요." }) }
+        verify { deleteResultObserver.onChanged(false) }
+        
+        viewModel.deleteStatus.removeObserver(deleteStatusObserver)
+        viewModel.deleteResult.removeObserver(deleteResultObserver)
+    }
+
+    @Test
+    fun `resetDeleteStatus should set deleteStatus to Idle and deleteResult to null`() = runTest {
+        // Given
+        val deleteStatusObserver = mockk<Observer<OrdersViewModel.DeleteStatus>>(relaxed = true)
+        val deleteResultObserver = mockk<Observer<Boolean?>>(relaxed = true)
+        
+        viewModel.deleteStatus.observeForever(deleteStatusObserver)
+        viewModel.deleteResult.observeForever(deleteResultObserver)
+
+        // When
+        viewModel.resetDeleteStatus()
+
+        // Then
+        verify { deleteStatusObserver.onChanged(OrdersViewModel.DeleteStatus.Idle) }
+        verify { deleteResultObserver.onChanged(null) }
+        
+        viewModel.deleteStatus.removeObserver(deleteStatusObserver)
+        viewModel.deleteResult.removeObserver(deleteResultObserver)
+    }
 }

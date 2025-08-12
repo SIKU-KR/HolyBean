@@ -123,7 +123,7 @@ class OrdersFragment : Fragment(), OrdersFragmentFunction {
             if (this.basketList.isNotEmpty()) {
                 viewModel.reprint(this.orderNumber, this.basketList)
             } else {
-                showToastMessage("주문을 조회해주세요.")
+                showToastMessage("주문 조회 후 클릭해주세요")
             }
         }
     }
@@ -131,30 +131,46 @@ class OrdersFragment : Fragment(), OrdersFragmentFunction {
     private fun initDeleteOrderButton() {
         binding.deleteButton.setOnClickListener {
             if (this.basketList.isNotEmpty()) {
-                val builder = AlertDialog.Builder(context)
-                builder.setTitle("주문 내역을 삭제하시겠습니까?")
-                    .setMessage("주문번호 ${this.orderNumber}번이 삭제되며 복구할 수 없습니다")
-                    .setPositiveButton("확인") { _, _ ->
-                        lifecycleScope.launch {
-                            try {
-                                showToastMessage("주문 삭제 중...기다려주세요")
-                                val result = lambdaRepository.deleteOrder(viewModel.getCurrentDate(), orderNumber)
-                                if (result == true) {
-                                    showToastMessage("주문이 성공적으로 삭제되었습니다.")
-                                    mainListener?.replaceOrdersFragment()
-                                } else {
-                                    showToastMessage("주문 삭제에 실패했습니다.")
-                                }
-                            } catch (e: Exception) {
-                                e.printStackTrace()
-                                showToastMessage("오류가 발생했습니다. 다시 시도해주세요.")
-                            }
-                        }
-                    }
-                    .setNegativeButton("취소") { _, _ -> }
-                    .show()
+                showDeleteConfirmationDialog()
             } else {
                 showToastMessage("주문 조회 후 클릭해주세요")
+            }
+        }
+        observeDeleteStatus()
+    }
+
+    private fun showDeleteConfirmationDialog() {
+        AlertDialog.Builder(context)
+            .setTitle("주문 내역을 삭제하시겠습니까?")
+            .setMessage("주문번호 ${this.orderNumber}번이 삭제되며 복구할 수 없습니다")
+            .setPositiveButton("확인") { _, _ ->
+                viewModel.deleteOrder(orderNumber)
+            }
+            .setNegativeButton("취소") { _, _ -> }
+            .show()
+    }
+
+    private fun observeDeleteStatus() {
+        viewModel.deleteStatus.observe(viewLifecycleOwner) { status ->
+            when (status) {
+                is OrdersViewModel.DeleteStatus.Loading -> {
+                    showToastMessage("주문 삭제 중...기다려주세요")
+                }
+
+                is OrdersViewModel.DeleteStatus.Success -> {
+                    showToastMessage("주문이 성공적으로 삭제되었습니다.")
+                    mainListener?.replaceOrdersFragment()
+                    viewModel.resetDeleteStatus()
+                }
+
+                is OrdersViewModel.DeleteStatus.Error -> {
+                    showToastMessage(status.message)
+                    viewModel.resetDeleteStatus()
+                }
+
+                is OrdersViewModel.DeleteStatus.Idle -> {
+                    // Do nothing
+                }
             }
         }
     }

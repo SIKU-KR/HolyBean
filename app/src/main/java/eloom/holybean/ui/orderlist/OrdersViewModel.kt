@@ -7,8 +7,6 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import eloom.holybean.data.model.OrdersDetailItem
 import eloom.holybean.data.repository.LambdaRepository
-import eloom.holybean.network.ApiService
-import eloom.holybean.network.RetrofitClient
 import eloom.holybean.printer.OrdersPrinter
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -21,14 +19,24 @@ class OrdersViewModel @Inject constructor(
     private val lambdaRepository: LambdaRepository
 ) : ViewModel() {
 
-    private val apiService = RetrofitClient.retrofit.create(ApiService::class.java)
-
-    // LiveData 추가
     private val _orderDetails = MutableLiveData<List<OrdersDetailItem>>()
     val orderDetails: LiveData<List<OrdersDetailItem>> get() = _orderDetails
 
     private val _error = MutableLiveData<String>()
     val error: LiveData<String> get() = _error
+
+    private val _deleteStatus = MutableLiveData<DeleteStatus>()
+    val deleteStatus: LiveData<DeleteStatus> get() = _deleteStatus
+
+    private val _deleteResult = MutableLiveData<Boolean?>()
+    val deleteResult: LiveData<Boolean?> get() = _deleteResult
+
+    sealed class DeleteStatus {
+        object Idle : DeleteStatus()
+        object Loading : DeleteStatus()
+        object Success : DeleteStatus()
+        data class Error(val message: String) : DeleteStatus()
+    }
 
     fun getCurrentDate(): String {
         val dateFormat = SimpleDateFormat("yyyy-MM-dd")
@@ -60,5 +68,31 @@ class OrdersViewModel @Inject constructor(
                 _error.postValue("Failed to fetch order details: ${e.message}")
             }
         }
+    }
+
+    fun deleteOrder(orderNumber: Int) {
+        viewModelScope.launch {
+            try {
+                _deleteStatus.postValue(DeleteStatus.Loading)
+                val result = lambdaRepository.deleteOrder(getCurrentDate(), orderNumber)
+                
+                if (result == true) {
+                    _deleteStatus.postValue(DeleteStatus.Success)
+                    _deleteResult.postValue(true)
+                } else {
+                    _deleteStatus.postValue(DeleteStatus.Error("주문 삭제에 실패했습니다."))
+                    _deleteResult.postValue(false)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                _deleteStatus.postValue(DeleteStatus.Error("오류가 발생했습니다. 다시 시도해주세요."))
+                _deleteResult.postValue(false)
+            }
+        }
+    }
+
+    fun resetDeleteStatus() {
+        _deleteStatus.postValue(DeleteStatus.Idle)
+        _deleteResult.postValue(null)
     }
 }
