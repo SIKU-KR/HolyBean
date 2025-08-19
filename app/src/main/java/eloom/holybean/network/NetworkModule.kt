@@ -19,5 +19,5 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideCoroutineDispatcher(): CoroutineDispatcher = Dispatchers.Main
+    fun provideCoroutineDispatcher(): CoroutineDispatcher = Dispatchers.IO
 }
