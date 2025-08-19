@@ -22,7 +22,6 @@ import eloom.holybean.data.model.OrderDialogData
 import eloom.holybean.databinding.FragmentHomeBinding
 import eloom.holybean.interfaces.MainActivityListener
 import eloom.holybean.ui.RvCustomDesign
-import eloom.holybean.ui.dialog.OrderDialog
 import kotlinx.coroutines.launch
 
 @AndroidEntryPoint

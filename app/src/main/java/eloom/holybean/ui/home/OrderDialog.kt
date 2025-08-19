@@ -1,4 +1,4 @@
-package eloom.holybean.ui.dialog
+package eloom.holybean.ui.home
 
 import android.app.AlertDialog
 import android.app.Dialog
