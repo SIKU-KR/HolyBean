@@ -2,7 +2,6 @@ package eloom.holybean.ui.report
 
 import android.bluetooth.BluetoothAdapter
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
-import androidx.lifecycle.Observer
 import eloom.holybean.data.model.ReportDetailItem
 import eloom.holybean.network.ApiService
 import eloom.holybean.network.dto.ResponseMenuSales
@@ -11,9 +10,11 @@ import eloom.holybean.printer.ReportPrinter
 import io.mockk.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.*
 import org.junit.After
-import org.junit.Assert.assertEquals
+import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -32,13 +33,25 @@ class ReportViewModelTest {
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
-        viewModel = ReportViewModel(apiService)
+        viewModel = ReportViewModel(apiService, testDispatcher)
     }
 
     @After
     fun tearDown() {
         Dispatchers.resetMain()
         clearAllMocks()
+    }
+
+    @Test
+    fun `uiState should be initialized correctly`() = runTest {
+        // Given & When
+        val initialState = viewModel.uiState.first()
+
+        // Then
+        assertEquals(emptyMap<String, Int>(), initialState.reportData)
+        assertEquals(emptyList<ReportDetailItem>(), initialState.reportDetailData)
+        assertEquals("", initialState.reportTitle)
+        assertEquals(false, initialState.isLoading)
     }
 
     @Test
@@ -50,7 +63,7 @@ class ReportViewModelTest {
     }
 
     @Test
-    fun `loadReportData should update LiveData on successful fetch`() = runTest {
+    fun `loadReportData should update uiState on successful fetch`() = runTest {
         // Given
         val startDate = "2024-01-01"
         val endDate = "2024-01-31"
@@ -60,53 +73,71 @@ class ReportViewModelTest {
         )
         coEvery { apiService.getReport(startDate, endDate) } returns Response.success(mockResponse)
 
-        val reportDataObserver = mockk<Observer<Map<String, Int>>>(relaxed = true)
-        val reportDetailObserver = mockk<Observer<List<ReportDetailItem>>>(relaxed = true)
-        val reportTitleObserver = mockk<Observer<String>>(relaxed = true)
-        viewModel.reportData.observeForever(reportDataObserver)
-        viewModel.reportDetailData.observeForever(reportDetailObserver)
-        viewModel.reportTitle.observeForever(reportTitleObserver)
-
         // When
         viewModel.loadReportData(startDate, endDate)
 
         // Then
-        verify { reportDataObserver.onChanged(mockResponse.paymentMethodSales) }
-        verify { reportDetailObserver.onChanged(listOf(ReportDetailItem("Coffee", 10, 50000))) }
-        verify { reportTitleObserver.onChanged("$startDate ~ $endDate") }
+        val uiState = viewModel.uiState.first()
+        assertEquals(mockResponse.paymentMethodSales, uiState.reportData)
+        assertEquals(listOf(ReportDetailItem("Coffee", 10, 50000)), uiState.reportDetailData)
+        assertEquals("$startDate ~ $endDate", uiState.reportTitle)
+        assertEquals(false, uiState.isLoading)
     }
 
     @Test
-    fun `loadReportData should post error on invalid date range`() = runTest {
+    fun `loadReportData should emit error event on invalid date range`() = runTest {
         // Given
         val startDate = "2024-02-01"
         val endDate = "2024-01-31"
-        val errorObserver = mockk<Observer<String>>(relaxed = true)
-        viewModel.errorMessage.observeForever(errorObserver)
+
+        // Collect events before triggering the action
+        val events = mutableListOf<ReportViewModel.ReportUiEvent>()
+        val collectJob = launch {
+            viewModel.uiEvent.collect { events.add(it) }
+        }
 
         // When
         viewModel.loadReportData(startDate, endDate)
 
+        // Wait for the coroutine to complete
+        advanceUntilIdle()
+
         // Then
-        verify { errorObserver.onChanged("잘못된 날짜 범위입니다") }
+        assertEquals(1, events.size)
+        assertTrue(events.first() is ReportViewModel.ReportUiEvent.ShowError)
+        assertEquals("잘못된 날짜 범위입니다", (events.first() as ReportViewModel.ReportUiEvent.ShowError).message)
         coVerify(exactly = 0) { apiService.getReport(any(), any()) }
+
+        collectJob.cancel()
     }
 
     @Test
-    fun `loadReportData should post error on api failure`() = runTest {
+    fun `loadReportData should emit error event on api failure`() = runTest {
         // Given
         val startDate = "2024-01-01"
         val endDate = "2024-01-31"
         val exception = RuntimeException("Network failed")
         coEvery { apiService.getReport(startDate, endDate) } throws exception
-        val errorObserver = mockk<Observer<String>>(relaxed = true)
-        viewModel.errorMessage.observeForever(errorObserver)
+
+        // Collect events before triggering the action
+        val events = mutableListOf<ReportViewModel.ReportUiEvent>()
+        val collectJob = launch {
+            viewModel.uiEvent.collect { events.add(it) }
+        }
 
         // When
         viewModel.loadReportData(startDate, endDate)
 
+        // Wait for the coroutine to complete
+        advanceUntilIdle()
+
         // Then
-        verify { errorObserver.onChanged("리포트를 불러오는데 실패했습니다: ${exception.localizedMessage}") }
+        assertEquals(1, events.size)
+        assertTrue(events.first() is ReportViewModel.ReportUiEvent.ShowError)
+        val expectedErrorMessage = "리포트를 불러오는데 실패했습니다: ${exception.localizedMessage}"
+        assertEquals(expectedErrorMessage, (events.first() as ReportViewModel.ReportUiEvent.ShowError).message)
+
+        collectJob.cancel()
     }
 
     @Test
@@ -128,6 +159,12 @@ class ReportViewModelTest {
         every { anyConstructed<ReportPrinter>().print(any()) } just runs
         every { anyConstructed<ReportPrinter>().disconnect() } just runs
 
+        // Collect events before triggering the action
+        val events = mutableListOf<ReportViewModel.ReportUiEvent>()
+        val collectJob = launch {
+            viewModel.uiEvent.collect { events.add(it) }
+        }
+
         // When
         viewModel.printReport()
         advanceUntilIdle()
@@ -136,18 +173,35 @@ class ReportViewModelTest {
         verify { anyConstructed<ReportPrinter>().getPrintingText(any()) }
         verify { anyConstructed<ReportPrinter>().print("print text") }
         verify { anyConstructed<ReportPrinter>().disconnect() }
+        // Check success toast event
+        val successEvent = events.find { it is ReportViewModel.ReportUiEvent.ShowToast }
+        assertNotNull(successEvent)
+        assertEquals("리포트 인쇄가 완료되었습니다", (successEvent as ReportViewModel.ReportUiEvent.ShowToast).message)
+
+        collectJob.cancel()
     }
 
     @Test
-    fun `printReport should post error when data is not available`() = runTest {
-        // Given
-        val errorObserver = mockk<Observer<String>>(relaxed = true)
-        viewModel.errorMessage.observeForever(errorObserver)
+    fun `printReport should emit error event when data is not available`() = runTest {
+        // Given - empty data (default state)
+
+        // Collect events before triggering the action
+        val events = mutableListOf<ReportViewModel.ReportUiEvent>()
+        val collectJob = launch {
+            viewModel.uiEvent.collect { events.add(it) }
+        }
 
         // When
         viewModel.printReport()
 
+        // Wait for the coroutine to complete
+        advanceUntilIdle()
+
         // Then
-        verify { errorObserver.onChanged("인쇄할 데이터가 없습니다") }
+        assertEquals(1, events.size)
+        assertTrue(events.first() is ReportViewModel.ReportUiEvent.ShowError)
+        assertEquals("인쇄할 데이터가 없습니다", (events.first() as ReportViewModel.ReportUiEvent.ShowError).message)
+
+        collectJob.cancel()
     }
 }

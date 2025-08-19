@@ -1,19 +1,18 @@
 package eloom.holybean.ui.home
 
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.lifecycle.HiltViewModel
 import eloom.holybean.data.model.CartItem
 import eloom.holybean.data.model.MenuItem
 import eloom.holybean.data.model.Order
 import eloom.holybean.data.repository.LambdaRepository
 import eloom.holybean.data.repository.MenuDB
-import eloom.holybean.interfaces.MainActivityListener
 import eloom.holybean.interfaces.OrderDialogListener
 import eloom.holybean.printer.HomePrinter
-import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
@@ -23,17 +22,52 @@ import javax.inject.Inject
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val lambdaRepository: LambdaRepository,
-    private val menudb: MenuDB
-) : OrderDialogListener, ViewModel() {
+    private val menuDB: MenuDB,
+    private val dispatcher: CoroutineDispatcher
+) : ViewModel(), OrderDialogListener {
 
-    private var mainListener: MainActivityListener? = null
+    data class UiState(
+        val allMenuItems: List<MenuItem> = emptyList(),
+        val filteredMenuItems: List<MenuItem> = emptyList(),
+        val selectedCategoryIndex: Int = 0,
+        val basketItems: List<CartItem> = emptyList(),
+        val orderId: Int = 0,
+        val totalPrice: Int = 0,
+        val currentDate: String = currentDateString()
+    ) {
+        companion object {
+            private fun currentDateString(): String {
+                val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+                return LocalDate.now().format(formatter)
+            }
+        }
+    }
 
-    // LiveData for error messages
-    private val _errorMessage = MutableLiveData<String?>()
-    val errorMessage: LiveData<String?> get() = _errorMessage
+    sealed class UiEvent {
+        data class ShowToast(val message: String) : UiEvent()
+        object NavigateHome : UiEvent()
+    }
 
-    fun setMainActivityListener(listener: MainActivityListener) {
-        this.mainListener = listener
+    private val _uiState = MutableStateFlow(UiState())
+    val uiState: StateFlow<UiState> = _uiState.asStateFlow()
+
+    private val _uiEvent = MutableSharedFlow<UiEvent>(
+        replay = 1,
+        extraBufferCapacity = 16,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
+    val uiEvent: SharedFlow<UiEvent> = _uiEvent.asSharedFlow()
+
+    init {
+        // Load initial data
+        viewModelScope.launch(dispatcher) {
+            val menus = getMenuList()
+            _uiState.value = _uiState.value.copy(
+                allMenuItems = menus,
+                filteredMenuItems = menus
+            )
+            refreshOrderNumber()
+        }
     }
 
     fun getCurrentDate(): String {
@@ -47,61 +81,123 @@ class HomeViewModel @Inject constructor(
     }
 
     fun getMenuList(): ArrayList<MenuItem> {
-        return ArrayList(menudb.getMenuList())
+        return ArrayList(menuDB.getMenuList())
+    }
+
+    fun refreshOrderNumber() {
+        viewModelScope.launch(dispatcher) {
+            val id = lambdaRepository.getOrderNumber()
+            _uiState.value = _uiState.value.copy(orderId = id)
+        }
+    }
+
+    fun onCategorySelected(index: Int) {
+        viewModelScope.launch(dispatcher) {
+            val filtered = if (index == 0) {
+                _uiState.value.allMenuItems
+            } else {
+                _uiState.value.allMenuItems.filter { it.id / 1000 == index }
+            }
+            _uiState.value = _uiState.value.copy(
+                selectedCategoryIndex = index,
+                filteredMenuItems = filtered
+            )
+        }
+    }
+
+    fun addToBasket(id: Int) {
+        viewModelScope.launch(dispatcher) {
+            val currentBasket = _uiState.value.basketItems.toMutableList()
+            val existing = currentBasket.find { it.id == id }
+            if (existing == null) {
+                val target = _uiState.value.allMenuItems.find { it.id == id } ?: return@launch
+                currentBasket.add(CartItem(id, target.name, target.price, 1, target.price))
+            } else {
+                val updated = existing.copy(count = existing.count + 1)
+                updated.total = updated.count * updated.price
+                val idx = currentBasket.indexOf(existing)
+                currentBasket[idx] = updated
+            }
+            val total = currentBasket.sumOf { it.count * it.price }
+            _uiState.value = _uiState.value.copy(
+                basketItems = currentBasket,
+                totalPrice = total
+            )
+        }
+    }
+
+    fun deleteFromBasket(id: Int) {
+        viewModelScope.launch(dispatcher) {
+            val currentBasket = _uiState.value.basketItems.toMutableList()
+            val item = currentBasket.find { it.id == id } ?: return@launch
+            if (item.count <= 1) {
+                currentBasket.remove(item)
+            } else {
+                val updated = item.copy(count = item.count - 1)
+                updated.total = updated.count * updated.price
+                val idx = currentBasket.indexOf(item)
+                currentBasket[idx] = updated
+            }
+            val total = currentBasket.sumOf { it.count * it.price }
+            _uiState.value = _uiState.value.copy(
+                basketItems = currentBasket,
+                totalPrice = total
+            )
+        }
+    }
+
+    fun addCoupon(amount: Int) {
+        if (amount <= 0) {
+            viewModelScope.launch(dispatcher) {
+                _uiEvent.emit(UiEvent.ShowToast("올바른 금액이 아닙니다"))
+            }
+            return
+        }
+        viewModelScope.launch(dispatcher) {
+            val currentBasket = _uiState.value.basketItems.toMutableList()
+            currentBasket.add(CartItem(999, "쿠폰", amount, 1, amount))
+            val total = currentBasket.sumOf { it.count * it.price }
+            _uiState.value = _uiState.value.copy(
+                basketItems = currentBasket,
+                totalPrice = total
+            )
+        }
     }
 
     override fun onOrderConfirmed(data: Order, takeOption: String) {
-        // 주문 POST 요청은 별도의 스레드에서 동기적으로 처리
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(dispatcher) {
             try {
-                // 1. POST 요청
                 lambdaRepository.postOrder(data)
-
-                // 주문 완료 후 바로 홈 프래그먼트 전환 (UI 스레드에서)
-                withContext(Dispatchers.Main) {
-                    mainListener?.replaceHomeFragment()
-                }
-
-                // 2. 영수증 출력은 비동기적으로 요청만 보냄 (별도 try-catch로 격리)
+                _uiEvent.emit(UiEvent.NavigateHome)
+                // Print receipts without blocking UI
                 try {
                     printReceipt(data, takeOption)
                 } catch (e: Exception) {
-                    // 영수증 출력 실패는 주문 처리에 영향을 주지 않음
                     e.printStackTrace()
                 }
-
             } catch (e: Exception) {
                 e.printStackTrace()
-                _errorMessage.postValue("주문 처리 중 오류가 발생했습니다.")
+                _uiEvent.emit(UiEvent.ShowToast("주문 처리 중 오류가 발생했습니다."))
             }
         }
     }
 
     // 영수증 출력은 요청만 보낸 후 완료 여부는 기다리지 않음
     private suspend fun printReceipt(data: Order, takeOption: String) {
-        withContext(Dispatchers.IO) {
+        withContext(dispatcher) {
             try {
                 val printer = HomePrinter()
                 val receiptForCustomer = printer.receiptTextForCustomer(data)
                 val receiptForPOS = printer.receiptTextForPOS(data, takeOption)
-
                 try {
-                    // 고객용 영수증 출력 요청
                     printer.print(receiptForCustomer)
-                    // POS용 영수증 출력 요청
                     printer.print(receiptForPOS)
                 } finally {
-                    // 프린터 연결 해제
                     printer.disconnect()
                 }
             } catch (e: Exception) {
-                // 프린터 초기화 또는 출력 중 오류가 발생하면 로그로 기록
                 e.printStackTrace()
             }
         }
-    }
-
-    fun clearErrorMessage() {
-        _errorMessage.value = null
     }
 }

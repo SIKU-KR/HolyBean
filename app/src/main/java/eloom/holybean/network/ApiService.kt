@@ -42,5 +42,5 @@ interface ApiService {
     suspend fun getMenuList(): Response<ResponseMenuList>
 
     @POST("/menu")
-    suspend fun postMenuList(@Body menuList: ArrayList<MenuItem>): Response<Unit>
+    suspend fun postMenuList(@Body menuList: List<MenuItem>): Response<Unit>
 }

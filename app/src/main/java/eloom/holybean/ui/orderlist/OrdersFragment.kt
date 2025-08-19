@@ -43,7 +43,7 @@ class OrdersFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        
+
         setupAdapters()
         setupRecyclerViews()
         setupButtons()
@@ -73,7 +73,7 @@ class OrdersFragment : Fragment() {
         ordersAdapter = OrdersAdapter { orderNumber, totalAmount ->
             viewModel.selectOrder(orderNumber, totalAmount)
         }
-        
+
         ordersDetailAdapter = OrdersDetailAdapter()
     }
 
@@ -114,7 +114,7 @@ class OrdersFragment : Fragment() {
                         updateUI(uiState)
                     }
                 }
-                
+
                 launch {
                     viewModel.uiEvent.collect { event ->
                         handleUiEvent(event)
@@ -127,28 +127,31 @@ class OrdersFragment : Fragment() {
     private fun updateUI(uiState: OrdersViewModel.OrdersUiState) {
         // Update orders list
         ordersAdapter.submitList(uiState.ordersList)
-        
+
         // Update selected order info
         binding.orderNum.text = uiState.selectedOrderNumber.toString()
         binding.totalPriceNum.text = uiState.selectedOrderTotal.toString()
-        
+
         // Update order details
         ordersDetailAdapter.submitList(uiState.orderDetails)
-        
+
         // Handle delete status
         when (uiState.deleteStatus) {
             is OrdersViewModel.DeleteStatus.Loading -> {
                 showToastMessage("주문 삭제 중...기다려주세요")
             }
+
             is OrdersViewModel.DeleteStatus.Success -> {
                 showToastMessage("주문이 성공적으로 삭제되었습니다.")
                 mainListener?.replaceOrdersFragment()
                 viewModel.resetDeleteStatus()
             }
+
             is OrdersViewModel.DeleteStatus.Error -> {
                 showToastMessage(uiState.deleteStatus.message)
                 viewModel.resetDeleteStatus()
             }
+
             is OrdersViewModel.DeleteStatus.Idle -> {
                 // Do nothing
             }
@@ -160,6 +163,7 @@ class OrdersFragment : Fragment() {
             is OrdersViewModel.OrdersUiEvent.ShowToast -> {
                 showToastMessage(event.message)
             }
+
             is OrdersViewModel.OrdersUiEvent.RefreshOrders -> {
                 mainListener?.replaceOrdersFragment()
             }

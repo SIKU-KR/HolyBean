@@ -1,8 +1,8 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:padding="16dp">
+              android:layout_width="match_parent"
+              android:layout_height="wrap_content"
+              android:orientation="vertical"
+              android:padding="16dp">
 
     <TextView
         android:layout_width="match_parent"
@@ -11,7 +11,7 @@
         android:gravity="center"
         android:text="메뉴 등록"
         android:textSize="28sp"
-        android:textStyle="bold" />
+        android:textStyle="bold"/>
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -30,7 +30,7 @@
             android:paddingEnd="5dp"
             android:text="메뉴 id:"
             android:textColor="#A9A9A9"
-            android:textSize="20sp" />
+            android:textSize="20sp"/>
 
         <TextView
             android:id="@+id/editMenuid"
@@ -42,7 +42,7 @@
             android:paddingStart="5dp"
             android:text="1001"
             android:textColor="#A9A9A9"
-            android:textSize="20sp" />
+            android:textSize="20sp"/>
     </LinearLayout>
 
     <LinearLayout
@@ -61,7 +61,7 @@
             android:paddingEnd="5dp"
             android:text="순서:"
             android:textColor="#A9A9A9"
-            android:textSize="20sp" />
+            android:textSize="20sp"/>
 
         <TextView
             android:id="@+id/editMenuOrder"
@@ -73,7 +73,7 @@
             android:paddingStart="5dp"
             android:text="1001"
             android:textColor="#A9A9A9"
-            android:textSize="20sp" />
+            android:textSize="20sp"/>
 
     </LinearLayout>
 
@@ -91,7 +91,7 @@
             android:gravity="right"
             android:paddingEnd="5dp"
             android:text="메뉴 이름:"
-            android:textSize="20sp" />
+            android:textSize="20sp"/>
 
         <EditText
             android:id="@+id/editMenuName"
@@ -101,7 +101,7 @@
             android:fontFamily="@font/pretendard_bold"
             android:hint="메뉴 이름을 입력하세요"
             android:inputType="text"
-            android:minHeight="48dp" />
+            android:minHeight="48dp"/>
 
     </LinearLayout>
 
@@ -120,7 +120,7 @@
             android:gravity="right"
             android:paddingEnd="5dp"
             android:text="메뉴 가격:"
-            android:textSize="20sp" />
+            android:textSize="20sp"/>
 
         <EditText
             android:id="@+id/editMenuPrice"
@@ -130,7 +130,7 @@
             android:fontFamily="@font/pretendard_bold"
             android:hint="메뉴 가격을 입력하세요"
             android:inputType="number"
-            android:minHeight="48dp" />
+            android:minHeight="48dp"/>
 
     </LinearLayout>
 

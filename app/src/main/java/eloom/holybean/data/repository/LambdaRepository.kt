@@ -75,8 +75,8 @@ class LambdaRepository @Inject constructor() {
         }
     }
 
-    suspend fun deleteOrder(date: String, num: Int): Boolean{
-        return try{
+    suspend fun deleteOrder(date: String, num: Int): Boolean {
+        return try {
             val response = apiService.deleteOrder(date, num)
             validateResponse(response)
             true
@@ -86,10 +86,10 @@ class LambdaRepository @Inject constructor() {
         }
     }
 
-    suspend fun getCreditsList(): ArrayList<CreditItem>{
+    suspend fun getCreditsList(): ArrayList<CreditItem> {
         return try {
             val response = validateResponse(apiService.getAllCreditOrders())
-            ArrayList(response.map{
+            ArrayList(response.map {
                 CreditItem(it.orderNum, it.totalAmount, it.orderDate, it.customerName)
             })
         } catch (e: Exception) {
@@ -98,18 +98,18 @@ class LambdaRepository @Inject constructor() {
         }
     }
 
-    suspend fun setCreditOrderPaid(date: String, num: Int){
-        try{
+    suspend fun setCreditOrderPaid(date: String, num: Int) {
+        try {
             validateResponse(apiService.updateCreditStatus(date, num))
-        }catch (e: Exception){
+        } catch (e: Exception) {
             handleException(e)
         }
     }
 
-    suspend fun saveMenuListToServer(menulist: ArrayList<MenuItem>) {
-        try{
+    suspend fun saveMenuListToServer(menulist: List<MenuItem>) {
+        try {
             validateResponse(apiService.postMenuList(menulist))
-        } catch(e: Exception){
+        } catch (e: Exception) {
             handleException(e)
         }
     }
@@ -119,7 +119,7 @@ class LambdaRepository @Inject constructor() {
             val response = validateResponse(apiService.getMenuList())
             ArrayList(response.menulist.map {
                 MenuItem(it.id, it.name, it.price, it.order, it.inuse)
-            } )
+            })
         } catch (e: Exception) {
             handleException(e)
             arrayListOf()

@@ -1,6 +1,7 @@
 package eloom.holybean.interfaces
 
-interface HomeFunctions{
-    fun addToBasket(id:Int)
-    fun deleteFromBasket(id:Int)
+@Deprecated("Replaced by ViewModel actions and adapter lambdas")
+interface HomeFunctions {
+    fun addToBasket(id: Int)
+    fun deleteFromBasket(id: Int)
 }

@@ -1,8 +1,8 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:fitsSystemWindows="true"
-    android:orientation="vertical">
+              android:layout_width="match_parent"
+              android:layout_height="wrap_content"
+              android:fitsSystemWindows="true"
+              android:orientation="vertical">
 
     <TextView
         android:layout_width="wrap_content"
@@ -13,6 +13,6 @@
         android:fontFamily="@font/nanum_gothic_extrabold"
         android:text="메뉴 선택"
         android:textAppearance="?attr/textAppearanceHeadlineSmall"
-        android:textColor="?attr/colorOnSurface" />
+        android:textColor="?attr/colorOnSurface"/>
 
 </LinearLayout>

@@ -13,140 +13,144 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.tabs.TabLayout
+import dagger.hilt.android.AndroidEntryPoint
 import eloom.holybean.R
-import eloom.holybean.data.model.MenuItem
-import eloom.holybean.data.repository.LambdaRepository
-import eloom.holybean.data.repository.MenuDB
 import eloom.holybean.databinding.FragmentMenuManagementBinding
 import eloom.holybean.interfaces.MainActivityListener
 import eloom.holybean.ui.RvCustomDesign
-import eloom.holybean.ui.dialog.MenuAddDialog
-import eloom.holybean.ui.dialog.MenuEditDialog
-import eloom.holybean.ui.dialog.PasswordDialog
-import com.google.android.material.tabs.TabLayout
-import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 @AndroidEntryPoint
 class MenuManagementFragment : Fragment() {
 
-    @Inject
-    lateinit var menuDB: MenuDB
-
-    @Inject
-    lateinit var lambdaRepository: LambdaRepository
+    private val viewModel: MenuManagementViewModel by viewModels()
+    private var _binding: FragmentMenuManagementBinding? = null
+    private val binding get() = _binding!!
 
     private var mainListener: MainActivityListener? = null
-
-    private lateinit var binding: FragmentMenuManagementBinding
-
     private lateinit var menuBoard: RecyclerView
-    private lateinit var menuTab: TabLayout
-
-    private lateinit var itemList: ArrayList<MenuItem>
-    private var category: Int = 1
+    private lateinit var menuAdapter: MenuAdapter
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
-        if (context is MainActivityListener) {
-            mainListener = context
-        } else {
-            throw RuntimeException("$context must implement OnFragmentInteractionListener")
-        }
+        mainListener = context as? MainActivityListener
+            ?: throw RuntimeException("$context must implement MainActivityListener")
     }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
-        binding = FragmentMenuManagementBinding.inflate(inflater, container, false)
-        val view = binding.root
-        itemList = readMenuList()
-        initMenuBoard()
-        initTabs()
-        initAddButton()
-        initSaveButton()
-        initReturnButton()
-        initSaveToServerButton()
-        initGetFromServerButton()
-        updateRecyclerViewForCategory()
-        return view
+        _binding = FragmentMenuManagementBinding.inflate(inflater, container, false)
+        return binding.root
     }
 
-    private fun initReturnButton() {
-        binding.returnButton.setOnClickListener {
-            mainListener?.replaceMenuManagementFragment()
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        initViews()
+        initListeners()
+        observeViewModel()
+    }
+
+    private fun initViews() {
+        setupMenuBoard()
+        setupTabs()
+    }
+
+    private fun executeProtectedAction(action: () -> Unit) {
+        if (viewModel.isPasswordSessionVerified()) {
+            action()
+        } else {
+            PasswordDialog(requireContext()) {
+                viewModel.markPasswordSessionAsVerified()
+                action()
+            }.show()
         }
     }
 
-    private fun initSaveButton() {
+    private fun initListeners() {
+        binding.returnButton.setOnClickListener {
+            mainListener?.replaceHomeFragment()
+        }
         binding.saveButton.setOnClickListener {
-            val passwordDialog = PasswordDialog(requireContext()) {
-                menuDB.saveMenuOrders(itemList.filter { it.id / 1000 == category })
+            executeProtectedAction { viewModel.saveMenuOrder() }
+        }
+        binding.addButton.setOnClickListener {
+            MenuAddDialog().show(childFragmentManager, "MenuAddDialog")
+        }
+        binding.deviceToServer.setOnClickListener {
+            executeProtectedAction { viewModel.saveMenuListToServer() }
+        }
+        binding.serverToDevice.setOnClickListener {
+            executeProtectedAction { viewModel.getMenuListFromServer() }
+        }
+    }
+
+    private fun observeViewModel() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    viewModel.uiState.collect { render(it) }
+                }
+                launch {
+                    viewModel.uiEvent.collect { handleEvent(it) }
+                }
+            }
+        }
+    }
+
+    private fun render(state: MenuManagementViewModel.UiState) {
+        menuAdapter.submitList(state.filteredMenuItems)
+    }
+
+    private fun handleEvent(event: MenuManagementViewModel.UiEvent) {
+        when (event) {
+            is MenuManagementViewModel.UiEvent.ShowToast -> {
+                Toast.makeText(requireContext(), event.message, Toast.LENGTH_SHORT).show()
+            }
+
+            is MenuManagementViewModel.UiEvent.RefreshMenu -> {
                 mainListener?.replaceMenuManagementFragment()
             }
-            passwordDialog.show()
         }
     }
 
-    private fun initAddButton() {
-        binding.addButton.setOnClickListener {
-            val id = menuDB.getNextAvailableIdForCategory(this.category)
-            val placement = menuDB.getNextAvailablePlacementForCategory(this.category)
-            val dialog = MenuAddDialog(id, placement, mainListener)
-            dialog.show(parentFragmentManager, "MenuAddDialog")
-        }
-    }
-
-    private fun initSaveToServerButton() {
-        binding.deviceToServer.setOnClickListener {
-            val passwordDialog = PasswordDialog(requireContext()) {
-                lifecycleScope.launch {
-                    lambdaRepository.saveMenuListToServer(readMenuList())
-                    Toast.makeText(binding.root.context, "서버에 저장 완료", Toast.LENGTH_SHORT).show()
-                }
-            }
-            passwordDialog.show()
-        }
-    }
-
-    private fun initGetFromServerButton() {
-        binding.serverToDevice.setOnClickListener {
-            val passwordDialog = PasswordDialog(requireContext()) {
-                lifecycleScope.launch {
-                    val response = lambdaRepository.getLastedSavedMenuList()
-                    if (response.size == 0) {
-                        throw Exception("데이터가 올바르지 않습니다.")
-                    }
-                    menuDB.overwriteMenuList(response)
-                    Toast.makeText(binding.root.context, "태블릿에 저장 완료", Toast.LENGTH_SHORT).show()
-                    mainListener?.replaceMenuManagementFragment()
-                }
-            }
-            passwordDialog.show()
-        }
-    }
-
-    override fun onDetach() {
-        super.onDetach()
-        mainListener = null
-    }
-
-    private fun initMenuBoard() {
+    private fun setupMenuBoard() {
+        menuAdapter = MenuAdapter()
         menuBoard = binding.menulistView
-        val boardAdapter = MenuAdapter(itemList)
         menuBoard.apply {
-            adapter = boardAdapter
+            adapter = menuAdapter
             layoutManager = GridLayoutManager(context, 1)
             addItemDecoration(RvCustomDesign(10, 10, 5, 5))
         }
+        setupItemTouchHelper()
+    }
 
-        // RecyclerView Item Movement Logic
+    private fun setupItemTouchHelper() {
         val callback = object : ItemTouchHelper.Callback() {
+            override fun onMove(
+                recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder, target: RecyclerView.ViewHolder
+            ): Boolean {
+                val fromPosition = viewHolder.adapterPosition
+                val toPosition = target.adapterPosition
+                viewModel.moveItem(fromPosition, toPosition)
+                return true
+            }
+
+            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
+                val position = viewHolder.adapterPosition
+                val menuItem = menuAdapter.getItemAt(position)
+                MenuEditDialog(menuItem).show(childFragmentManager, "MenuEditDialog")
+                menuAdapter.notifyItemChanged(position)
+            }
+
             private val editBackground = ColorDrawable(Color.parseColor("#FFD700"))
             private val paint = Paint().apply {
                 color = Color.WHITE
@@ -157,35 +161,6 @@ class MenuManagementFragment : Fragment() {
                 typeface = ResourcesCompat.getFont(requireContext(), R.font.pretendard_bold)
             }
             private val maxSwipeDistance = 120f
-
-            override fun onMove(
-                recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder, target: RecyclerView.ViewHolder
-            ): Boolean {
-                val fromPosition = viewHolder.adapterPosition
-                val toPosition = target.adapterPosition
-
-                // 현재 카테고리의 메뉴 아이템들을 새 ArrayList로 생성
-                val filteredItems = ArrayList(itemList.filter { it.id / 1000 == category })
-                moveItem(filteredItems, fromPosition, toPosition)
-
-                // 변경된 순서에 맞춰 placement 값 업데이트
-                filteredItems.forEachIndexed { index, menuItem ->
-                    menuItem.order = (category * 1000) + (index + 1)
-                }
-
-                // 다른 카테고리의 아이템들과 합쳐서 전체 리스트를 재정렬 후 ArrayList로 생성
-                val otherItems = itemList.filter { it.id / 1000 != category }
-                itemList = ArrayList((otherItems + filteredItems).sortedBy { it.order })
-
-                recyclerView.adapter?.notifyItemMoved(fromPosition, toPosition)
-                return true
-            }
-
-
-            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
-                val position = viewHolder.adapterPosition
-                showSwipeMenuDialog(position)
-            }
 
             override fun onChildDraw(
                 c: Canvas,
@@ -223,32 +198,19 @@ class MenuManagementFragment : Fragment() {
                 return makeMovementFlags(dragFlags, swipeFlags)
             }
         }
-
-        // ItemTouchHelper를 RecyclerView에 연결
-        val itemTouchHelper = ItemTouchHelper(callback)
-        itemTouchHelper.attachToRecyclerView(menuBoard)
+        ItemTouchHelper(callback).attachToRecyclerView(menuBoard)
     }
 
-
-    private fun showSwipeMenuDialog(position: Int) {
-        val filteredItems = itemList.filter { it.id / 1000 == category }
-        val menuItem = filteredItems[position]
-        val dialog = MenuEditDialog(menuItem, mainListener)
-        dialog.show(parentFragmentManager, "MenuEditDialog")
-    }
-
-    private fun initTabs() {
-        menuTab = binding.menuTab
-        menuTab.addTab(menuTab.newTab().setText("ICE커피"))
-        menuTab.addTab(menuTab.newTab().setText("HOT커피"))
-        menuTab.addTab(menuTab.newTab().setText("에이드/스무디"))
-        menuTab.addTab(menuTab.newTab().setText("티/음료"))
-        menuTab.addTab(menuTab.newTab().setText("베이커리"))
+    private fun setupTabs() {
+        val menuTab = binding.menuTab
+        val categories = listOf("ICE커피", "HOT커피", "에이드/스무디", "티/음료", "베이커리")
+        categories.forEach { category ->
+            menuTab.addTab(menuTab.newTab().setText(category))
+        }
 
         menuTab.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
             override fun onTabSelected(tab: TabLayout.Tab) {
-                category = tab.position + 1
-                updateRecyclerViewForCategory()
+                viewModel.onCategorySelected(tab.position)
             }
 
             override fun onTabUnselected(tab: TabLayout.Tab) {}
@@ -256,20 +218,13 @@ class MenuManagementFragment : Fragment() {
         })
     }
 
-    private fun updateRecyclerViewForCategory() {
-        val filteredItems = ArrayList(itemList.filter { it.id / 1000 == this.category })
-        menuBoard.adapter = MenuAdapter(filteredItems)
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 
-    // 아이템을 이동시키는 로직
-    private fun moveItem(list: MutableList<MenuItem>, fromPosition: Int, toPosition: Int) {
-        val item = list.removeAt(fromPosition)
-        list.add(toPosition, item)
+    override fun onDetach() {
+        super.onDetach()
+        mainListener = null
     }
-
-    private fun readMenuList(): ArrayList<MenuItem> {
-        return ArrayList(menuDB.getMenuList().sortedBy { it.order })
-    }
-
-
 }

@@ -10,7 +10,8 @@ import androidx.recyclerview.widget.RecyclerView
 import eloom.holybean.R
 import eloom.holybean.data.model.OrdersDetailItem
 
-class OrdersDetailAdapter : ListAdapter<OrdersDetailItem, OrdersDetailAdapter.OrdersDetailHolder>(OrdersDetailDiffCallback()) {
+class OrdersDetailAdapter :
+    ListAdapter<OrdersDetailItem, OrdersDetailAdapter.OrdersDetailHolder>(OrdersDetailDiffCallback()) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): OrdersDetailHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.list_item_basket, parent, false)

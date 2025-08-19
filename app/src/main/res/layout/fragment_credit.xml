@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@drawable/main_backgroud"
-    tools:context=".ui.credits.CreditsFragment"
-    >
+                                                   xmlns:app="http://schemas.android.com/apk/res-auto"
+                                                   xmlns:tools="http://schemas.android.com/tools"
+                                                   android:layout_width="match_parent"
+                                                   android:layout_height="match_parent"
+                                                   android:background="@drawable/main_backgroud"
+                                                   tools:context=".ui.credits.CreditsFragment"
+>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/orderBoard"
@@ -17,7 +17,7 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toStartOf="@id/basket"
-        tools:listitem="@layout/list_item_orders" />
+        tools:listitem="@layout/list_item_orders"/>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/basket"
@@ -29,7 +29,7 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintWidth_percent="0.4"
-        tools:listitem="@layout/list_item_basket" />
+        tools:listitem="@layout/list_item_basket"/>
 
     <TextView
         android:id="@+id/orderNumTitle"
@@ -41,7 +41,7 @@
         android:text="주문번호 : "
         android:textAppearance="@style/TextAppearance.AppCompat.Large"
         app:layout_constraintStart_toStartOf="@id/basket"
-        app:layout_constraintTop_toTopOf="@id/basket" />
+        app:layout_constraintTop_toTopOf="@id/basket"/>
 
     <!-- 주문번호(숫자) -->
     <TextView
@@ -52,7 +52,7 @@
         android:text="1"
         android:textAppearance="@style/TextAppearance.AppCompat.Large"
         app:layout_constraintBottom_toBottomOf="@id/orderNumTitle"
-        app:layout_constraintStart_toEndOf="@id/orderNumTitle" />
+        app:layout_constraintStart_toEndOf="@id/orderNumTitle"/>
 
     <!-- 현재 총 가격 (제목) -->
     <TextView
@@ -63,7 +63,7 @@
         android:text="주문 금액 : "
         android:textAppearance="@style/TextAppearance.AppCompat.Large"
         app:layout_constraintBottom_toBottomOf="@id/totalPriceNum"
-        app:layout_constraintEnd_toStartOf="@id/totalPriceNum" />
+        app:layout_constraintEnd_toStartOf="@id/totalPriceNum"/>
 
     <!-- 현재 총 가격 (숫자) -->
     <TextView
@@ -76,7 +76,7 @@
         android:text="0"
         android:textAppearance="@style/TextAppearance.AppCompat.Large"
         app:layout_constraintBottom_toBottomOf="@id/basket"
-        app:layout_constraintEnd_toEndOf="@id/basket" />
+        app:layout_constraintEnd_toEndOf="@id/basket"/>
 
     <android.widget.Button
         android:id="@+id/viewThisOrder"
@@ -90,7 +90,7 @@
         app:layout_constraintBottom_toBottomOf="@id/basket"
         app:layout_constraintHeight_percent="0.07"
         app:layout_constraintStart_toStartOf="@id/basket"
-        app:layout_constraintWidth_percent="0.15" />
+        app:layout_constraintWidth_percent="0.15"/>
 
     <android.widget.Button
         android:id="@+id/deleteCredit"
@@ -104,6 +104,6 @@
         app:layout_constraintBottom_toBottomOf="@id/basket"
         app:layout_constraintEnd_toEndOf="@id/basket"
         app:layout_constraintHeight_percent="0.07"
-        app:layout_constraintWidth_percent="0.15" />
+        app:layout_constraintWidth_percent="0.15"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

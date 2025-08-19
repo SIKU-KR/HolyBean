@@ -1,7 +1,9 @@
 package eloom.holybean.data.repository
 
-import eloom.holybean.data.model.*
-import eloom.holybean.exception.ApiException
+import eloom.holybean.data.model.CartItem
+import eloom.holybean.data.model.MenuItem
+import eloom.holybean.data.model.Order
+import eloom.holybean.data.model.PaymentMethod
 import eloom.holybean.network.ApiService
 import eloom.holybean.network.RetrofitClient
 import eloom.holybean.network.dto.*
@@ -30,7 +32,7 @@ class LambdaRepositoryTest {
         // RetrofitClient.retrofit.create()를 모킹
         mockkObject(RetrofitClient)
         every { RetrofitClient.retrofit.create(ApiService::class.java) } returns mockApiService
-        
+
         lambdaRepository = LambdaRepository()
     }
 
@@ -45,16 +47,16 @@ class LambdaRepositoryTest {
     fun `getCurrentDate should return current date in yyyy-MM-dd format`() {
         // Given
         val expectedDate = SimpleDateFormat("yyyy-MM-dd").format(Date())
-        
+
         // When - getOrdersOfDay를 통해 getCurrentDate 동작 확인
         val mockResponse = Response.success(listOf<ResponseOrder>())
         coEvery { mockApiService.getOrderOfDay(expectedDate) } returns mockResponse
-        
+
         // getCurrentDate가 올바른 형식으로 호출되는지 간접 확인
         runTest {
             lambdaRepository.getOrdersOfDay()
         }
-        
+
         // Then
         coVerify { mockApiService.getOrderOfDay(expectedDate) }
     }

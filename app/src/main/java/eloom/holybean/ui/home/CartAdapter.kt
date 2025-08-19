@@ -4,12 +4,20 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import eloom.holybean.R
 import eloom.holybean.data.model.CartItem
 
-// 메뉴목록 (RecyclerView)의 어댑터 정의
-class CartAdapter(private var basketList: ArrayList<CartItem>, private val mainListener: HomeFragment) : RecyclerView.Adapter<CartAdapter.BasketHolder>() {
+class CartAdapter(
+    private val onClick: (CartItem) -> Unit
+) : ListAdapter<CartItem, CartAdapter.BasketHolder>(Diff) {
+
+    object Diff : DiffUtil.ItemCallback<CartItem>() {
+        override fun areItemsTheSame(oldItem: CartItem, newItem: CartItem) = oldItem.id == newItem.id
+        override fun areContentsTheSame(oldItem: CartItem, newItem: CartItem) = oldItem == newItem
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): BasketHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.list_item_basket, parent, false)
@@ -17,24 +25,19 @@ class CartAdapter(private var basketList: ArrayList<CartItem>, private val mainL
     }
 
     override fun onBindViewHolder(holder: BasketHolder, position: Int) {
-        val item = basketList[position]
-        holder.basketName.text = item.name
-        holder.basketCount.text = item.count.toString()
-        holder.basketTotal.text = item.total.toString()
-        holder.itemView.setOnClickListener {
-            // 여기서 각 item의 click function을 지정해주자.
-            // Toast.makeText(holder.itemView.context, "메뉴 삭제: ${item.name}", Toast.LENGTH_SHORT).show()
-            mainListener.deleteFromBasket(item.id)
+        holder.bind(getItem(position), onClick)
+    }
+
+    class BasketHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        private val basketName: TextView = itemView.findViewById(R.id.basket_name)
+        private val basketCount: TextView = itemView.findViewById(R.id.basket_count)
+        private val basketTotal: TextView = itemView.findViewById(R.id.basket_price)
+
+        fun bind(item: CartItem, onClick: (CartItem) -> Unit) {
+            basketName.text = item.name
+            basketCount.text = item.count.toString()
+            basketTotal.text = item.total.toString()
+            itemView.setOnClickListener { onClick(item) }
         }
-    }
-
-    override fun getItemCount(): Int {
-        return basketList.size
-    }
-
-    inner class BasketHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        val basketName: TextView = itemView.findViewById(R.id.basket_name)
-        val basketCount: TextView = itemView.findViewById(R.id.basket_count)
-        val basketTotal: TextView = itemView.findViewById(R.id.basket_price)
     }
 }

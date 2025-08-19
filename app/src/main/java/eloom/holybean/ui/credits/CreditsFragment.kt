@@ -1,70 +1,58 @@
 package eloom.holybean.ui.credits
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
+import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.GridLayoutManager
-import androidx.recyclerview.widget.RecyclerView
+import dagger.hilt.android.AndroidEntryPoint
+import eloom.holybean.databinding.FragmentCreditBinding
 import eloom.holybean.interfaces.MainActivityListener
 import eloom.holybean.ui.RvCustomDesign
-import eloom.holybean.data.model.CreditItem
-import eloom.holybean.databinding.FragmentCreditBinding
-import eloom.holybean.interfaces.CreditsFragmentFunction
-import eloom.holybean.data.model.OrdersDetailItem
-import eloom.holybean.data.repository.LambdaRepository
 import eloom.holybean.ui.orderlist.OrdersDetailAdapter
-import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import javax.inject.Inject
 
 @AndroidEntryPoint
-@SuppressLint("notifyDataSetChanged")
-class CreditsFragment : Fragment(), CreditsFragmentFunction {
+class CreditsFragment : Fragment() {
 
-    @Inject
-    lateinit var lambdaRepository: LambdaRepository
+    private val viewModel: CreditsViewModel by viewModels()
 
-    private val viewModel by viewModels<CreditsViewModel>()
+    private var _binding: FragmentCreditBinding? = null
+    private val binding get() = _binding!!
 
-    private lateinit var binding: FragmentCreditBinding
-    private lateinit var context: Context
     private var mainListener: MainActivityListener? = null
 
-    private var orderNumber = 1
-    private var orderDate = ""
-    private var rowId: String = '0'.toString()
-
-    private lateinit var orderNum: TextView
-    private lateinit var totalPrice: TextView
-    private lateinit var ordersBoard: RecyclerView
-    private lateinit var creditsList: ArrayList<CreditItem>
-    private lateinit var basket: RecyclerView
-    private var basketList = arrayListOf<OrdersDetailItem>()
+    private lateinit var creditsAdapter: CreditsAdapter
     private lateinit var ordersDetailAdapter: OrdersDetailAdapter
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle? ): View? {
-        binding = FragmentCreditBinding.inflate(inflater, container, false)
-        val view = binding.root
-        context = view.context
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
+        _binding = FragmentCreditBinding.inflate(inflater, container, false)
+        return binding.root
+    }
 
-        initUi()
-        initBasket()
-        initOrdersBoard()
-        initViewButton()
-        initDeleteButton()
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
 
+        setupAdapters()
+        setupRecyclerViews()
+        setupButtons()
         observeViewModel()
+    }
 
-        return view
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 
     override fun onAttach(context: Context) {
@@ -72,7 +60,7 @@ class CreditsFragment : Fragment(), CreditsFragmentFunction {
         if (context is MainActivityListener) {
             mainListener = context
         } else {
-            throw RuntimeException("$context must implement OnFragmentInteractionListener")
+            throw RuntimeException("$context must implement MainActivityListener")
         }
     }
 
@@ -81,65 +69,81 @@ class CreditsFragment : Fragment(), CreditsFragmentFunction {
         mainListener = null
     }
 
-    private fun initUi() {
-        orderNum = binding.orderNum
-        totalPrice = binding.totalPriceNum
-    }
-
-    private fun initDeleteButton() {
-        binding.deleteCredit.setOnClickListener {
-            viewModel.handleDeleteButton(this.orderDate, this.orderNumber)
+    private fun setupAdapters() {
+        creditsAdapter = CreditsAdapter { creditItem ->
+            viewModel.selectOrder(creditItem.orderId, creditItem.totalAmount, creditItem.date)
         }
-    }
 
-    private fun initViewButton() {
-        binding.viewThisOrder.setOnClickListener {
-            lifecycleScope.launch {
-                val newItems = withContext(Dispatchers.IO) {
-                    lambdaRepository.getOrderDetail(orderDate, orderNumber)
-                }
-                basketList.clear()
-                basketList.addAll(newItems)
-                ordersDetailAdapter.submitList(basketList.toList())
-            }
-        }
-    }
-
-    private fun initOrdersBoard() {
-        ordersBoard = binding.orderBoard
-        lifecycleScope.launch {
-            creditsList = lambdaRepository.getCreditsList()
-            val boardAdapter = CreditsAdapter(creditsList, this@CreditsFragment)
-            ordersBoard.apply {
-                adapter = boardAdapter
-                layoutManager = GridLayoutManager(context, 1)
-                addItemDecoration(RvCustomDesign(0, 0, 0, 20))
-            }
-        }
-    }
-
-    private fun initBasket(){
-        basket = binding.basket
         ordersDetailAdapter = OrdersDetailAdapter()
-        basket.apply{
+    }
+
+    private fun setupRecyclerViews() {
+        binding.orderBoard.apply {
+            adapter = creditsAdapter
+            layoutManager = GridLayoutManager(requireContext(), 1)
+            addItemDecoration(RvCustomDesign(0, 0, 0, 20))
+        }
+
+        binding.basket.apply {
             adapter = ordersDetailAdapter
-            layoutManager = GridLayoutManager(context, 1)
-            addItemDecoration(RvCustomDesign(15,15,0,0)) // 20dp의 여백
+            layoutManager = GridLayoutManager(requireContext(), 1)
+            addItemDecoration(RvCustomDesign(15, 15, 0, 0))
         }
     }
 
-    override fun newOrderSelected(num: Int, total: Int, date:String) {
-        this.orderNumber = num
-        this.orderDate = date
-        orderNum.text = num.toString()
-        totalPrice.text = total.toString()
-        basketList.clear()
-        ordersDetailAdapter.submitList(emptyList())
+    private fun setupButtons() {
+        binding.viewThisOrder.setOnClickListener {
+            viewModel.fetchOrderDetail()
+        }
+
+        binding.deleteCredit.setOnClickListener {
+            viewModel.handleDeleteButton()
+        }
     }
 
     private fun observeViewModel() {
-        viewModel.deleteState.observe(viewLifecycleOwner) {
-            mainListener?.replaceCreditsFragment()
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    viewModel.uiState.collect { uiState ->
+                        updateUI(uiState)
+                    }
+                }
+
+                launch {
+                    viewModel.uiEvent.collect { event ->
+                        handleUiEvent(event)
+                    }
+                }
+            }
         }
+    }
+
+    private fun updateUI(uiState: CreditsViewModel.CreditsUiState) {
+        // Update credits list
+        creditsAdapter.submitList(uiState.creditsList)
+
+        // Update selected order info
+        binding.orderNum.text = uiState.selectedOrderNumber.toString()
+        binding.totalPriceNum.text = uiState.selectedOrderTotal.toString()
+
+        // Update order details
+        ordersDetailAdapter.submitList(uiState.orderDetails)
+    }
+
+    private fun handleUiEvent(event: CreditsViewModel.CreditsUiEvent) {
+        when (event) {
+            is CreditsViewModel.CreditsUiEvent.ShowToast -> {
+                showToastMessage(event.message)
+            }
+
+            is CreditsViewModel.CreditsUiEvent.RefreshCredits -> {
+                mainListener?.replaceCreditsFragment()
+            }
+        }
+    }
+
+    private fun showToastMessage(msg: String) {
+        Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show()
     }
 }

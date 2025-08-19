@@ -1,4 +1,4 @@
-package eloom.holybean.ui.dialog
+package eloom.holybean.ui.menumanagement
 
 import android.app.AlertDialog
 import android.app.Dialog
@@ -7,22 +7,14 @@ import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.DialogFragment
-import androidx.lifecycle.lifecycleScope
-import eloom.holybean.interfaces.MainActivityListener
-import eloom.holybean.data.model.MenuItem
-import eloom.holybean.data.repository.MenuDB
-import eloom.holybean.databinding.DialogMenuAddBinding
+import androidx.fragment.app.viewModels
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import javax.inject.Inject
+import eloom.holybean.databinding.DialogMenuAddBinding
 
 @AndroidEntryPoint
-class MenuAddDialog(private val id: Int, private val placement: Int, private val mainListener: MainActivityListener?) : DialogFragment() {
+class MenuAddDialog : DialogFragment() {
 
-    @Inject
-    lateinit var menuDB: MenuDB
+    private val viewModel: MenuManagementViewModel by viewModels({ requireParentFragment() })
 
     private lateinit var binding: DialogMenuAddBinding
 
@@ -31,10 +23,17 @@ class MenuAddDialog(private val id: Int, private val placement: Int, private val
     private lateinit var menuIdTextView: TextView
     private lateinit var menuOrderTextView: TextView
 
+    private var menuId: Int = 0
+    private var menuPlacement: Int = 0
+
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         binding = DialogMenuAddBinding.inflate(requireActivity().layoutInflater)
 
         initializeViews()
+
+        menuId = viewModel.getNextAvailableId()
+        menuPlacement = viewModel.getNextAvailablePlacement()
+
         setDefaultValues()
         setupListeners()
 
@@ -51,8 +50,8 @@ class MenuAddDialog(private val id: Int, private val placement: Int, private val
     }
 
     private fun setDefaultValues() {
-        menuIdTextView.text = id.toString()
-        menuOrderTextView.text = placement.toString()
+        menuIdTextView.text = menuId.toString()
+        menuOrderTextView.text = menuPlacement.toString()
     }
 
     private fun setupListeners() {
@@ -66,7 +65,18 @@ class MenuAddDialog(private val id: Int, private val placement: Int, private val
 
         if (validateInput(newName, newPriceText)) {
             val newPrice = newPriceText.toInt()
-            validateAndSaveMenu(newName, newPrice)
+            val action = {
+                viewModel.addMenu(menuId, newName, newPrice, menuPlacement)
+                dismiss()
+            }
+            if (viewModel.isPasswordSessionVerified()) {
+                action()
+            } else {
+                PasswordDialog(requireContext()) {
+                    viewModel.markPasswordSessionAsVerified()
+                    action()
+                }.show()
+            }
         }
     }
 
@@ -76,41 +86,22 @@ class MenuAddDialog(private val id: Int, private val placement: Int, private val
                 Toast.makeText(requireContext(), "메뉴 이름을 입력해주세요.", Toast.LENGTH_SHORT).show()
                 false
             }
+
             newPriceText.isEmpty() -> {
                 Toast.makeText(requireContext(), "가격을 입력해주세요.", Toast.LENGTH_SHORT).show()
                 false
             }
+
             newPriceText.toIntOrNull() == null || newPriceText.toInt() < 0 -> {
                 Toast.makeText(requireContext(), "유효한 가격을 입력해주세요.", Toast.LENGTH_SHORT).show()
                 false
             }
+
             else -> true
         }
     }
 
-    private fun validateAndSaveMenu(newName: String, newPrice: Int) {
-        lifecycleScope.launch {
-            val isNameValid = withContext(Dispatchers.IO) { menuDB.isValidMenuName(newName) }
-            if (!isNameValid) {
-                Toast.makeText(requireContext(), "존재하는 메뉴입니다.", Toast.LENGTH_SHORT).show()
-            } else {
-                saveMenu(newName, newPrice)
-            }
-        }
-    }
-
-    private fun saveMenu(newName: String, newPrice: Int) {
-        val item = MenuItem(id, newName, newPrice, placement, true)
-        val passwordDialog = PasswordDialog(requireContext()) {
-            menuDB.addMenu(item)
-            mainListener?.replaceMenuManagementFragment()
-            dismiss()
-        }
-        passwordDialog.show()
-    }
-
     private fun onCancelButtonClicked() {
-        mainListener?.replaceMenuManagementFragment()
         dismiss()
     }
 }

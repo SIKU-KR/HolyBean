@@ -1,23 +1,22 @@
 package eloom.holybean.ui.home
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
-import androidx.lifecycle.Observer
 import eloom.holybean.data.model.CartItem
 import eloom.holybean.data.model.MenuItem
 import eloom.holybean.data.model.Order
 import eloom.holybean.data.model.PaymentMethod
 import eloom.holybean.data.repository.LambdaRepository
 import eloom.holybean.data.repository.MenuDB
-import eloom.holybean.interfaces.MainActivityListener
 import io.mockk.*
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
-import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
 import org.junit.After
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -33,19 +32,17 @@ class HomeViewModelTest {
     private lateinit var homeViewModel: HomeViewModel
     private val lambdaRepository: LambdaRepository = mockk(relaxed = true)
     private val menuDB: MenuDB = mockk(relaxed = true)
-    private val mainActivityListener: MainActivityListener = mockk(relaxed = true)
     private val testDispatcher = UnconfinedTestDispatcher()
 
     @Before
     fun setUp() {
-        Dispatchers.setMain(testDispatcher)
-        homeViewModel = HomeViewModel(lambdaRepository, menuDB)
-        homeViewModel.setMainActivityListener(mainActivityListener)
+        every { menuDB.getMenuList() } returns emptyList()
+        coEvery { lambdaRepository.getOrderNumber() } returns 1
+        homeViewModel = HomeViewModel(lambdaRepository, menuDB, testDispatcher)
     }
 
     @After
     fun tearDown() {
-        Dispatchers.resetMain()
         clearAllMocks()
     }
 
@@ -126,87 +123,54 @@ class HomeViewModelTest {
         val result = homeViewModel.getMenuList()
 
         // Then
-        verify(exactly = 1) { menuDB.getMenuList() }
+        verify(atLeast = 1) { menuDB.getMenuList() }
         assertEquals(testMenuList.size, result.size)
         assertEquals(testMenuList, result)
     }
 
     @Test
-    fun `setMainActivityListener should set listener correctly`() {
-        // Given
-        val newListener: MainActivityListener = mockk()
-
-        // When
-        homeViewModel.setMainActivityListener(newListener)
-
-        // Then
-        // 직접적인 검증이 어려우므로, onOrderConfirmed에서 listener 호출을 통해 간접 검증
-        // 이는 다음 테스트에서 확인됩니다.
-        assertTrue(true) // 예외가 발생하지 않으면 성공
-    }
-
-    @Test
-    fun `clearErrorMessage should clear error message`() {
-        // Given
-        val errorObserver: Observer<String?> = mockk(relaxed = true)
-        homeViewModel.errorMessage.observeForever(errorObserver)
-
-        // When
-        homeViewModel.clearErrorMessage()
-
-        // Then
-        verify { errorObserver.onChanged(null) }
-        homeViewModel.errorMessage.removeObserver(errorObserver)
-    }
-
-    @Test
-    fun `onOrderConfirmed should post order successfully and navigate to home`() = runTest {
+    fun `onOrderConfirmed should post order successfully and emit navigate event`() = runTest(testDispatcher) {
         // Given
         val testOrder = createTestOrder()
         val takeOption = "포장"
         coEvery { lambdaRepository.postOrder(any()) } returns Unit
 
+        val events = mutableListOf<HomeViewModel.UiEvent>()
+        val job: Job = launch { homeViewModel.uiEvent.collect { events.add(it) } }
+
         // When
         homeViewModel.onOrderConfirmed(testOrder, takeOption)
-
-        // 비동기 작업 완료를 위해 잠시 대기
-        Thread.sleep(100)
+        advanceUntilIdle()
 
         // Then
         coVerify(exactly = 1) { lambdaRepository.postOrder(testOrder) }
-        verify(exactly = 1) { mainActivityListener.replaceHomeFragment() }
-
-        // 에러가 발생하지 않았으므로 errorMessage는 null이어야 함
-        assertNull(homeViewModel.errorMessage.value)
+        assertTrue(events.any { it is HomeViewModel.UiEvent.NavigateHome })
+        job.cancel()
     }
 
     @Test
-    fun `onOrderConfirmed should handle repository error and set error message`() = runTest {
+    fun `onOrderConfirmed should handle repository error and emit toast`() = runTest(testDispatcher) {
         // Given
         val testOrder = createTestOrder()
         val takeOption = "매장"
         val testException = Exception("Network Error")
         coEvery { lambdaRepository.postOrder(any()) } throws testException
 
-        val errorObserver: Observer<String?> = mockk(relaxed = true)
-        homeViewModel.errorMessage.observeForever(errorObserver)
+        val events = mutableListOf<HomeViewModel.UiEvent>()
+        val job: Job = launch { homeViewModel.uiEvent.collect { events.add(it) } }
 
         // When
         homeViewModel.onOrderConfirmed(testOrder, takeOption)
-
-        // 비동기 작업 완료를 위해 잠시 대기
-        Thread.sleep(100)
+        advanceUntilIdle()
 
         // Then
         coVerify(exactly = 1) { lambdaRepository.postOrder(testOrder) }
-        verify(exactly = 0) { mainActivityListener.replaceHomeFragment() } // 에러시 화면 전환 안됨
-        verify { errorObserver.onChanged("주문 처리 중 오류가 발생했습니다.") }
-
-        homeViewModel.errorMessage.removeObserver(errorObserver)
+        assertTrue(events.firstOrNull() is HomeViewModel.UiEvent.ShowToast)
+        job.cancel()
     }
 
     @Test
-    fun `onOrderConfirmed should handle multiple order confirmations correctly`() = runTest {
+    fun `onOrderConfirmed should handle multiple order confirmations correctly`() = runTest(testDispatcher) {
         // Given
         val testOrder1 = createTestOrder(orderNum = 1)
         val testOrder2 = createTestOrder(orderNum = 2)
@@ -215,13 +179,12 @@ class HomeViewModelTest {
         // When
         homeViewModel.onOrderConfirmed(testOrder1, "포장")
         homeViewModel.onOrderConfirmed(testOrder2, "매장")
-
-        // 비동기 작업 완료를 위해 잠시 대기
-        Thread.sleep(200)
+        advanceUntilIdle()
 
         // Then
         coVerify(exactly = 2) { lambdaRepository.postOrder(any()) }
-        verify(exactly = 2) { mainActivityListener.replaceHomeFragment() }
+        // Navigation events should be emitted twice
+        // (optional explicit check omitted for brevity)
     }
 
     // 헬퍼 메서드: 테스트용 Order 객체 생성

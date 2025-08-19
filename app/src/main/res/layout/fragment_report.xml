@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    xmlns:tools="http://schemas.android.com/tools">
+                                                   xmlns:app="http://schemas.android.com/apk/res-auto"
+                                                   android:layout_width="match_parent"
+                                                   android:layout_height="match_parent"
+                                                   xmlns:tools="http://schemas.android.com/tools">
 
     <!-- 판매 총액 부분 -->
 
@@ -27,7 +27,7 @@
             android:text="기간 설정 후 조회"
             android:gravity="start"
             android:textAppearance="@style/TextAppearance.AppCompat.Medium"
-            android:fontFamily="@font/pretendard_extrabold" />
+            android:fontFamily="@font/pretendard_extrabold"/>
 
         <TextView
             android:id="@+id/totalSell"
@@ -40,7 +40,7 @@
             android:text="총 판매금액 : 00,000"
             android:textAppearance="@style/TextAppearance.AppCompat.Medium"
             app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintTop_toTopOf="@id/report_title" />
+            app:layout_constraintTop_toTopOf="@id/report_title"/>
 
         <TextView
             android:id="@+id/couponSell"
@@ -53,7 +53,7 @@
             android:text="쿠폰 판매액 : 00,000"
             android:textAppearance="@style/TextAppearance.AppCompat.Medium"
             app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintTop_toTopOf="@id/totalSell" />
+            app:layout_constraintTop_toTopOf="@id/totalSell"/>
 
         <TextView
             android:id="@+id/cashSell"
@@ -66,7 +66,7 @@
             android:text="현금 판매액 : 00,000"
             android:textAppearance="@style/TextAppearance.AppCompat.Medium"
             app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintTop_toTopOf="@id/couponSell" />
+            app:layout_constraintTop_toTopOf="@id/couponSell"/>
 
         <TextView
             android:id="@+id/transferSell"
@@ -79,7 +79,7 @@
             android:text="이체 판매액 : 00,000"
             android:textAppearance="@style/TextAppearance.AppCompat.Medium"
             app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintTop_toTopOf="@id/cashSell" />
+            app:layout_constraintTop_toTopOf="@id/cashSell"/>
 
         <TextView
             android:id="@+id/creditSell"
@@ -92,7 +92,7 @@
             android:text="외상 판매액 : 00,000"
             android:textAppearance="@style/TextAppearance.AppCompat.Medium"
             app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintTop_toTopOf="@id/transferSell" />
+            app:layout_constraintTop_toTopOf="@id/transferSell"/>
 
         <TextView
             android:id="@+id/freeCouponSell"
@@ -105,7 +105,7 @@
             android:text="무료쿠폰 판매액 : 00,000"
             android:textAppearance="@style/TextAppearance.AppCompat.Medium"
             app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintTop_toTopOf="@id/creditSell" />
+            app:layout_constraintTop_toTopOf="@id/creditSell"/>
 
         <TextView
             android:id="@+id/freelyOut"
@@ -118,7 +118,7 @@
             android:text="무료제공 금액 : 00,000"
             android:textAppearance="@style/TextAppearance.AppCompat.Medium"
             app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintTop_toTopOf="@id/freeCouponSell" />
+            app:layout_constraintTop_toTopOf="@id/freeCouponSell"/>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
@@ -139,7 +139,7 @@
             android:paddingVertical="100dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintRight_toRightOf="parent"
-            tools:listitem="@layout/list_item_basket" />
+            tools:listitem="@layout/list_item_basket"/>
 
         <android.widget.Button
             android:id="@+id/print_button"
@@ -201,7 +201,7 @@
                 android:fontFamily="@font/pretendard_extrabold"
                 android:text="시작일"
                 android:textAppearance="@style/TextAppearance.AppCompat.Medium"
-                android:textColor="#000000" />
+                android:textColor="#000000"/>
 
             <LinearLayout
                 android:id="@+id/date1_button"
@@ -218,7 +218,7 @@
                     android:layout_gravity="center"
                     android:padding="10dp"
                     android:scaleType="fitCenter"
-                    android:src="@drawable/calendar_icon" />
+                    android:src="@drawable/calendar_icon"/>
 
                 <TextView
                     android:id="@+id/date1_text"
@@ -228,7 +228,7 @@
                     android:fontFamily="@font/pretendard_extrabold"
                     android:gravity="center"
                     android:text="2024-01-01"
-                    android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
+                    android:textAppearance="@style/TextAppearance.AppCompat.Medium"/>
 
             </LinearLayout>
 
@@ -252,7 +252,7 @@
                 android:fontFamily="@font/pretendard_extrabold"
                 android:text="종료일"
                 android:textAppearance="@style/TextAppearance.AppCompat.Medium"
-                android:textColor="#000000" />
+                android:textColor="#000000"/>
 
             <LinearLayout
                 android:id="@+id/date2_button"
@@ -269,7 +269,7 @@
                     android:layout_gravity="center"
                     android:padding="10dp"
                     android:scaleType="fitCenter"
-                    android:src="@drawable/calendar_icon" />
+                    android:src="@drawable/calendar_icon"/>
 
                 <TextView
                     android:id="@+id/date2_text"
@@ -279,7 +279,7 @@
                     android:fontFamily="@font/pretendard_extrabold"
                     android:gravity="center"
                     android:text="2024-01-01"
-                    android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
+                    android:textAppearance="@style/TextAppearance.AppCompat.Medium"/>
 
             </LinearLayout>
 
@@ -296,7 +296,7 @@
             android:textSize="24sp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintHeight_percent="0.07" />
+            app:layout_constraintHeight_percent="0.07"/>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

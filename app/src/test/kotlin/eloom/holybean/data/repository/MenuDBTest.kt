@@ -16,7 +16,7 @@ class MenuDBTest {
     @Before
     fun setUp() {
         MockKAnnotations.init(this)
-        
+
         // MenuDB를 완전히 모킹하여 각 메서드의 행동을 직접 정의
         menuDB = mockk(relaxed = true)
     }
@@ -116,8 +116,8 @@ class MenuDBTest {
     @Test
     fun `overwriteMenuList should handle large list of items`() {
         // Given
-        val largeMenuList = (1..100).map { 
-            MenuItem(it, "메뉴$it", 1000 + it * 100, it, true) 
+        val largeMenuList = (1..100).map {
+            MenuItem(it, "메뉴$it", 1000 + it * 100, it, true)
         }
         every { menuDB.overwriteMenuList(largeMenuList) } just runs
 
@@ -323,7 +323,7 @@ class MenuDBTest {
         // Given
         val categories = listOf(0, 1, 2, 3, 4)
         val expectedIds = listOf(1, 1001, 2001, 3001, 4001)
-        
+
         categories.forEachIndexed { index, category ->
             every { menuDB.getNextAvailableIdForCategory(category) } returns expectedIds[index]
         }
