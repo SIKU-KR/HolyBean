@@ -41,6 +41,14 @@ class MenuManagementViewModel @Inject constructor(
     )
     val uiEvent: SharedFlow<UiEvent> = _uiEvent.asSharedFlow()
 
+    private var passwordSessionVerified = false
+
+    fun isPasswordSessionVerified(): Boolean = passwordSessionVerified
+
+    fun markPasswordSessionAsVerified() {
+        passwordSessionVerified = true
+    }
+
     init {
         loadMenuList()
     }

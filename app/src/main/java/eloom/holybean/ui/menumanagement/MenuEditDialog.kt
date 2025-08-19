@@ -54,21 +54,35 @@ class MenuEditDialog(private val item: MenuItem) : DialogFragment() {
 
     private fun setupListeners() {
         binding.disableEditButton.setOnClickListener {
-            val passwordDialog = PasswordDialog(requireContext()) {
+            val action = {
                 viewModel.toggleMenuInUse(item)
                 dismiss()
             }
-            passwordDialog.show()
+            if (viewModel.isPasswordSessionVerified()) {
+                action()
+            } else {
+                PasswordDialog(requireContext()) {
+                    viewModel.markPasswordSessionAsVerified()
+                    action()
+                }.show()
+            }
         }
 
         binding.saveEditButton.setOnClickListener {
             val newName = menuNameEditText.text.toString().trim()
             val newPrice = menuPriceEditText.text.toString().trim().toIntOrNull() ?: item.price
-            val passwordDialog = PasswordDialog(requireContext()) {
+            val action = {
                 viewModel.updateMenu(item, newName, newPrice)
                 dismiss()
             }
-            passwordDialog.show()
+            if (viewModel.isPasswordSessionVerified()) {
+                action()
+            } else {
+                PasswordDialog(requireContext()) {
+                    viewModel.markPasswordSessionAsVerified()
+                    action()
+                }.show()
+            }
         }
 
         binding.cancelEditButton.setOnClickListener {

@@ -64,27 +64,32 @@ class MenuManagementFragment : Fragment() {
         setupTabs()
     }
 
+    private fun executeProtectedAction(action: () -> Unit) {
+        if (viewModel.isPasswordSessionVerified()) {
+            action()
+        } else {
+            PasswordDialog(requireContext()) {
+                viewModel.markPasswordSessionAsVerified()
+                action()
+            }.show()
+        }
+    }
+
     private fun initListeners() {
         binding.returnButton.setOnClickListener {
             mainListener?.replaceHomeFragment()
         }
         binding.saveButton.setOnClickListener {
-            PasswordDialog(requireContext()) {
-                viewModel.saveMenuOrder()
-            }.show()
+            executeProtectedAction { viewModel.saveMenuOrder() }
         }
         binding.addButton.setOnClickListener {
-            MenuAddDialog().show(parentFragmentManager, "MenuAddDialog")
+            MenuAddDialog().show(childFragmentManager, "MenuAddDialog")
         }
         binding.deviceToServer.setOnClickListener {
-            PasswordDialog(requireContext()) {
-                viewModel.saveMenuListToServer()
-            }.show()
+            executeProtectedAction { viewModel.saveMenuListToServer() }
         }
         binding.serverToDevice.setOnClickListener {
-            PasswordDialog(requireContext()) {
-                viewModel.getMenuListFromServer()
-            }.show()
+            executeProtectedAction { viewModel.getMenuListFromServer() }
         }
     }
 
@@ -142,7 +147,7 @@ class MenuManagementFragment : Fragment() {
             override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
                 val position = viewHolder.adapterPosition
                 val menuItem = menuAdapter.getItemAt(position)
-                MenuEditDialog(menuItem).show(parentFragmentManager, "MenuEditDialog")
+                MenuEditDialog(menuItem).show(childFragmentManager, "MenuEditDialog")
                 menuAdapter.notifyItemChanged(position)
             }
 

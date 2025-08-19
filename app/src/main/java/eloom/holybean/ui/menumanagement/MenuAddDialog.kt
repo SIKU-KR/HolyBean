@@ -65,11 +65,18 @@ class MenuAddDialog : DialogFragment() {
 
         if (validateInput(newName, newPriceText)) {
             val newPrice = newPriceText.toInt()
-            val passwordDialog = PasswordDialog(requireContext()) {
+            val action = {
                 viewModel.addMenu(menuId, newName, newPrice, menuPlacement)
                 dismiss()
             }
-            passwordDialog.show()
+            if (viewModel.isPasswordSessionVerified()) {
+                action()
+            } else {
+                PasswordDialog(requireContext()) {
+                    viewModel.markPasswordSessionAsVerified()
+                    action()
+                }.show()
+            }
         }
     }
 
