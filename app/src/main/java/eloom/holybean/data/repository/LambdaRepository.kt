@@ -106,7 +106,7 @@ class LambdaRepository @Inject constructor() {
         }
     }
 
-    suspend fun saveMenuListToServer(menulist: ArrayList<MenuItem>) {
+    suspend fun saveMenuListToServer(menulist: List<MenuItem>) {
         try {
             validateResponse(apiService.postMenuList(menulist))
         } catch (e: Exception) {
