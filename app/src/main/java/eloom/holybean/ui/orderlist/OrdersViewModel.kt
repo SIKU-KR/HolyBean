@@ -6,7 +6,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import eloom.holybean.data.model.OrderItem
 import eloom.holybean.data.model.OrdersDetailItem
 import eloom.holybean.data.repository.LambdaRepository
-import eloom.holybean.printer.OrdersPrinter
+import eloom.holybean.printer.PrinterHelper
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.*
@@ -18,6 +18,7 @@ import javax.inject.Inject
 @HiltViewModel
 class OrdersViewModel @Inject constructor(
     private val lambdaRepository: LambdaRepository,
+    private val printerHelper: PrinterHelper,
     private val dispatcher: CoroutineDispatcher
 ) : ViewModel() {
 
@@ -106,16 +107,14 @@ class OrdersViewModel @Inject constructor(
             return
         }
 
-        val printer = OrdersPrinter()
-        val orderDetailsArrayList = ArrayList(currentState.orderDetails)
-        val text = printer.makeText(currentState.selectedOrderNumber, orderDetailsArrayList)
         viewModelScope.launch(dispatcher) {
-            try {
-                printer.print(text)
-            } catch (e: Exception) {
-                _uiEvent.tryEmit(OrdersUiEvent.ShowToast("Printer error: ${e.message}"))
-            } finally {
-                printer.disconnect()
+            val orderDetailsArrayList = ArrayList(currentState.orderDetails)
+            val success = printerHelper.printOrderReprint(currentState.selectedOrderNumber, orderDetailsArrayList)
+            
+            if (success) {
+                _uiEvent.tryEmit(OrdersUiEvent.ShowToast("영수증이 재출력되었습니다"))
+            } else {
+                _uiEvent.tryEmit(OrdersUiEvent.ShowToast("프린터 연결을 확인해주세요"))
             }
         }
     }

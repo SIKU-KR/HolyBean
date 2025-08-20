@@ -6,7 +6,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import eloom.holybean.data.model.PrinterDTO
 import eloom.holybean.data.model.ReportDetailItem
 import eloom.holybean.network.ApiService
-import eloom.holybean.printer.ReportPrinter
+import eloom.holybean.printer.PrinterHelper
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.*
@@ -19,6 +19,7 @@ import javax.inject.Inject
 @HiltViewModel
 class ReportViewModel @Inject constructor(
     private val apiService: ApiService,
+    private val printerHelper: PrinterHelper,
     private val dispatcher: CoroutineDispatcher
 ) : ViewModel() {
 
@@ -95,13 +96,15 @@ class ReportViewModel @Inject constructor(
 
         viewModelScope.launch(dispatcher) {
             try {
-                val reportPrinter = ReportPrinter()
                 val dateParts = title.split(" ~ ")
                 val printerDTO = PrinterDTO(dateParts[0], dateParts[1], summary, details)
-                val printText = reportPrinter.getPrintingText(printerDTO)
-                reportPrinter.print(printText)
-                reportPrinter.disconnect()
-                _uiEvent.tryEmit(ReportUiEvent.ShowToast("리포트 인쇄가 완료되었습니다"))
+                val success = printerHelper.printSalesReport(printerDTO)
+                
+                if (success) {
+                    _uiEvent.tryEmit(ReportUiEvent.ShowToast("리포트 인쇄가 완료되었습니다"))
+                } else {
+                    _uiEvent.tryEmit(ReportUiEvent.ShowError("프린터 연결을 확인해주세요"))
+                }
             } catch (e: Exception) {
                 _uiEvent.tryEmit(ReportUiEvent.ShowError("인쇄 실패 : ${e.localizedMessage}"))
             }

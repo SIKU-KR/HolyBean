@@ -9,7 +9,7 @@ import eloom.holybean.data.model.Order
 import eloom.holybean.data.repository.LambdaRepository
 import eloom.holybean.data.repository.MenuRepository
 import eloom.holybean.interfaces.OrderDialogListener
-import eloom.holybean.printer.HomePrinter
+import eloom.holybean.printer.PrinterHelper
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.*
@@ -23,6 +23,7 @@ import javax.inject.Inject
 class HomeViewModel @Inject constructor(
     private val lambdaRepository: LambdaRepository,
     private val menuRepository: MenuRepository,
+    private val printerHelper: PrinterHelper,
     private val dispatcher: CoroutineDispatcher
 ) : ViewModel(), OrderDialogListener {
 
@@ -182,14 +183,12 @@ class HomeViewModel @Inject constructor(
     private suspend fun printReceipt(data: Order, takeOption: String) {
         withContext(dispatcher) {
             try {
-                val printer = HomePrinter()
-                val receiptForCustomer = printer.receiptTextForCustomer(data)
-                val receiptForPOS = printer.receiptTextForPOS(data, takeOption)
-                try {
-                    printer.print(receiptForCustomer)
-                    printer.print(receiptForPOS)
-                } finally {
-                    printer.disconnect()
+                val customerSuccess = printerHelper.printCustomerReceipt(data)
+                val posSuccess = printerHelper.printPOSReceipt(data, takeOption)
+                
+                if (!customerSuccess || !posSuccess) {
+                    // Log failure but don't interrupt order flow
+                    println("Warning: Some receipts failed to print. Customer: $customerSuccess, POS: $posSuccess")
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
