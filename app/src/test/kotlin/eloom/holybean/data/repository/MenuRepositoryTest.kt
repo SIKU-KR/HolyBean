@@ -95,7 +95,7 @@ class MenuRepositoryTest {
         // Then
         assertEquals(1003, result)
     }
-    
+
     @Test
     fun `getNextAvailableIdForCategory returns startRange if no ids exist`() = runTest {
         // Given

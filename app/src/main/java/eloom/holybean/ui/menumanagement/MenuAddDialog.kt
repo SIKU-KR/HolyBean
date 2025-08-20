@@ -38,7 +38,7 @@ class MenuAddDialog : DialogFragment() {
             menuPlacement = viewModel.getNextAvailablePlacement()
             setDefaultValues()
         }
-        
+
         setupListeners()
 
         return AlertDialog.Builder(requireActivity())

@@ -2,12 +2,14 @@ package eloom.holybean.ui.home
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import eloom.holybean.data.model.CartItem
-import eloom.holybean.data.model.MenuItem
 import eloom.holybean.data.model.Order
 import eloom.holybean.data.model.PaymentMethod
 import eloom.holybean.data.repository.LambdaRepository
 import eloom.holybean.data.repository.MenuRepository
-import io.mockk.*
+import io.mockk.clearAllMocks
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
