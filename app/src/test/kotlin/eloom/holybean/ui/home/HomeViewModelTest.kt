@@ -6,9 +6,11 @@ import eloom.holybean.data.model.Order
 import eloom.holybean.data.model.PaymentMethod
 import eloom.holybean.data.repository.LambdaRepository
 import eloom.holybean.data.repository.MenuRepository
+import eloom.holybean.printer.PrinterHelper
 import io.mockk.clearAllMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
@@ -34,13 +36,16 @@ class HomeViewModelTest {
     private lateinit var homeViewModel: HomeViewModel
     private val lambdaRepository: LambdaRepository = mockk(relaxed = true)
     private val menuRepository: MenuRepository = mockk(relaxed = true)
+    private val printerHelper: PrinterHelper = mockk(relaxed = true)
     private val testDispatcher = UnconfinedTestDispatcher()
 
     @Before
     fun setUp() {
         coEvery { menuRepository.getMenuListSync() } returns emptyList()
         coEvery { lambdaRepository.getOrderNumber() } returns 1
-        homeViewModel = HomeViewModel(lambdaRepository, menuRepository, testDispatcher)
+        every { printerHelper.printCustomerReceipt(any()) } returns true
+        every { printerHelper.printPOSReceipt(any(), any()) } returns true
+        homeViewModel = HomeViewModel(lambdaRepository, menuRepository, printerHelper, testDispatcher)
     }
 
     @After
@@ -168,6 +173,55 @@ class HomeViewModelTest {
         coVerify(exactly = 2) { lambdaRepository.postOrder(any()) }
         // Navigation events should be emitted twice
         // (optional explicit check omitted for brevity)
+    }
+
+    @Test
+    fun `onOrderConfirmed should call printer methods when order is successful`() = runTest(testDispatcher) {
+        // Given
+        val testOrder = createTestOrder()
+        val takeOption = "포장"
+        coEvery { lambdaRepository.postOrder(any()) } returns Unit
+        every { printerHelper.printCustomerReceipt(testOrder) } returns true
+        every { printerHelper.printPOSReceipt(testOrder, takeOption) } returns true
+
+        val events = mutableListOf<HomeViewModel.UiEvent>()
+        val job: Job = launch { homeViewModel.uiEvent.collect { events.add(it) } }
+
+        // When
+        homeViewModel.onOrderConfirmed(testOrder, takeOption)
+        advanceUntilIdle()
+
+        // Then
+        coVerify(exactly = 1) { lambdaRepository.postOrder(testOrder) }
+        io.mockk.verify { printerHelper.printCustomerReceipt(testOrder) }
+        io.mockk.verify { printerHelper.printPOSReceipt(testOrder, takeOption) }
+        assertTrue(events.any { it is HomeViewModel.UiEvent.NavigateHome })
+        job.cancel()
+    }
+
+    @Test
+    fun `onOrderConfirmed should continue with order even if printing fails`() = runTest(testDispatcher) {
+        // Given
+        val testOrder = createTestOrder()
+        val takeOption = "매장"
+        coEvery { lambdaRepository.postOrder(any()) } returns Unit
+        every { printerHelper.printCustomerReceipt(testOrder) } returns false
+        every { printerHelper.printPOSReceipt(testOrder, takeOption) } returns false
+
+        val events = mutableListOf<HomeViewModel.UiEvent>()
+        val job: Job = launch { homeViewModel.uiEvent.collect { events.add(it) } }
+
+        // When
+        homeViewModel.onOrderConfirmed(testOrder, takeOption)
+        advanceUntilIdle()
+
+        // Then
+        coVerify(exactly = 1) { lambdaRepository.postOrder(testOrder) }
+        io.mockk.verify { printerHelper.printCustomerReceipt(testOrder) }
+        io.mockk.verify { printerHelper.printPOSReceipt(testOrder, takeOption) }
+        // Order should still complete successfully even if printing fails
+        assertTrue(events.any { it is HomeViewModel.UiEvent.NavigateHome })
+        job.cancel()
     }
 
     // 헬퍼 메서드: 테스트용 Order 객체 생성
