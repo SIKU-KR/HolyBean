@@ -11,14 +11,14 @@ data class MenuItem(
     val id: Int,
 
     @ColumnInfo(name = "name")
-    val name: String,
+    var name: String,
 
     @ColumnInfo(name = "price")
-    val price: Int,
+    var price: Int,
 
     @ColumnInfo(name = "placement")
-    val order: Int,
+    var order: Int,
 
     @ColumnInfo(name = "inuse")
-    val inuse: Boolean
+    var inuse: Boolean
 )
