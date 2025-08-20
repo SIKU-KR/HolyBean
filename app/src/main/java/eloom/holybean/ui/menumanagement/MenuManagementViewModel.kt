@@ -5,7 +5,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import eloom.holybean.data.model.MenuItem
 import eloom.holybean.data.repository.LambdaRepository
-import eloom.holybean.data.repository.MenuDB
+import eloom.holybean.data.repository.MenuRepository
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.*
@@ -14,7 +14,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class MenuManagementViewModel @Inject constructor(
-    private val menuDB: MenuDB,
+    private val menuRepository: MenuRepository,
     private val lambdaRepository: LambdaRepository,
     private val dispatcher: CoroutineDispatcher
 ) : ViewModel() {
@@ -56,14 +56,21 @@ class MenuManagementViewModel @Inject constructor(
     private fun loadMenuList() {
         viewModelScope.launch(dispatcher) {
             _uiState.update { it.copy(isLoading = true) }
-            val menuList = menuDB.getMenuList().sortedBy { it.order }
-            _uiState.update {
-                it.copy(
-                    allMenuItems = menuList,
-                    isLoading = false
-                )
-            }
-            filterMenuByCategory(_uiState.value.selectedCategoryIndex)
+            menuRepository.getMenuList()
+                .map { list -> list.sortedBy { it.order } }
+                .catch { e ->
+                    _uiEvent.tryEmit(UiEvent.ShowToast("Error loading menu: ${e.message}"))
+                    emit(emptyList())
+                }
+                .collect { menuList ->
+                    _uiState.update {
+                        it.copy(
+                            allMenuItems = menuList,
+                            isLoading = false
+                        )
+                    }
+                    filterMenuByCategory(_uiState.value.selectedCategoryIndex)
+                }
         }
     }
 
@@ -110,32 +117,31 @@ class MenuManagementViewModel @Inject constructor(
         viewModelScope.launch(dispatcher) {
             val category = _uiState.value.selectedCategoryIndex
             val itemsToSave = _uiState.value.allMenuItems.filter { it.id / 1000 == category }
-            menuDB.saveMenuOrders(itemsToSave)
+            menuRepository.saveMenuOrders(itemsToSave)
             _uiEvent.tryEmit(UiEvent.ShowToast("저장되었습니다."))
             _uiEvent.tryEmit(UiEvent.RefreshMenu)
         }
     }
 
-    fun getNextAvailableId(): Int {
+    suspend fun getNextAvailableId(): Int {
         val category = _uiState.value.selectedCategoryIndex
-        return menuDB.getNextAvailableIdForCategory(category)
+        return menuRepository.getNextAvailableIdForCategory(category)
     }
 
-    fun getNextAvailablePlacement(): Int {
+    suspend fun getNextAvailablePlacement(): Int {
         val category = _uiState.value.selectedCategoryIndex
-        return menuDB.getNextAvailablePlacementForCategory(category)
+        return menuRepository.getNextAvailablePlacementForCategory(category)
     }
 
     fun addMenu(id: Int, name: String, price: Int, placement: Int) {
         viewModelScope.launch(dispatcher) {
-            val isNameValid = menuDB.isValidMenuName(name)
+            val isNameValid = menuRepository.isValidMenuName(name)
             if (!isNameValid) {
                 _uiEvent.tryEmit(UiEvent.ShowToast("존재하는 메뉴입니다."))
             } else {
                 val item = MenuItem(id, name, price, placement, true)
-                menuDB.addMenu(item)
+                menuRepository.addMenu(item)
                 _uiEvent.tryEmit(UiEvent.ShowToast("메뉴가 추가되었습니다."))
-                loadMenuList()
             }
         }
     }
@@ -144,19 +150,17 @@ class MenuManagementViewModel @Inject constructor(
         viewModelScope.launch(dispatcher) {
             item.name = newName
             item.price = newPrice
-            menuDB.updateSpecificMenu(item)
+            menuRepository.updateSpecificMenu(item)
             _uiEvent.tryEmit(UiEvent.ShowToast("메뉴가 수정되었습니다."))
-            loadMenuList()
         }
     }
 
     fun toggleMenuInUse(item: MenuItem) {
         viewModelScope.launch(dispatcher) {
             item.inuse = !item.inuse
-            menuDB.updateSpecificMenu(item)
+            menuRepository.updateSpecificMenu(item)
             val status = if (item.inuse) "활성화" else "비활성화"
             _uiEvent.tryEmit(UiEvent.ShowToast("메뉴가 $status 되었습니다."))
-            loadMenuList()
         }
     }
 
@@ -164,7 +168,7 @@ class MenuManagementViewModel @Inject constructor(
         viewModelScope.launch(dispatcher) {
             try {
                 _uiState.update { it.copy(isLoading = true) }
-                lambdaRepository.saveMenuListToServer(menuDB.getMenuList())
+                lambdaRepository.saveMenuListToServer(menuRepository.getMenuListSync())
                 _uiState.update { it.copy(isLoading = false) }
                 _uiEvent.tryEmit(UiEvent.ShowToast("서버에 저장 완료"))
             } catch (e: Exception) {
@@ -182,7 +186,7 @@ class MenuManagementViewModel @Inject constructor(
                 if (response.isEmpty()) {
                     throw Exception("데이터가 올바르지 않습니다.")
                 }
-                menuDB.overwriteMenuList(response)
+                menuRepository.overwriteMenuList(response)
                 _uiState.update { it.copy(isLoading = false) }
                 _uiEvent.tryEmit(UiEvent.ShowToast("태블릿에 저장 완료"))
                 _uiEvent.tryEmit(UiEvent.RefreshMenu)

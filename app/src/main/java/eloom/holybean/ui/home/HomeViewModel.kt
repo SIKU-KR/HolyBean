@@ -7,7 +7,7 @@ import eloom.holybean.data.model.CartItem
 import eloom.holybean.data.model.MenuItem
 import eloom.holybean.data.model.Order
 import eloom.holybean.data.repository.LambdaRepository
-import eloom.holybean.data.repository.MenuDB
+import eloom.holybean.data.repository.MenuRepository
 import eloom.holybean.interfaces.OrderDialogListener
 import eloom.holybean.printer.HomePrinter
 import kotlinx.coroutines.CoroutineDispatcher
@@ -22,7 +22,7 @@ import javax.inject.Inject
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val lambdaRepository: LambdaRepository,
-    private val menuDB: MenuDB,
+    private val menuRepository: MenuRepository,
     private val dispatcher: CoroutineDispatcher
 ) : ViewModel(), OrderDialogListener {
 
@@ -61,7 +61,7 @@ class HomeViewModel @Inject constructor(
     init {
         // Load initial data
         viewModelScope.launch(dispatcher) {
-            val menus = getMenuList()
+            val menus = menuRepository.getMenuListSync()
             _uiState.value = _uiState.value.copy(
                 allMenuItems = menus,
                 filteredMenuItems = menus
@@ -78,10 +78,6 @@ class HomeViewModel @Inject constructor(
     fun getTotal(basketList: ArrayList<CartItem>): Int {
         basketList.forEach { it.total = it.count * it.price }
         return basketList.sumOf { it.total }
-    }
-
-    fun getMenuList(): ArrayList<MenuItem> {
-        return ArrayList(menuDB.getMenuList())
     }
 
     fun refreshOrderNumber() {
