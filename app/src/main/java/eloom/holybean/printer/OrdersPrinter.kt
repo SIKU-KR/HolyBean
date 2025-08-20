@@ -2,7 +2,7 @@ package eloom.holybean.printer
 
 import eloom.holybean.data.model.OrdersDetailItem
 
-class OrdersPrinter : Printer() {
+object OrdersPrinter {
     fun makeText(orderNum: Int, basketList: ArrayList<OrdersDetailItem>): String {
         var result = "[R]영수증 재출력\n"
         result += "[C]=====================================\n"

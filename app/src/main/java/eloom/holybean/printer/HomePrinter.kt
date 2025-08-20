@@ -2,7 +2,7 @@ package eloom.holybean.printer
 
 import eloom.holybean.data.model.Order
 
-class HomePrinter : Printer() {
+object HomePrinter {
     fun receiptTextForCustomer(data: Order): String {
         var result = "[C]=====================================\n"
         result += "[L]\n"

@@ -2,7 +2,7 @@ package eloom.holybean.printer
 
 import eloom.holybean.data.model.PrinterDTO
 
-class ReportPrinter : Printer() {
+object ReportPrinter {
 
     fun getPrintingText(data: PrinterDTO): String {
         var result = "[L]\n"
