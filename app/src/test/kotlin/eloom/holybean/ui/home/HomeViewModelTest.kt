@@ -2,12 +2,14 @@ package eloom.holybean.ui.home
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import eloom.holybean.data.model.CartItem
-import eloom.holybean.data.model.MenuItem
 import eloom.holybean.data.model.Order
 import eloom.holybean.data.model.PaymentMethod
 import eloom.holybean.data.repository.LambdaRepository
-import eloom.holybean.data.repository.MenuDB
-import io.mockk.*
+import eloom.holybean.data.repository.MenuRepository
+import io.mockk.clearAllMocks
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -31,14 +33,14 @@ class HomeViewModelTest {
 
     private lateinit var homeViewModel: HomeViewModel
     private val lambdaRepository: LambdaRepository = mockk(relaxed = true)
-    private val menuDB: MenuDB = mockk(relaxed = true)
+    private val menuRepository: MenuRepository = mockk(relaxed = true)
     private val testDispatcher = UnconfinedTestDispatcher()
 
     @Before
     fun setUp() {
-        every { menuDB.getMenuList() } returns emptyList()
+        coEvery { menuRepository.getMenuListSync() } returns emptyList()
         coEvery { lambdaRepository.getOrderNumber() } returns 1
-        homeViewModel = HomeViewModel(lambdaRepository, menuDB, testDispatcher)
+        homeViewModel = HomeViewModel(lambdaRepository, menuRepository, testDispatcher)
     }
 
     @After
@@ -107,25 +109,6 @@ class HomeViewModelTest {
         assertEquals(8000, cartItem1.total)
         assertEquals(4500, cartItem2.total)
         assertEquals(18000, cartItem3.total)
-    }
-
-    @Test
-    fun `getMenuList should return menu list from database`() {
-        // Given
-        val testMenuList = listOf(
-            MenuItem(1, "아메리카노", 4000, 1, true),
-            MenuItem(2, "라떼", 4500, 2, true),
-            MenuItem(3, "케이크", 6000, 3, false)
-        )
-        every { menuDB.getMenuList() } returns testMenuList
-
-        // When
-        val result = homeViewModel.getMenuList()
-
-        // Then
-        verify(atLeast = 1) { menuDB.getMenuList() }
-        assertEquals(testMenuList.size, result.size)
-        assertEquals(testMenuList, result)
     }
 
     @Test

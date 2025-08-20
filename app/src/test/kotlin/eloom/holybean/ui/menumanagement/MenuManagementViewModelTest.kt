@@ -3,11 +3,12 @@ package eloom.holybean.ui.menumanagement
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import eloom.holybean.data.model.MenuItem
 import eloom.holybean.data.repository.LambdaRepository
-import eloom.holybean.data.repository.MenuDB
+import eloom.holybean.data.repository.MenuRepository
 import io.mockk.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.*
 import org.junit.After
@@ -23,7 +24,7 @@ class MenuManagementViewModelTest {
     val instantExecutorRule = InstantTaskExecutorRule()
 
     private lateinit var viewModel: MenuManagementViewModel
-    private val menuDB: MenuDB = mockk(relaxed = true)
+    private val menuRepository: MenuRepository = mockk(relaxed = true)
     private val lambdaRepository: LambdaRepository = mockk(relaxed = true)
     private val testDispatcher = UnconfinedTestDispatcher()
 
@@ -31,9 +32,9 @@ class MenuManagementViewModelTest {
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         // Mock initial state
-        every { menuDB.getMenuList() } returns emptyList()
+        every { menuRepository.getMenuList() } returns flowOf(emptyList())
         coEvery { lambdaRepository.getLastedSavedMenuList() } returns arrayListOf()
-        viewModel = MenuManagementViewModel(menuDB, lambdaRepository, testDispatcher)
+        viewModel = MenuManagementViewModel(menuRepository, lambdaRepository, testDispatcher)
     }
 
     @After
@@ -61,10 +62,10 @@ class MenuManagementViewModelTest {
             MenuItem(1001, "Americano", 4000, 1001, true),
             MenuItem(1002, "Latte", 4500, 1002, true)
         )
-        every { menuDB.getMenuList() } returns mockMenuList
+        every { menuRepository.getMenuList() } returns flowOf(mockMenuList)
 
         // When - ViewModel loads menu on init
-        val testViewModel = MenuManagementViewModel(menuDB, lambdaRepository, testDispatcher)
+        val testViewModel = MenuManagementViewModel(menuRepository, lambdaRepository, testDispatcher)
 
         // Then
         val uiState = testViewModel.uiState.first()
@@ -78,8 +79,8 @@ class MenuManagementViewModelTest {
             MenuItem(1001, "Americano", 4000, 1001, true),
             MenuItem(2001, "Green Tea", 3000, 2001, true)
         )
-        every { menuDB.getMenuList() } returns mockMenuList
-        val testViewModel = MenuManagementViewModel(menuDB, lambdaRepository, testDispatcher)
+        every { menuRepository.getMenuList() } returns flowOf(mockMenuList)
+        val testViewModel = MenuManagementViewModel(menuRepository, lambdaRepository, testDispatcher)
 
         // When
         testViewModel.onCategorySelected(0) // Category 1 (ICE커피)
@@ -99,9 +100,9 @@ class MenuManagementViewModelTest {
         val price = 5000
         val placement = 1001
 
-        every { menuDB.isValidMenuName(name) } returns true
-        every { menuDB.addMenu(any()) } just runs
-        every { menuDB.getMenuList() } returns emptyList()
+        coEvery { menuRepository.isValidMenuName(name) } returns true
+        coEvery { menuRepository.addMenu(any()) } just runs
+        every { menuRepository.getMenuList() } returns flowOf(emptyList())
 
         val events = mutableListOf<MenuManagementViewModel.UiEvent>()
         val collectJob = launch { viewModel.uiEvent.collect { events.add(it) } }
@@ -111,7 +112,7 @@ class MenuManagementViewModelTest {
         advanceUntilIdle()
 
         // Then
-        verify { menuDB.addMenu(any()) }
+        coVerify { menuRepository.addMenu(any()) }
         assertEquals(1, events.size)
         assertTrue(events[0] is MenuManagementViewModel.UiEvent.ShowToast)
         assertEquals("메뉴가 추가되었습니다.", (events[0] as MenuManagementViewModel.UiEvent.ShowToast).message)
@@ -127,7 +128,7 @@ class MenuManagementViewModelTest {
         val price = 5000
         val placement = 1001
 
-        every { menuDB.isValidMenuName(name) } returns false
+        coEvery { menuRepository.isValidMenuName(name) } returns false
 
         val events = mutableListOf<MenuManagementViewModel.UiEvent>()
         val collectJob = launch { viewModel.uiEvent.collect { events.add(it) } }
@@ -148,8 +149,8 @@ class MenuManagementViewModelTest {
     fun `updateMenu should emit success event and update menu`() = runTest(testDispatcher) {
         // Given
         val menuItemToUpdate = MenuItem(1001, "Americano", 4500, 1001, true)
-        every { menuDB.updateSpecificMenu(any()) } just runs
-        every { menuDB.getMenuList() } returns listOf(menuItemToUpdate)
+        coEvery { menuRepository.updateSpecificMenu(any()) } just runs
+        every { menuRepository.getMenuList() } returns flowOf(listOf(menuItemToUpdate))
 
         val events = mutableListOf<MenuManagementViewModel.UiEvent>()
         val collectJob = launch { viewModel.uiEvent.collect { events.add(it) } }
@@ -159,7 +160,7 @@ class MenuManagementViewModelTest {
         advanceUntilIdle()
 
         // Then
-        verify { menuDB.updateSpecificMenu(any()) }
+        coVerify { menuRepository.updateSpecificMenu(any()) }
         assertEquals(1, events.size)
         assertTrue(events[0] is MenuManagementViewModel.UiEvent.ShowToast)
         assertEquals("메뉴가 수정되었습니다.", (events[0] as MenuManagementViewModel.UiEvent.ShowToast).message)
@@ -171,8 +172,8 @@ class MenuManagementViewModelTest {
     fun `toggleMenuInUse should change menu status`() = runTest(testDispatcher) {
         // Given
         val menuItem = MenuItem(1001, "Americano", 4500, 1001, true)
-        every { menuDB.updateSpecificMenu(any()) } just runs
-        every { menuDB.getMenuList() } returns listOf(menuItem)
+        coEvery { menuRepository.updateSpecificMenu(any()) } just runs
+        every { menuRepository.getMenuList() } returns flowOf(listOf(menuItem))
 
         val events = mutableListOf<MenuManagementViewModel.UiEvent>()
         val collectJob = launch { viewModel.uiEvent.collect { events.add(it) } }
@@ -183,7 +184,7 @@ class MenuManagementViewModelTest {
 
         // Then
         assertFalse(menuItem.inuse) // Should be toggled to false
-        verify { menuDB.updateSpecificMenu(any()) }
+        coVerify { menuRepository.updateSpecificMenu(any()) }
         assertEquals(1, events.size)
         assertTrue(events.first() is MenuManagementViewModel.UiEvent.ShowToast)
         assertEquals("메뉴가 비활성화 되었습니다.", (events.first() as MenuManagementViewModel.UiEvent.ShowToast).message)
@@ -199,8 +200,8 @@ class MenuManagementViewModelTest {
             MenuItem(1002, "Latte", 4500, 1002, true),
             MenuItem(1003, "Cappuccino", 4700, 1003, true)
         )
-        every { menuDB.getMenuList() } returns mockMenuList
-        val testViewModel = MenuManagementViewModel(menuDB, lambdaRepository, testDispatcher)
+        every { menuRepository.getMenuList() } returns flowOf(mockMenuList)
+        val testViewModel = MenuManagementViewModel(menuRepository, lambdaRepository, testDispatcher)
 
         // When
         testViewModel.moveItem(0, 2) // Move first item to third position
@@ -218,9 +219,9 @@ class MenuManagementViewModelTest {
         val mockMenuList = listOf(
             MenuItem(1001, "Americano", 4000, 1001, true)
         )
-        every { menuDB.getMenuList() } returns mockMenuList
-        every { menuDB.saveMenuOrders(any()) } just runs
-        val testViewModel = MenuManagementViewModel(menuDB, lambdaRepository, testDispatcher)
+        every { menuRepository.getMenuList() } returns flowOf(mockMenuList)
+        coEvery { menuRepository.saveMenuOrders(any()) } just runs
+        val testViewModel = MenuManagementViewModel(menuRepository, lambdaRepository, testDispatcher)
 
         val events = mutableListOf<MenuManagementViewModel.UiEvent>()
         val collectJob = launch { testViewModel.uiEvent.collect { events.add(it) } }
@@ -230,7 +231,7 @@ class MenuManagementViewModelTest {
         advanceUntilIdle()
 
         // Then
-        verify { menuDB.saveMenuOrders(any()) }
+        coVerify { menuRepository.saveMenuOrders(any()) }
         assertEquals(2, events.size)
         assertTrue(events[0] is MenuManagementViewModel.UiEvent.ShowToast)
         assertEquals("저장되었습니다.", (events[0] as MenuManagementViewModel.UiEvent.ShowToast).message)
@@ -247,8 +248,8 @@ class MenuManagementViewModelTest {
             MenuItem(1002, "Remote Latte", 4700, 1002, true)
         )
         coEvery { lambdaRepository.getLastedSavedMenuList() } returns remoteMenuList
-        every { menuDB.overwriteMenuList(any()) } just runs
-        every { menuDB.getMenuList() } returns emptyList()
+        coEvery { menuRepository.overwriteMenuList(any()) } just runs
+        every { menuRepository.getMenuList() } returns flowOf(emptyList())
 
         val events = mutableListOf<MenuManagementViewModel.UiEvent>()
         val collectJob = launch { viewModel.uiEvent.collect { events.add(it) } }
@@ -259,7 +260,7 @@ class MenuManagementViewModelTest {
 
         // Then
         coVerify { lambdaRepository.getLastedSavedMenuList() }
-        verify { menuDB.overwriteMenuList(remoteMenuList) }
+        coVerify { menuRepository.overwriteMenuList(remoteMenuList) }
         assertEquals(2, events.size)
         assertTrue(events[0] is MenuManagementViewModel.UiEvent.ShowToast)
         assertEquals("태블릿에 저장 완료", (events[0] as MenuManagementViewModel.UiEvent.ShowToast).message)
@@ -282,7 +283,7 @@ class MenuManagementViewModelTest {
         advanceUntilIdle()
 
         // Then
-        verify(exactly = 0) { menuDB.overwriteMenuList(any()) }
+        coVerify(exactly = 0) { menuRepository.overwriteMenuList(any()) }
         assertEquals(1, events.size)
         assertTrue(events.first() is MenuManagementViewModel.UiEvent.ShowToast)
         val expectedMessage = "데이터 가져오기 실패: $errorMessage"
@@ -297,7 +298,7 @@ class MenuManagementViewModelTest {
         val menuList = listOf(
             MenuItem(1001, "Americano", 4000, 1001, true)
         )
-        every { menuDB.getMenuList() } returns menuList
+        coEvery { menuRepository.getMenuListSync() } returns menuList
         coEvery { lambdaRepository.saveMenuListToServer(any()) } just runs
 
         val events = mutableListOf<MenuManagementViewModel.UiEvent>()
@@ -317,31 +318,31 @@ class MenuManagementViewModelTest {
     }
 
     @Test
-    fun `getNextAvailableId should return value from MenuDB`() {
+    fun `getNextAvailableId should return value from MenuRepository`() = runTest {
         // Given
         val expectedId = 1005
-        every { menuDB.getNextAvailableIdForCategory(any()) } returns expectedId
+        coEvery { menuRepository.getNextAvailableIdForCategory(any()) } returns expectedId
 
         // When
         val result = viewModel.getNextAvailableId()
 
         // Then
         assertEquals(expectedId, result)
-        verify { menuDB.getNextAvailableIdForCategory(1) } // Default category
+        coVerify { menuRepository.getNextAvailableIdForCategory(1) } // Default category
     }
 
     @Test
-    fun `getNextAvailablePlacement should return value from MenuDB`() {
+    fun `getNextAvailablePlacement should return value from MenuRepository`() = runTest {
         // Given
         val expectedPlacement = 1010
-        every { menuDB.getNextAvailablePlacementForCategory(any()) } returns expectedPlacement
+        coEvery { menuRepository.getNextAvailablePlacementForCategory(any()) } returns expectedPlacement
 
         // When
         val result = viewModel.getNextAvailablePlacement()
 
         // Then
         assertEquals(expectedPlacement, result)
-        verify { menuDB.getNextAvailablePlacementForCategory(1) } // Default category
+        coVerify { menuRepository.getNextAvailablePlacementForCategory(1) } // Default category
     }
 
     @Test

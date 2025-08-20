@@ -8,8 +8,10 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import eloom.holybean.databinding.DialogMenuAddBinding
+import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class MenuAddDialog : DialogFragment() {
@@ -31,10 +33,12 @@ class MenuAddDialog : DialogFragment() {
 
         initializeViews()
 
-        menuId = viewModel.getNextAvailableId()
-        menuPlacement = viewModel.getNextAvailablePlacement()
+        lifecycleScope.launch {
+            menuId = viewModel.getNextAvailableId()
+            menuPlacement = viewModel.getNextAvailablePlacement()
+            setDefaultValues()
+        }
 
-        setDefaultValues()
         setupListeners()
 
         return AlertDialog.Builder(requireActivity())

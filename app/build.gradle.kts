@@ -5,6 +5,7 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("dagger.hilt.android.plugin")
+    id("com.google.devtools.ksp")
 }
 
 android {
@@ -101,6 +102,11 @@ dependencies {
     implementation("com.github.DantSu:ESCPOS-ThermalPrinter-Android:3.3.0")
     implementation("com.google.dagger:hilt-android:2.52")
     kapt("com.google.dagger:hilt-android-compiler:2.52")
+
+    val room_version = "2.6.1"
+    implementation("androidx.room:room-runtime:$room_version")
+    ksp("androidx.room:room-compiler:$room_version")
+    implementation("androidx.room:room-ktx:$room_version")
 }
 
 kapt {
