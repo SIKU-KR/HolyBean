@@ -1,9 +1,11 @@
-package eloom.holybean.network
+package eloom.holybean.di
 
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import eloom.holybean.network.ApiService
+import eloom.holybean.network.RetrofitClient
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import javax.inject.Singleton
