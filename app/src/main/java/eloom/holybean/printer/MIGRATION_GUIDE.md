@@ -2,25 +2,30 @@
 
 ## Overview
 
-The HolyBean printer system has been completely refactored to improve efficiency, stability, and maintainability. This guide explains the final architecture after completing the refactoring.
+The HolyBean printer system has been completely refactored to improve efficiency, stability, and maintainability. This
+guide explains the final architecture after completing the refactoring.
 
 ## Key Changes
 
 ### 1. Eliminated Utility Classes
+
 - **Before**: `HomePrinter`, `OrdersPrinter`, `ReportPrinter` utility objects handled text formatting
 - **After**: Formatting logic moved directly into respective ViewModels for better cohesion
 
 ### 2. Centralized Connection Management
+
 - **Before**: Each printer instance created its own `EscPosPrinter` connection
 - **After**: Single `PrinterManager` singleton manages one shared connection
 
 ### 3. Enhanced Error Handling
+
 - **Before**: Basic print/disconnect with limited error handling
 - **After**: Automatic retry logic, reconnection, and detailed error reporting with `PrintResult` sealed class
 
 ## Migration Steps
 
 ### Step 1: Update Imports
+
 ```kotlin
 // Remove these imports (no longer needed)
 import eloom.holybean.printer.HomePrinter
@@ -35,6 +40,7 @@ import eloom.holybean.printer.PrinterState
 ```
 
 ### Step 2: Inject Dependencies
+
 ```kotlin
 // In your ViewModel - inject PrinterManager directly
 @Inject
@@ -44,6 +50,7 @@ lateinit var printerManager: PrinterManager
 ### Step 3: Update Printing Code
 
 #### Before (Old System):
+
 ```kotlin
 // Old way - creating new instance each time
 val homePrinter = HomePrinter()
@@ -53,6 +60,7 @@ homePrinter.disconnect()
 ```
 
 #### After (New System):
+
 ```kotlin
 // Formatting and printing are now done in the ViewModel
 private fun formatReceiptTextForCustomer(data: Order): String {
@@ -79,6 +87,7 @@ private suspend fun printReceipt(data: Order, takeOption: String) {
 ```
 
 ### Step 4: Monitor Printer Status (Optional)
+
 ```kotlin
 // Observe printer connection state in real-time
 printerManager.printerState.collect { state ->
@@ -94,13 +103,17 @@ printerManager.printerState.collect { state ->
 ## Best Practices
 
 ### 1. Keep Formatting Logic in ViewModels
+
 Each ViewModel now contains its own formatting methods for better cohesion:
+
 - `HomeViewModel`: `formatReceiptTextForCustomer()`, `formatReceiptTextForPOS()`
 - `OrdersViewModel`: `formatReprintText()`
 - `ReportViewModel`: `formatReportText()`
 
 ### 2. Handle Print Results Properly
+
 Always check the `PrintResult` to handle failures gracefully:
+
 ```kotlin
 when (val result = printerManager.print(formattedText)) {
     is PrintResult.Success -> {
@@ -113,7 +126,9 @@ when (val result = printerManager.print(formattedText)) {
 ```
 
 ### 3. Monitor Connection State in UI
+
 Update your UI to reflect the current printer connection status:
+
 ```kotlin
 // In your Fragment/Activity
 lifecycleScope.launch {
@@ -124,6 +139,7 @@ lifecycleScope.launch {
 ```
 
 ### 4. No Manual Disconnection Required
+
 The new system manages connections automatically. You don't need to call `disconnect()` after each print operation.
 
 ## Benefits of New System
@@ -137,6 +153,7 @@ The new system manages connections automatically. You don't need to call `discon
 ## Troubleshooting
 
 ### Connection Issues
+
 ```kotlin
 // Force reconnection if having connection problems
 printerHelper.forceReconnect()
@@ -147,7 +164,9 @@ Log.d("Printer", "Current printer state: $currentState")
 ```
 
 ### Testing Connection
+
 The system automatically tests connections before printing, but you can monitor the status:
+
 ```kotlin
 printerManager.printerState.collect { state ->
     Log.d("Printer", "Printer state changed to: $state")

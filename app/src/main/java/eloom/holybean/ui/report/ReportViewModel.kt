@@ -6,8 +6,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import eloom.holybean.data.model.PrinterDTO
 import eloom.holybean.data.model.ReportDetailItem
 import eloom.holybean.network.ApiService
-import eloom.holybean.printer.PrinterManager
 import eloom.holybean.printer.PrintResult
+import eloom.holybean.printer.PrinterManager
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.*
@@ -101,11 +101,12 @@ class ReportViewModel @Inject constructor(
                 val printerDTO = PrinterDTO(dateParts[0], dateParts[1], summary, details)
                 val reportText = formatReportText(printerDTO)
                 val result = printerManager.print(reportText)
-                
+
                 when (result) {
                     is PrintResult.Success -> {
                         _uiEvent.tryEmit(ReportUiEvent.ShowToast("리포트 인쇄가 완료되었습니다"))
                     }
+
                     is PrintResult.Failure -> {
                         _uiEvent.tryEmit(ReportUiEvent.ShowError("프린터 연결을 확인해주세요"))
                     }

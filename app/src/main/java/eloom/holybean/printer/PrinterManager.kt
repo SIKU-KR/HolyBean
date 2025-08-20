@@ -73,9 +73,11 @@ class PrinterManager @Inject constructor(
                 // Test if connection is still valid
                 testConnection()
             }
+
             PrinterState.DISCONNECTED, PrinterState.ERROR -> {
                 attemptReconnection()
             }
+
             PrinterState.CONNECTING -> {
                 false // Already in progress
             }

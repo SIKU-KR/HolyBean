@@ -1,13 +1,12 @@
 package eloom.holybean.ui.report
 
-import android.bluetooth.BluetoothAdapter
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import eloom.holybean.data.model.ReportDetailItem
 import eloom.holybean.network.ApiService
 import eloom.holybean.network.dto.ResponseMenuSales
 import eloom.holybean.network.dto.ResponseSalesReport
-import eloom.holybean.printer.PrinterManager
 import eloom.holybean.printer.PrintResult
+import eloom.holybean.printer.PrinterManager
 import io.mockk.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi

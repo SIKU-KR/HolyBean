@@ -1,12 +1,11 @@
 package eloom.holybean.ui.orderlist
 
-import android.bluetooth.BluetoothAdapter
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import eloom.holybean.data.model.OrderItem
 import eloom.holybean.data.model.OrdersDetailItem
 import eloom.holybean.data.repository.LambdaRepository
-import eloom.holybean.printer.PrinterManager
 import eloom.holybean.printer.PrintResult
+import eloom.holybean.printer.PrinterManager
 import io.mockk.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -214,12 +213,12 @@ class OrdersViewModelTest {
         // Then
         verify { printerManager.print(any()) }
         // Should show success message
-        val successEvent = events.find { 
-            it is OrdersViewModel.OrdersUiEvent.ShowToast && 
-            it.message == "영수증이 재출력되었습니다"
+        val successEvent = events.find {
+            it is OrdersViewModel.OrdersUiEvent.ShowToast &&
+                    it.message == "영수증이 재출력되었습니다"
         }
         assertNotNull(successEvent)
-        
+
         collectJob.cancel()
     }
 

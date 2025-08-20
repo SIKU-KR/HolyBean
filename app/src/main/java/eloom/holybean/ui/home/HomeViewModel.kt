@@ -9,8 +9,8 @@ import eloom.holybean.data.model.Order
 import eloom.holybean.data.repository.LambdaRepository
 import eloom.holybean.data.repository.MenuRepository
 import eloom.holybean.interfaces.OrderDialogListener
-import eloom.holybean.printer.PrinterManager
 import eloom.holybean.printer.PrintResult
+import eloom.holybean.printer.PrinterManager
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.*
@@ -186,10 +186,10 @@ class HomeViewModel @Inject constructor(
             try {
                 val customerReceiptText = formatReceiptTextForCustomer(data)
                 val posReceiptText = formatReceiptTextForPOS(data, takeOption)
-                
+
                 val customerResult = printerManager.print(customerReceiptText)
                 val posResult = printerManager.print(posReceiptText)
-                
+
                 when {
                     customerResult is PrintResult.Failure || posResult is PrintResult.Failure -> {
                         println("Warning: Some receipts failed to print")

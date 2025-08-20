@@ -6,8 +6,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import eloom.holybean.data.model.OrderItem
 import eloom.holybean.data.model.OrdersDetailItem
 import eloom.holybean.data.repository.LambdaRepository
-import eloom.holybean.printer.PrinterManager
 import eloom.holybean.printer.PrintResult
+import eloom.holybean.printer.PrinterManager
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.*
@@ -112,11 +112,12 @@ class OrdersViewModel @Inject constructor(
             val orderDetailsArrayList = ArrayList(currentState.orderDetails)
             val reprintText = formatReprintText(currentState.selectedOrderNumber, orderDetailsArrayList)
             val result = printerManager.print(reprintText)
-            
+
             when (result) {
                 is PrintResult.Success -> {
                     _uiEvent.tryEmit(OrdersUiEvent.ShowToast("영수증이 재출력되었습니다"))
                 }
+
                 is PrintResult.Failure -> {
                     _uiEvent.tryEmit(OrdersUiEvent.ShowToast("프린터 연결을 확인해주세요"))
                 }

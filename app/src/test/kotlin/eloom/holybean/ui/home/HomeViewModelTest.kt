@@ -6,13 +6,9 @@ import eloom.holybean.data.model.Order
 import eloom.holybean.data.model.PaymentMethod
 import eloom.holybean.data.repository.LambdaRepository
 import eloom.holybean.data.repository.MenuRepository
-import eloom.holybean.printer.PrinterManager
 import eloom.holybean.printer.PrintResult
-import io.mockk.clearAllMocks
-import io.mockk.coEvery
-import io.mockk.coVerify
-import io.mockk.every
-import io.mockk.mockk
+import eloom.holybean.printer.PrinterManager
+import io.mockk.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -192,7 +188,7 @@ class HomeViewModelTest {
 
         // Then
         coVerify(exactly = 1) { lambdaRepository.postOrder(testOrder) }
-        io.mockk.verify(exactly = 2) { printerManager.print(any()) } // Customer + POS receipts
+        verify(exactly = 2) { printerManager.print(any()) } // Customer + POS receipts
         assertTrue(events.any { it is HomeViewModel.UiEvent.NavigateHome })
         job.cancel()
     }
@@ -214,7 +210,7 @@ class HomeViewModelTest {
 
         // Then
         coVerify(exactly = 1) { lambdaRepository.postOrder(testOrder) }
-        io.mockk.verify(exactly = 2) { printerManager.print(any()) } // Customer + POS receipts
+        verify(exactly = 2) { printerManager.print(any()) } // Customer + POS receipts
         // Order should still complete successfully even if printing fails
         assertTrue(events.any { it is HomeViewModel.UiEvent.NavigateHome })
         job.cancel()
