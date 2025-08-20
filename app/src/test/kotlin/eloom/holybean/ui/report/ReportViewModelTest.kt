@@ -6,7 +6,8 @@ import eloom.holybean.data.model.ReportDetailItem
 import eloom.holybean.network.ApiService
 import eloom.holybean.network.dto.ResponseMenuSales
 import eloom.holybean.network.dto.ResponseSalesReport
-import eloom.holybean.printer.PrinterHelper
+import eloom.holybean.printer.PrinterManager
+import eloom.holybean.printer.PrintResult
 import io.mockk.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -28,13 +29,13 @@ class ReportViewModelTest {
 
     private lateinit var viewModel: ReportViewModel
     private val apiService: ApiService = mockk()
-    private val printerHelper: PrinterHelper = mockk(relaxed = true)
+    private val printerManager: PrinterManager = mockk(relaxed = true)
     private val testDispatcher = UnconfinedTestDispatcher()
 
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
-        viewModel = ReportViewModel(apiService, printerHelper, testDispatcher)
+        viewModel = ReportViewModel(apiService, printerManager, testDispatcher)
     }
 
     @After
@@ -153,7 +154,7 @@ class ReportViewModelTest {
         coEvery { apiService.getReport(startDate, endDate) } returns Response.success(mockResponse)
         viewModel.loadReportData(startDate, endDate)
 
-        every { printerHelper.printSalesReport(any()) } returns true
+        every { printerManager.print(any()) } returns PrintResult.Success
 
         // Collect events before triggering the action
         val events = mutableListOf<ReportViewModel.ReportUiEvent>()
@@ -166,7 +167,7 @@ class ReportViewModelTest {
         advanceUntilIdle()
 
         // Then
-        verify { printerHelper.printSalesReport(any()) }
+        verify { printerManager.print(any()) }
         // Check success toast event
         val successEvent = events.find { it is ReportViewModel.ReportUiEvent.ShowToast }
         assertNotNull(successEvent)
@@ -211,7 +212,7 @@ class ReportViewModelTest {
         coEvery { apiService.getReport(startDate, endDate) } returns Response.success(mockResponse)
         viewModel.loadReportData(startDate, endDate)
 
-        every { printerHelper.printSalesReport(any()) } returns false
+        every { printerManager.print(any()) } returns PrintResult.Failure("Connection failed")
 
         // Collect events before triggering the action
         val events = mutableListOf<ReportViewModel.ReportUiEvent>()
@@ -224,7 +225,7 @@ class ReportViewModelTest {
         advanceUntilIdle()
 
         // Then
-        verify { printerHelper.printSalesReport(any()) }
+        verify { printerManager.print(any()) }
         // Should show printer connection error
         val errorEvent = events.find { it is ReportViewModel.ReportUiEvent.ShowError }
         assertNotNull(errorEvent)

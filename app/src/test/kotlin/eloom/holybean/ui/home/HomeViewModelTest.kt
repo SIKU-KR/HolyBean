@@ -6,7 +6,8 @@ import eloom.holybean.data.model.Order
 import eloom.holybean.data.model.PaymentMethod
 import eloom.holybean.data.repository.LambdaRepository
 import eloom.holybean.data.repository.MenuRepository
-import eloom.holybean.printer.PrinterHelper
+import eloom.holybean.printer.PrinterManager
+import eloom.holybean.printer.PrintResult
 import io.mockk.clearAllMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -36,16 +37,15 @@ class HomeViewModelTest {
     private lateinit var homeViewModel: HomeViewModel
     private val lambdaRepository: LambdaRepository = mockk(relaxed = true)
     private val menuRepository: MenuRepository = mockk(relaxed = true)
-    private val printerHelper: PrinterHelper = mockk(relaxed = true)
+    private val printerManager: PrinterManager = mockk(relaxed = true)
     private val testDispatcher = UnconfinedTestDispatcher()
 
     @Before
     fun setUp() {
         coEvery { menuRepository.getMenuListSync() } returns emptyList()
         coEvery { lambdaRepository.getOrderNumber() } returns 1
-        every { printerHelper.printCustomerReceipt(any()) } returns true
-        every { printerHelper.printPOSReceipt(any(), any()) } returns true
-        homeViewModel = HomeViewModel(lambdaRepository, menuRepository, printerHelper, testDispatcher)
+        every { printerManager.print(any()) } returns PrintResult.Success
+        homeViewModel = HomeViewModel(lambdaRepository, menuRepository, printerManager, testDispatcher)
     }
 
     @After
@@ -181,8 +181,7 @@ class HomeViewModelTest {
         val testOrder = createTestOrder()
         val takeOption = "포장"
         coEvery { lambdaRepository.postOrder(any()) } returns Unit
-        every { printerHelper.printCustomerReceipt(testOrder) } returns true
-        every { printerHelper.printPOSReceipt(testOrder, takeOption) } returns true
+        every { printerManager.print(any()) } returns PrintResult.Success
 
         val events = mutableListOf<HomeViewModel.UiEvent>()
         val job: Job = launch { homeViewModel.uiEvent.collect { events.add(it) } }
@@ -193,8 +192,7 @@ class HomeViewModelTest {
 
         // Then
         coVerify(exactly = 1) { lambdaRepository.postOrder(testOrder) }
-        io.mockk.verify { printerHelper.printCustomerReceipt(testOrder) }
-        io.mockk.verify { printerHelper.printPOSReceipt(testOrder, takeOption) }
+        io.mockk.verify(exactly = 2) { printerManager.print(any()) } // Customer + POS receipts
         assertTrue(events.any { it is HomeViewModel.UiEvent.NavigateHome })
         job.cancel()
     }
@@ -205,8 +203,7 @@ class HomeViewModelTest {
         val testOrder = createTestOrder()
         val takeOption = "매장"
         coEvery { lambdaRepository.postOrder(any()) } returns Unit
-        every { printerHelper.printCustomerReceipt(testOrder) } returns false
-        every { printerHelper.printPOSReceipt(testOrder, takeOption) } returns false
+        every { printerManager.print(any()) } returns PrintResult.Failure("Connection failed")
 
         val events = mutableListOf<HomeViewModel.UiEvent>()
         val job: Job = launch { homeViewModel.uiEvent.collect { events.add(it) } }
@@ -217,8 +214,7 @@ class HomeViewModelTest {
 
         // Then
         coVerify(exactly = 1) { lambdaRepository.postOrder(testOrder) }
-        io.mockk.verify { printerHelper.printCustomerReceipt(testOrder) }
-        io.mockk.verify { printerHelper.printPOSReceipt(testOrder, takeOption) }
+        io.mockk.verify(exactly = 2) { printerManager.print(any()) } // Customer + POS receipts
         // Order should still complete successfully even if printing fails
         assertTrue(events.any { it is HomeViewModel.UiEvent.NavigateHome })
         job.cancel()

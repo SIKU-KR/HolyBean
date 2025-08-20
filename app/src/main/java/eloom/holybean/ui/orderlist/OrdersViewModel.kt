@@ -6,7 +6,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import eloom.holybean.data.model.OrderItem
 import eloom.holybean.data.model.OrdersDetailItem
 import eloom.holybean.data.repository.LambdaRepository
-import eloom.holybean.printer.PrinterHelper
+import eloom.holybean.printer.PrinterManager
+import eloom.holybean.printer.PrintResult
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.*
@@ -18,7 +19,7 @@ import javax.inject.Inject
 @HiltViewModel
 class OrdersViewModel @Inject constructor(
     private val lambdaRepository: LambdaRepository,
-    private val printerHelper: PrinterHelper,
+    private val printerManager: PrinterManager,
     private val dispatcher: CoroutineDispatcher
 ) : ViewModel() {
 
@@ -109,14 +110,33 @@ class OrdersViewModel @Inject constructor(
 
         viewModelScope.launch(dispatcher) {
             val orderDetailsArrayList = ArrayList(currentState.orderDetails)
-            val success = printerHelper.printOrderReprint(currentState.selectedOrderNumber, orderDetailsArrayList)
+            val reprintText = formatReprintText(currentState.selectedOrderNumber, orderDetailsArrayList)
+            val result = printerManager.print(reprintText)
             
-            if (success) {
-                _uiEvent.tryEmit(OrdersUiEvent.ShowToast("영수증이 재출력되었습니다"))
-            } else {
-                _uiEvent.tryEmit(OrdersUiEvent.ShowToast("프린터 연결을 확인해주세요"))
+            when (result) {
+                is PrintResult.Success -> {
+                    _uiEvent.tryEmit(OrdersUiEvent.ShowToast("영수증이 재출력되었습니다"))
+                }
+                is PrintResult.Failure -> {
+                    _uiEvent.tryEmit(OrdersUiEvent.ShowToast("프린터 연결을 확인해주세요"))
+                }
             }
         }
+    }
+
+    private fun formatReprintText(orderNum: Int, basketList: ArrayList<OrdersDetailItem>): String {
+        var result = "[R]영수증 재출력\n"
+        result += "[C]=====================================\n"
+        result += "[L]\n"
+        result += "[C]<u><font size='big'>주문번호 : ${orderNum}</font></u>\n"
+        result += "[L]\n"
+        result += "[C]-------------------------------------\n"
+        for (item in basketList) {
+            result += "[L]<b>${item.name}</b>[R]${item.count}\n"
+        }
+        result += "[L]\n"
+        result += "[C]====================================="
+        return result
     }
 
     fun fetchOrderDetail(orderNumber: Int) {

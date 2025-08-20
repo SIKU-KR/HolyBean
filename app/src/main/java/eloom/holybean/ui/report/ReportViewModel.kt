@@ -6,7 +6,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import eloom.holybean.data.model.PrinterDTO
 import eloom.holybean.data.model.ReportDetailItem
 import eloom.holybean.network.ApiService
-import eloom.holybean.printer.PrinterHelper
+import eloom.holybean.printer.PrinterManager
+import eloom.holybean.printer.PrintResult
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.*
@@ -19,7 +20,7 @@ import javax.inject.Inject
 @HiltViewModel
 class ReportViewModel @Inject constructor(
     private val apiService: ApiService,
-    private val printerHelper: PrinterHelper,
+    private val printerManager: PrinterManager,
     private val dispatcher: CoroutineDispatcher
 ) : ViewModel() {
 
@@ -98,17 +99,42 @@ class ReportViewModel @Inject constructor(
             try {
                 val dateParts = title.split(" ~ ")
                 val printerDTO = PrinterDTO(dateParts[0], dateParts[1], summary, details)
-                val success = printerHelper.printSalesReport(printerDTO)
+                val reportText = formatReportText(printerDTO)
+                val result = printerManager.print(reportText)
                 
-                if (success) {
-                    _uiEvent.tryEmit(ReportUiEvent.ShowToast("리포트 인쇄가 완료되었습니다"))
-                } else {
-                    _uiEvent.tryEmit(ReportUiEvent.ShowError("프린터 연결을 확인해주세요"))
+                when (result) {
+                    is PrintResult.Success -> {
+                        _uiEvent.tryEmit(ReportUiEvent.ShowToast("리포트 인쇄가 완료되었습니다"))
+                    }
+                    is PrintResult.Failure -> {
+                        _uiEvent.tryEmit(ReportUiEvent.ShowError("프린터 연결을 확인해주세요"))
+                    }
                 }
             } catch (e: Exception) {
                 _uiEvent.tryEmit(ReportUiEvent.ShowError("인쇄 실패 : ${e.localizedMessage}"))
             }
         }
+    }
+
+    private fun formatReportText(data: PrinterDTO): String {
+        var result = "[L]\n"
+        result += "[C]<u><font size='big'>${data.startdate}~</font></u>\n"
+        result += "[C]<u><font size='big'>${data.enddate}</font></u>\n"
+        result += "[C]-------------------------------------\n"
+        result += "[L]총 판매금액 : ${data.reportData["총합"] ?: 0}\n"
+        result += "[L]현금 판매금액 : ${data.reportData["현금"] ?: 0}\n"
+        result += "[L]쿠폰 판매금액 : ${data.reportData["쿠폰"] ?: 0}\n"
+        result += "[L]계좌이체 판매금액 : ${data.reportData["계좌이체"] ?: 0}\n"
+        result += "[L]외상 판매금액 : ${data.reportData["외상"] ?: 0}\n"
+        result += "[L]무료쿠폰 판매금액 : ${data.reportData["무료쿠폰"] ?: 0}\n"
+        result += "[L]무료제공 판매금액 : ${data.reportData["무료제공"] ?: 0}\n"
+        result += "[C]-------------------------------------\n"
+        result += "[L]이름[R]수량[R]판매액\n"
+        for (item in data.reportDetailItem) {
+            result += "[L]${item.name}[R]${item.quantity}[R]${item.subtotal}\n"
+        }
+        result += "[L]\n"
+        return result
     }
 
     private fun isValidDateRange(start: String, end: String): Boolean {

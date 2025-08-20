@@ -2,13 +2,13 @@
 
 ## Overview
 
-The HolyBean printer system has been completely refactored to improve efficiency, stability, and maintainability. This guide explains how to migrate existing code to use the new printer system.
+The HolyBean printer system has been completely refactored to improve efficiency, stability, and maintainability. This guide explains the final architecture after completing the refactoring.
 
 ## Key Changes
 
-### 1. Eliminated Inheritance-Based Structure
-- **Before**: `HomePrinter`, `OrdersPrinter`, `ReportPrinter` extended `Printer` class
-- **After**: Utility objects that only handle text formatting
+### 1. Eliminated Utility Classes
+- **Before**: `HomePrinter`, `OrdersPrinter`, `ReportPrinter` utility objects handled text formatting
+- **After**: Formatting logic moved directly into respective ViewModels for better cohesion
 
 ### 2. Centralized Connection Management
 - **Before**: Each printer instance created its own `EscPosPrinter` connection
@@ -16,31 +16,27 @@ The HolyBean printer system has been completely refactored to improve efficiency
 
 ### 3. Enhanced Error Handling
 - **Before**: Basic print/disconnect with limited error handling
-- **After**: Automatic retry logic, reconnection, and detailed error reporting
+- **After**: Automatic retry logic, reconnection, and detailed error reporting with `PrintResult` sealed class
 
 ## Migration Steps
 
 ### Step 1: Update Imports
 ```kotlin
-// Remove these imports
+// Remove these imports (no longer needed)
 import eloom.holybean.printer.HomePrinter
 import eloom.holybean.printer.OrdersPrinter
 import eloom.holybean.printer.ReportPrinter
+import eloom.holybean.printer.PrinterHelper
 
 // Add these imports
 import eloom.holybean.printer.PrinterManager
-import eloom.holybean.printer.PrinterHelper
 import eloom.holybean.printer.PrintResult
 import eloom.holybean.printer.PrinterState
 ```
 
 ### Step 2: Inject Dependencies
 ```kotlin
-// In your ViewModel or Fragment
-@Inject
-lateinit var printerHelper: PrinterHelper
-
-// Or inject PrinterManager directly if you need more control
+// In your ViewModel - inject PrinterManager directly
 @Inject
 lateinit var printerManager: PrinterManager
 ```
@@ -58,23 +54,26 @@ homePrinter.disconnect()
 
 #### After (New System):
 ```kotlin
-// Method 1: Using PrinterHelper (Recommended)
-val success = printerHelper.printCustomerReceipt(order)
-if (!success) {
-    // Handle print failure
-    showPrintErrorDialog()
+// Formatting and printing are now done in the ViewModel
+private fun formatReceiptTextForCustomer(data: Order): String {
+    var result = "[C]=====================================\n"
+    result += "[L]\n"
+    result += "[C]<u><font size='big'>주문번호 : ${data.orderNum}</font></u>\n"
+    // ... rest of formatting logic
+    return result
 }
 
-// Method 2: Using PrinterManager directly
-val receiptText = HomePrinter.receiptTextForCustomer(order)
-when (val result = printerManager.print(receiptText)) {
-    is PrintResult.Success -> {
-        // Print successful
-        showPrintSuccessMessage()
-    }
-    is PrintResult.Failure -> {
-        // Handle failure with error message
-        showPrintErrorDialog(result.errorMessage)
+private suspend fun printReceipt(data: Order, takeOption: String) {
+    val customerReceiptText = formatReceiptTextForCustomer(data)
+    when (val result = printerManager.print(customerReceiptText)) {
+        is PrintResult.Success -> {
+            // Print successful
+            _uiEvent.emit(UiEvent.ShowToast("인쇄 완료"))
+        }
+        is PrintResult.Failure -> {
+            // Handle failure with error message
+            _uiEvent.emit(UiEvent.ShowToast("프린터 연결을 확인해주세요"))
+        }
     }
 }
 ```
@@ -94,23 +93,22 @@ printerManager.printerState.collect { state ->
 
 ## Best Practices
 
-### 1. Use PrinterHelper for Common Operations
-The `PrinterHelper` class provides convenient methods for all common printing operations:
-- `printCustomerReceipt(order)`
-- `printPOSReceipt(order, option)`
-- `printOrderReprint(orderNum, basketList)`
-- `printSalesReport(reportData)`
+### 1. Keep Formatting Logic in ViewModels
+Each ViewModel now contains its own formatting methods for better cohesion:
+- `HomeViewModel`: `formatReceiptTextForCustomer()`, `formatReceiptTextForPOS()`
+- `OrdersViewModel`: `formatReprintText()`
+- `ReportViewModel`: `formatReportText()`
 
 ### 2. Handle Print Results Properly
-Always check the return value or `PrintResult` to handle failures gracefully:
+Always check the `PrintResult` to handle failures gracefully:
 ```kotlin
-val success = printerHelper.printCustomerReceipt(order)
-if (!success) {
-    // Show user-friendly error message
-    Toast.makeText(context, "프린터 연결을 확인해주세요", Toast.LENGTH_SHORT).show()
-    
-    // Optionally try to reconnect
-    printerHelper.forceReconnect()
+when (val result = printerManager.print(formattedText)) {
+    is PrintResult.Success -> {
+        _uiEvent.emit(UiEvent.ShowToast("인쇄 완료"))
+    }
+    is PrintResult.Failure -> {
+        _uiEvent.emit(UiEvent.ShowToast("프린터 연결을 확인해주세요: ${result.errorMessage}"))
+    }
 }
 ```
 

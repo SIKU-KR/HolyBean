@@ -9,7 +9,8 @@ import eloom.holybean.data.model.Order
 import eloom.holybean.data.repository.LambdaRepository
 import eloom.holybean.data.repository.MenuRepository
 import eloom.holybean.interfaces.OrderDialogListener
-import eloom.holybean.printer.PrinterHelper
+import eloom.holybean.printer.PrinterManager
+import eloom.holybean.printer.PrintResult
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.*
@@ -23,7 +24,7 @@ import javax.inject.Inject
 class HomeViewModel @Inject constructor(
     private val lambdaRepository: LambdaRepository,
     private val menuRepository: MenuRepository,
-    private val printerHelper: PrinterHelper,
+    private val printerManager: PrinterManager,
     private val dispatcher: CoroutineDispatcher
 ) : ViewModel(), OrderDialogListener {
 
@@ -183,16 +184,55 @@ class HomeViewModel @Inject constructor(
     private suspend fun printReceipt(data: Order, takeOption: String) {
         withContext(dispatcher) {
             try {
-                val customerSuccess = printerHelper.printCustomerReceipt(data)
-                val posSuccess = printerHelper.printPOSReceipt(data, takeOption)
+                val customerReceiptText = formatReceiptTextForCustomer(data)
+                val posReceiptText = formatReceiptTextForPOS(data, takeOption)
                 
-                if (!customerSuccess || !posSuccess) {
-                    // Log failure but don't interrupt order flow
-                    println("Warning: Some receipts failed to print. Customer: $customerSuccess, POS: $posSuccess")
+                val customerResult = printerManager.print(customerReceiptText)
+                val posResult = printerManager.print(posReceiptText)
+                
+                when {
+                    customerResult is PrintResult.Failure || posResult is PrintResult.Failure -> {
+                        println("Warning: Some receipts failed to print")
+                    }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
             }
         }
+    }
+
+    private fun formatReceiptTextForCustomer(data: Order): String {
+        var result = "[C]=====================================\n"
+        result += "[L]\n"
+        result += "[C]<u><font size='big'>주문번호 : ${data.orderNum}</font></u>\n"
+        result += "[L]\n"
+        result += "[C]-------------------------------------\n"
+        result += "[L]\n"
+        for (item in data.orderItems) {
+            result += "[L]<b>${item.name}</b>[R]${item.count}\n"
+        }
+        result += "[L]\n"
+        result += "[C]====================================="
+        return result
+    }
+
+    private fun formatReceiptTextForPOS(data: Order, option: String): String {
+        var result = "[C]=====================================\n"
+        result += "[L]\n"
+        result += "[C]<u><font size='big'>주문번호 : ${data.orderNum}</font></u>\n"
+        result += "[L]\n"
+        result += "[L]<font size='big'>${option}</font>\n"
+        result += "[L]\n"
+        result += "[R]주문자 : ${data.customerName}\n"
+        result += "[C]-------------------------------------\n"
+        result += "[L]\n"
+        for (item in data.orderItems) {
+            result += "[L]<b>${item.name}</b>[R]${item.count}\n"
+        }
+        result += "[L]\n"
+        result += "[R]합계 : ${data.totalAmount}\n"
+        result += "[R]${data.orderDate}\n"
+        result += "[C]====================================="
+        return result
     }
 }
