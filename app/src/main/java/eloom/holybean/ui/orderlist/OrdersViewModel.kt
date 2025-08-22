@@ -111,7 +111,7 @@ class OrdersViewModel @Inject constructor(
         viewModelScope.launch(dispatcher) {
             val orderDetailsArrayList = ArrayList(currentState.orderDetails)
             val reprintText = formatReprintText(currentState.selectedOrderNumber, orderDetailsArrayList)
-            val result = printerManager.print(reprintText)
+            val result = printerManager.printAsync(reprintText)
 
             when (result) {
                 is PrintResult.Success -> {

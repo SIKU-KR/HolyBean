@@ -8,7 +8,10 @@ import eloom.holybean.data.repository.LambdaRepository
 import eloom.holybean.data.repository.MenuRepository
 import eloom.holybean.printer.PrintResult
 import eloom.holybean.printer.PrinterManager
-import io.mockk.*
+import io.mockk.clearAllMocks
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -40,7 +43,7 @@ class HomeViewModelTest {
     fun setUp() {
         coEvery { menuRepository.getMenuListSync() } returns emptyList()
         coEvery { lambdaRepository.getOrderNumber() } returns 1
-        every { printerManager.print(any()) } returns PrintResult.Success
+        coEvery { printerManager.printAsync(any()) } returns PrintResult.Success
         homeViewModel = HomeViewModel(lambdaRepository, menuRepository, printerManager, testDispatcher)
     }
 
@@ -177,7 +180,7 @@ class HomeViewModelTest {
         val testOrder = createTestOrder()
         val takeOption = "포장"
         coEvery { lambdaRepository.postOrder(any()) } returns Unit
-        every { printerManager.print(any()) } returns PrintResult.Success
+        coEvery { printerManager.printAsync(any()) } returns PrintResult.Success
 
         val events = mutableListOf<HomeViewModel.UiEvent>()
         val job: Job = launch { homeViewModel.uiEvent.collect { events.add(it) } }
@@ -188,7 +191,7 @@ class HomeViewModelTest {
 
         // Then
         coVerify(exactly = 1) { lambdaRepository.postOrder(testOrder) }
-        verify(exactly = 2) { printerManager.print(any()) } // Customer + POS receipts
+        coVerify(exactly = 2) { printerManager.printAsync(any()) } // Customer + POS receipts
         assertTrue(events.any { it is HomeViewModel.UiEvent.NavigateHome })
         job.cancel()
     }
@@ -199,7 +202,7 @@ class HomeViewModelTest {
         val testOrder = createTestOrder()
         val takeOption = "매장"
         coEvery { lambdaRepository.postOrder(any()) } returns Unit
-        every { printerManager.print(any()) } returns PrintResult.Failure("Connection failed")
+        coEvery { printerManager.printAsync(any()) } returns PrintResult.Failure("Connection failed")
 
         val events = mutableListOf<HomeViewModel.UiEvent>()
         val job: Job = launch { homeViewModel.uiEvent.collect { events.add(it) } }
@@ -210,7 +213,7 @@ class HomeViewModelTest {
 
         // Then
         coVerify(exactly = 1) { lambdaRepository.postOrder(testOrder) }
-        verify(exactly = 2) { printerManager.print(any()) } // Customer + POS receipts
+        coVerify(exactly = 2) { printerManager.printAsync(any()) } // Customer + POS receipts
         // Order should still complete successfully even if printing fails
         assertTrue(events.any { it is HomeViewModel.UiEvent.NavigateHome })
         job.cancel()

@@ -6,7 +6,10 @@ import eloom.holybean.data.model.OrdersDetailItem
 import eloom.holybean.data.repository.LambdaRepository
 import eloom.holybean.printer.PrintResult
 import eloom.holybean.printer.PrinterManager
-import io.mockk.*
+import io.mockk.clearAllMocks
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
@@ -198,7 +201,7 @@ class OrdersViewModelTest {
         coEvery { lambdaRepository.getOrderDetail(any(), any()) } returns orderDetails
         viewModel.fetchOrderDetail(101)
 
-        every { printerManager.print(any()) } returns PrintResult.Success
+        coEvery { printerManager.printAsync(any()) } returns PrintResult.Success
 
         // Collect events before triggering the action
         val events = mutableListOf<OrdersViewModel.OrdersUiEvent>()
@@ -211,7 +214,7 @@ class OrdersViewModelTest {
         advanceUntilIdle()
 
         // Then
-        verify { printerManager.print(any()) }
+        coVerify { printerManager.printAsync(any()) }
         // Should show success message
         val successEvent = events.find {
             it is OrdersViewModel.OrdersUiEvent.ShowToast &&
@@ -258,7 +261,7 @@ class OrdersViewModelTest {
         coEvery { lambdaRepository.getOrderDetail(any(), any()) } returns orderDetails
         testViewModel.fetchOrderDetail(102)
 
-        every { printerManager.print(any()) } returns PrintResult.Failure("Connection failed")
+        coEvery { printerManager.printAsync(any()) } returns PrintResult.Failure("Connection failed")
 
         // Collect events before triggering the action
         val events = mutableListOf<OrdersViewModel.OrdersUiEvent>()
@@ -271,7 +274,7 @@ class OrdersViewModelTest {
         advanceUntilIdle()
 
         // Then
-        verify { printerManager.print(any()) }
+        coVerify { printerManager.printAsync(any()) }
         // Should show error message for printer connection failure
         val printerErrorEvent = events.find {
             it is OrdersViewModel.OrdersUiEvent.ShowToast &&

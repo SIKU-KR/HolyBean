@@ -100,7 +100,7 @@ class ReportViewModel @Inject constructor(
                 val dateParts = title.split(" ~ ")
                 val printerDTO = PrinterDTO(dateParts[0], dateParts[1], summary, details)
                 val reportText = formatReportText(printerDTO)
-                val result = printerManager.print(reportText)
+                val result = printerManager.printAsync(reportText)
 
                 when (result) {
                     is PrintResult.Success -> {

@@ -187,8 +187,8 @@ class HomeViewModel @Inject constructor(
                 val customerReceiptText = formatReceiptTextForCustomer(data)
                 val posReceiptText = formatReceiptTextForPOS(data, takeOption)
 
-                val customerResult = printerManager.print(customerReceiptText)
-                val posResult = printerManager.print(posReceiptText)
+                val customerResult = printerManager.printAsync(customerReceiptText)
+                val posResult = printerManager.printAsync(posReceiptText)
 
                 when {
                     customerResult is PrintResult.Failure || posResult is PrintResult.Failure -> {

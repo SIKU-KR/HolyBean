@@ -7,7 +7,10 @@ import eloom.holybean.network.dto.ResponseMenuSales
 import eloom.holybean.network.dto.ResponseSalesReport
 import eloom.holybean.printer.PrintResult
 import eloom.holybean.printer.PrinterManager
-import io.mockk.*
+import io.mockk.clearAllMocks
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
@@ -153,7 +156,7 @@ class ReportViewModelTest {
         coEvery { apiService.getReport(startDate, endDate) } returns Response.success(mockResponse)
         viewModel.loadReportData(startDate, endDate)
 
-        every { printerManager.print(any()) } returns PrintResult.Success
+        coEvery { printerManager.printAsync(any()) } returns PrintResult.Success
 
         // Collect events before triggering the action
         val events = mutableListOf<ReportViewModel.ReportUiEvent>()
@@ -166,7 +169,7 @@ class ReportViewModelTest {
         advanceUntilIdle()
 
         // Then
-        verify { printerManager.print(any()) }
+        coVerify { printerManager.printAsync(any()) }
         // Check success toast event
         val successEvent = events.find { it is ReportViewModel.ReportUiEvent.ShowToast }
         assertNotNull(successEvent)
@@ -211,7 +214,7 @@ class ReportViewModelTest {
         coEvery { apiService.getReport(startDate, endDate) } returns Response.success(mockResponse)
         viewModel.loadReportData(startDate, endDate)
 
-        every { printerManager.print(any()) } returns PrintResult.Failure("Connection failed")
+        coEvery { printerManager.printAsync(any()) } returns PrintResult.Failure("Connection failed")
 
         // Collect events before triggering the action
         val events = mutableListOf<ReportViewModel.ReportUiEvent>()
@@ -224,7 +227,7 @@ class ReportViewModelTest {
         advanceUntilIdle()
 
         // Then
-        verify { printerManager.print(any()) }
+        coVerify { printerManager.printAsync(any()) }
         // Should show printer connection error
         val errorEvent = events.find { it is ReportViewModel.ReportUiEvent.ShowError }
         assertNotNull(errorEvent)

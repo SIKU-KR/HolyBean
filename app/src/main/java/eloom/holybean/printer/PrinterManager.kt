@@ -3,9 +3,12 @@ package eloom.holybean.printer
 import android.util.Log
 import com.dantsu.escposprinter.EscPosPrinter
 import com.dantsu.escposprinter.connection.bluetooth.BluetoothPrintersConnections
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.withContext
 import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -24,28 +27,24 @@ class PrinterManager @Inject constructor(
     }
 
     init {
-        // Initialize connection state
         checkConnectionStatus()
     }
 
-    fun print(formattedText: String): PrintResult {
+    suspend fun printAsync(formattedText: String): PrintResult = withContext(Dispatchers.IO) {
         var attempt = 0
         var lastException: Exception? = null
 
         while (attempt < MAX_RETRY_ATTEMPTS) {
             try {
-                // Check and ensure connection before printing
                 if (!ensureConnection()) {
                     attempt++
-                    Thread.sleep(RETRY_DELAY_MS)
+                    delay(RETRY_DELAY_MS)
                     continue
                 }
-
-                // Attempt to print
                 printer.printFormattedTextAndCut(formattedText, 500)
                 _printerState.value = PrinterState.CONNECTED
                 Log.d(TAG, "Print successful on attempt ${attempt + 1}")
-                return PrintResult.Success
+                return@withContext PrintResult.Success
 
             } catch (e: IOException) {
                 lastException = e
@@ -53,7 +52,7 @@ class PrinterManager @Inject constructor(
                 _printerState.value = PrinterState.DISCONNECTED
                 attempt++
                 if (attempt < MAX_RETRY_ATTEMPTS) {
-                    Thread.sleep(RETRY_DELAY_MS)
+                    delay(RETRY_DELAY_MS)
                 }
             } catch (e: Exception) {
                 lastException = e
@@ -64,7 +63,7 @@ class PrinterManager @Inject constructor(
         }
 
         Log.e(TAG, "Print failed after $MAX_RETRY_ATTEMPTS attempts")
-        return PrintResult.Failure(lastException?.message ?: "Unknown error occurred")
+        return@withContext PrintResult.Failure(lastException?.message ?: "Unknown error occurred")
     }
 
     private fun ensureConnection(): Boolean {
@@ -101,7 +100,6 @@ class PrinterManager @Inject constructor(
             _printerState.value = PrinterState.CONNECTING
             Log.d(TAG, "Attempting to reconnect to printer...")
 
-            // Check if bluetooth printer is available
             val connection = BluetoothPrintersConnections.selectFirstPaired()
             if (connection != null) {
                 _printerState.value = PrinterState.CONNECTED
