@@ -11,4 +11,5 @@ local.properties
 lambda.http
 /app/release
 GEMINI.md
+CLAUDE.md
 /.cursor
