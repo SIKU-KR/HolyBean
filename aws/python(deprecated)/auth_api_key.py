@@ -1,4 +1,3 @@
-# API key의 인증을 위해 호출되는 함수.
 import os
 
 def lambda_handler(event, context):

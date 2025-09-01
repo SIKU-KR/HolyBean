@@ -3,7 +3,7 @@ import json
 
 # DynamoDB 클라이언트 초기화
 ddb_client = boto3.client('dynamodb', region_name='ap-northeast-2')
-TABLE_NAME = "eloom.holybean"
+TABLE_NAME = "holybean"
 
 def lambda_handler(event, context):
     # 경로 파라미터에서 orderDate 가져오기
@@ -44,15 +44,31 @@ def lambda_handler(event, context):
             }
 
         # 필요한 필드만 추출 (각 주문마다 customerName, totalAmount, orderMethod, orderNum)
-        filtered_orders = [
-            {
-                'customerName': order.get('customerName', {}).get('S', ''),
-                'totalAmount': int(order.get('totalAmount', {}).get('N', 0)),
-                'orderMethod': order.get('paymentMethods', {}).get('L', [{}])[0].get('M', {}).get('method', {}).get('S', 'Unknown'),
-                'orderNum': int(order.get('orderNum', {}).get('N', 0))
-            }
-            for order in result['Items']
-        ]
+        filtered_orders = []
+        for order in result['Items']:
+            customer_name = order.get('customerName', {}).get('S', '')
+            total_amount = int(order.get('totalAmount', {}).get('N', 0))
+            order_num = int(order.get('orderNum', {}).get('N', 0))
+            
+            # 결제 방법들 추출
+            payment_methods = order.get('paymentMethods', {}).get('L', [])
+            methods = [pm.get('M', {}).get('method', {}).get('S', 'Unknown') for pm in payment_methods]
+            
+            # 결제 방법이 2개 이상이면 '+'로 이어붙임, 그렇지 않으면 첫 번째 방법 사용
+            if len(methods) > 1:
+                order_method = '+'.join(methods)
+            elif len(methods) == 1:
+                order_method = methods[0]
+            else:
+                order_method = 'Unknown'
+
+            # 필터링된 주문 정보 추가
+            filtered_orders.append({
+                'customerName': customer_name,
+                'totalAmount': total_amount,
+                'orderMethod': order_method,
+                'orderNum': order_num
+            })
 
         # 조회된 데이터 반환
         return {
