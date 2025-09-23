@@ -14,7 +14,6 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
@@ -68,6 +67,23 @@ class HomeViewModel @Inject constructor(
                 filteredMenuItems = menus
             )
             refreshOrderNumber()
+        }
+    }
+
+    fun startPrinter() {
+        viewModelScope.launch(dispatcher) {
+            runCatching { homePrinter.connect() }
+                .onFailure { error ->
+                    _uiEvent.emit(
+                        UiEvent.ShowToast("프린터 연결 실패: ${error.message ?: "알 수 없는 오류"}")
+                    )
+                }
+        }
+    }
+
+    fun stopPrinter() {
+        viewModelScope.launch(dispatcher) {
+            runCatching { homePrinter.disconnect() }
         }
     }
 
@@ -181,19 +197,13 @@ class HomeViewModel @Inject constructor(
 
     // 영수증 출력은 요청만 보낸 후 완료 여부는 기다리지 않음
     private suspend fun printReceipt(data: Order, takeOption: String) {
-        withContext(dispatcher) {
-            try {
-                val receiptForCustomer = homePrinter.receiptTextForCustomer(data)
-                val receiptForPOS = homePrinter.receiptTextForPOS(data, takeOption)
-                try {
-                    homePrinter.print(receiptForCustomer)
-                    homePrinter.print(receiptForPOS)
-                } finally {
-                    homePrinter.disconnect()
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+        runCatching {
+            val receiptForCustomer = homePrinter.receiptTextForCustomer(data)
+            val receiptForPOS = homePrinter.receiptTextForPOS(data, takeOption)
+            homePrinter.print(receiptForCustomer)
+            homePrinter.print(receiptForPOS)
+        }.onFailure { error ->
+            error.printStackTrace()
         }
     }
 }

@@ -95,16 +95,21 @@ class ReportViewModel @Inject constructor(
         }
 
         viewModelScope.launch(dispatcher) {
-            try {
+            val result = runCatching {
                 val dateParts = title.split(" ~ ")
                 val printerDTO = PrinterDTO(dateParts[0], dateParts[1], summary, details)
                 val printText = reportPrinter.getPrintingText(printerDTO)
+                reportPrinter.connect()
                 reportPrinter.print(printText)
-                reportPrinter.disconnect()
-                _uiEvent.tryEmit(ReportUiEvent.ShowToast("리포트 인쇄가 완료되었습니다"))
-            } catch (e: Exception) {
-                _uiEvent.tryEmit(ReportUiEvent.ShowError("인쇄 실패 : ${e.localizedMessage}"))
             }
+            result
+                .onSuccess {
+                    _uiEvent.tryEmit(ReportUiEvent.ShowToast("리포트 인쇄가 완료되었습니다"))
+                }
+                .onFailure { error ->
+                    _uiEvent.tryEmit(ReportUiEvent.ShowError("인쇄 실패 : ${error.localizedMessage}"))
+                }
+            runCatching { reportPrinter.disconnect() }
         }
     }
 

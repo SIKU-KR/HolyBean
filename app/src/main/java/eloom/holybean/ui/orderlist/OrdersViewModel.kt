@@ -110,13 +110,14 @@ class OrdersViewModel @Inject constructor(
         val orderDetailsArrayList = ArrayList(currentState.orderDetails)
         val text = ordersPrinter.makeText(currentState.selectedOrderNumber, orderDetailsArrayList)
         viewModelScope.launch(dispatcher) {
-            try {
+            val result = runCatching {
+                ordersPrinter.connect()
                 ordersPrinter.print(text)
-            } catch (e: Exception) {
-                _uiEvent.tryEmit(OrdersUiEvent.ShowToast("Printer error: ${e.message}"))
-            } finally {
-                ordersPrinter.disconnect()
             }
+            result.onFailure { error ->
+                _uiEvent.tryEmit(OrdersUiEvent.ShowToast("Printer error: ${error.message}"))
+            }
+            runCatching { ordersPrinter.disconnect() }
         }
     }
 
