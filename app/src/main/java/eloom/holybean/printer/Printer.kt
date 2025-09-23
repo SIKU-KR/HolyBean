@@ -1,8 +1,8 @@
 package eloom.holybean.printer
 
-import com.dantsu.escposprinter.EscPosCharsetEncoding
-import com.dantsu.escposprinter.EscPosPrinter
-import com.dantsu.escposprinter.connection.bluetooth.BluetoothPrintersConnections
+import eloom.holybean.escpos.EscPosCharsetEncoding
+import eloom.holybean.escpos.EscPosPrinter
+import eloom.holybean.escpos.connection.bluetooth.BluetoothPrintersConnections
 
 abstract class Printer {
 
