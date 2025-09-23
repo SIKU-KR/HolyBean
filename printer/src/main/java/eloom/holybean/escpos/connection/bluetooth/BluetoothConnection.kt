@@ -22,6 +22,9 @@ class BluetoothConnection(
     private val permissionChecker: BluetoothPermissionChecker,
 ) : DeviceConnection() {
 
+    val address: String
+        get() = device.address
+
     private var socket: BluetoothSocket? = null
     private val _state = MutableStateFlow<ConnectionState>(ConnectionState.Disconnected)
     val state: StateFlow<ConnectionState> = _state.asStateFlow()
