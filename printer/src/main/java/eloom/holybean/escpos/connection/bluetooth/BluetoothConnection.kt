@@ -1,9 +1,11 @@
 package eloom.holybean.escpos.connection.bluetooth
 
-import android.annotation.SuppressLint
+import android.Manifest
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothSocket
 import android.os.ParcelUuid
+import androidx.annotation.RequiresPermission
+import androidx.annotation.WorkerThread
 import eloom.holybean.escpos.connection.DeviceConnection
 import eloom.holybean.escpos.exceptions.PrinterConnectionException
 import eloom.holybean.escpos.connection.di.BluetoothAdapterProvider
@@ -24,12 +26,11 @@ class BluetoothConnection(
     private val _state = MutableStateFlow<ConnectionState>(ConnectionState.Disconnected)
     val state: StateFlow<ConnectionState> = _state.asStateFlow()
 
-    fun getDevice(): BluetoothDevice = device
-
     override fun isConnected(): Boolean =
         socket?.isConnected == true && super.isConnected()
 
-    @SuppressLint("MissingPermission")
+    @WorkerThread
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     override fun connect(): DeviceConnection {
         if (isConnected()) {
             return this

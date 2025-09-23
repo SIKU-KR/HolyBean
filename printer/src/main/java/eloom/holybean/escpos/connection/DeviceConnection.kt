@@ -1,5 +1,6 @@
 package eloom.holybean.escpos.connection
 
+import androidx.annotation.WorkerThread
 import eloom.holybean.escpos.exceptions.EscPosConnectionException
 import java.io.ByteArrayOutputStream
 import java.io.IOException
@@ -20,6 +21,7 @@ abstract class DeviceConnection {
         buffer.write(bytes)
     }
 
+    @WorkerThread
     @Throws(EscPosConnectionException::class)
     @JvmOverloads
     fun send(addWaitingTime: Int = 0) {
