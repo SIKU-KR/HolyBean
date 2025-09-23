@@ -1,6 +1,5 @@
 package eloom.holybean
 
-import android.os.Build
 import android.os.Bundle
 import android.view.WindowInsets
 import android.view.WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
@@ -9,9 +8,8 @@ import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
 import com.google.android.material.navigation.NavigationView
 import dagger.hilt.android.AndroidEntryPoint
-import eloom.holybean.interfaces.MainActivityListener
-import eloom.holybean.PermissionCoordinator
 import eloom.holybean.PermissionCoordinator.PermissionResult
+import eloom.holybean.interfaces.MainActivityListener
 import eloom.holybean.ui.credits.CreditsFragment
 import eloom.holybean.ui.home.HomeFragment
 import eloom.holybean.ui.menumanagement.MenuManagementFragment
@@ -23,70 +21,78 @@ class MainActivity : AppCompatActivity(), MainActivityListener {
     private val permissionCoordinator by lazy { PermissionCoordinator(this) }
 
     private lateinit var drawerLayout: DrawerLayout
+    private lateinit var navigationView: NavigationView
 
     override fun replaceHomeFragment() {
-        val homeFragment = HomeFragment()
-        supportFragmentManager.beginTransaction()
-            .replace(R.id.fragment_container, homeFragment)
-            .commit()
+        loadFragment(HomeFragment())
     }
 
     override fun replaceOrdersFragment() {
-        val ordersFragment = OrdersFragment()
-        supportFragmentManager.beginTransaction()
-            .replace(R.id.fragment_container, ordersFragment)
-            .commit()
+        loadFragment(OrdersFragment())
     }
 
     override fun replaceCreditsFragment() {
-        val creditsController = CreditsFragment()
-        supportFragmentManager.beginTransaction()
-            .replace(R.id.fragment_container, creditsController)
-            .commit()
+        loadFragment(CreditsFragment())
     }
 
     override fun replaceMenuManagementFragment() {
-        val menuManagementFragment = MenuManagementFragment()
-        supportFragmentManager.beginTransaction()
-            .replace(R.id.fragment_container, menuManagementFragment)
-            .commit()
+        loadFragment(MenuManagementFragment())
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            window.insetsController?.let { controller ->
-                controller.hide(WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars())
-                controller.systemBarsBehavior = BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-            }
-        }
-
-        drawerLayout = findViewById(R.id.drawer_layout)
-        val navigationView: NavigationView = findViewById(R.id.nav_view)
-
-        if (savedInstanceState == null) {
-            supportFragmentManager.beginTransaction()
-                .replace(R.id.fragment_container, HomeFragment())
-                .commit()
-        }
-
-        navigationView.setNavigationItemSelectedListener { drawerItem ->
-            when (drawerItem.itemId) {
-                R.id.nav_home -> loadFragment(HomeFragment())
-                R.id.nav_orders -> loadFragment(OrdersFragment())
-                R.id.nav_report -> loadFragment(ReportFragment())
-                R.id.nav_credit -> loadFragment(CreditsFragment())
-                R.id.menu_management -> loadFragment(MenuManagementFragment())
-            }
-            drawerItem.isChecked = true
-            drawerLayout.closeDrawers()
-            true
-        }
-
+        configureSystemBars()
+        initializeViews()
+        setupInitialFragment(savedInstanceState)
+        setupNavigationDrawer()
         requestBluetoothPermissions()
+    }
 
+    private fun configureSystemBars() {
+        window.insetsController?.let { controller ->
+            controller.hide(WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars())
+            controller.systemBarsBehavior = BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        }
+    }
+
+    private fun initializeViews() {
+        drawerLayout = findViewById(R.id.drawer_layout)
+        navigationView = findViewById(R.id.nav_view)
+    }
+
+    private fun setupInitialFragment(savedInstanceState: Bundle?) {
+        if (savedInstanceState == null) {
+            loadFragment(HomeFragment())
+        }
+    }
+
+    private fun setupNavigationDrawer() {
+        navigationView.setNavigationItemSelectedListener { drawerItem ->
+            val handled = handleNavigationSelection(drawerItem.itemId)
+            if (handled) {
+                drawerItem.isChecked = true
+                drawerLayout.closeDrawers()
+            }
+            handled
+        }
+    }
+
+    private fun handleNavigationSelection(itemId: Int): Boolean {
+        val fragment = when (itemId) {
+            R.id.nav_home -> HomeFragment()
+            R.id.nav_orders -> OrdersFragment()
+            R.id.nav_report -> ReportFragment()
+            R.id.nav_credit -> CreditsFragment()
+            R.id.menu_management -> MenuManagementFragment()
+            else -> null
+        }
+
+        return fragment?.let {
+            loadFragment(it)
+            true
+        } ?: false
     }
 
     private fun requestBluetoothPermissions() {
