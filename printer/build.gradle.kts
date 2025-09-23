@@ -7,10 +7,10 @@ plugins {
 
 android {
     namespace = "eloom.holybean.escpos"
-    compileSdk = 34
+    compileSdk = 36
 
     defaultConfig {
-        minSdk = 26
+        minSdk = 31
     }
 
     buildTypes {
@@ -37,4 +37,5 @@ dependencies {
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("com.google.zxing:core:3.4.0")
     implementation("androidx.core:core-ktx:1.17.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
 }
