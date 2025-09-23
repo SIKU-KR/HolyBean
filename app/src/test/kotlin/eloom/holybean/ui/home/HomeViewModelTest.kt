@@ -6,6 +6,7 @@ import eloom.holybean.data.model.Order
 import eloom.holybean.data.model.PaymentMethod
 import eloom.holybean.data.repository.LambdaRepository
 import eloom.holybean.data.repository.MenuRepository
+import eloom.holybean.printer.polymorphism.HomePrinter
 import io.mockk.clearAllMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -34,13 +35,14 @@ class HomeViewModelTest {
     private lateinit var homeViewModel: HomeViewModel
     private val lambdaRepository: LambdaRepository = mockk(relaxed = true)
     private val menuRepository: MenuRepository = mockk(relaxed = true)
+    private val homePrinter: HomePrinter = mockk(relaxed = true)
     private val testDispatcher = UnconfinedTestDispatcher()
 
     @Before
     fun setUp() {
         coEvery { menuRepository.getMenuListSync() } returns emptyList()
         coEvery { lambdaRepository.getOrderNumber() } returns 1
-        homeViewModel = HomeViewModel(lambdaRepository, menuRepository, testDispatcher)
+        homeViewModel = HomeViewModel(lambdaRepository, menuRepository, testDispatcher, homePrinter)
     }
 
     @After

@@ -1,11 +1,10 @@
 package eloom.holybean.ui.orderlist
 
-import android.bluetooth.BluetoothAdapter
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import eloom.holybean.data.model.OrderItem
 import eloom.holybean.data.model.OrdersDetailItem
 import eloom.holybean.data.repository.LambdaRepository
-import eloom.holybean.printer.OrdersPrinter
+import eloom.holybean.printer.polymorphism.OrdersPrinter
 import io.mockk.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -29,13 +28,20 @@ class OrdersViewModelTest {
     private lateinit var viewModel: OrdersViewModel
     private val lambdaRepository: LambdaRepository = mockk()
     private val testDispatcher = UnconfinedTestDispatcher()
+    private lateinit var ordersPrinter: OrdersPrinter
+
+    private fun createViewModelWithPrinter(printer: OrdersPrinter = mockk(relaxed = true)): OrdersViewModel {
+        coEvery { lambdaRepository.getOrdersOfDay() } returns arrayListOf()
+        return OrdersViewModel(lambdaRepository, testDispatcher, printer)
+    }
 
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         // Mock the initial loadOrdersOfDay call to prevent automatic execution
         coEvery { lambdaRepository.getOrdersOfDay() } returns arrayListOf()
-        viewModel = OrdersViewModel(lambdaRepository, testDispatcher)
+        ordersPrinter = mockk(relaxed = true)
+        viewModel = OrdersViewModel(lambdaRepository, testDispatcher, ordersPrinter)
     }
 
     @After
@@ -60,7 +66,7 @@ class OrdersViewModelTest {
     @Test
     fun `loadOrdersOfDay should update uiState with orders list on success`() = runTest {
         // Given
-        val testViewModel = OrdersViewModel(lambdaRepository, testDispatcher)
+        val testViewModel = createViewModelWithPrinter()
         val mockOrders = arrayListOf(
             OrderItem(orderId = 1, totalAmount = 8000, method = "Card", orderer = "John"),
             OrderItem(orderId = 2, totalAmount = 4500, method = "Cash", orderer = "Jane")
@@ -129,7 +135,7 @@ class OrdersViewModelTest {
     @Test
     fun `fetchOrderDetail should emit toast event when order list is empty`() = runTest {
         // Given
-        val testViewModel = OrdersViewModel(lambdaRepository, testDispatcher)
+        val testViewModel = createViewModelWithPrinter()
         val orderNumber = 123
 
         val currentDate = testViewModel.getCurrentDate()
@@ -159,7 +165,7 @@ class OrdersViewModelTest {
     @Test
     fun `fetchOrderDetail should emit error event on repository failure`() = runTest {
         // Given
-        val testViewModel = OrdersViewModel(lambdaRepository, testDispatcher)
+        val testViewModel = createViewModelWithPrinter()
         val orderNumber = 456
         val errorMessage = "Network error"
         val exception = RuntimeException(errorMessage)
@@ -198,27 +204,24 @@ class OrdersViewModelTest {
         coEvery { lambdaRepository.getOrderDetail(any(), any()) } returns orderDetails
         viewModel.fetchOrderDetail(101)
 
-        mockkStatic(BluetoothAdapter::class)
-        every { BluetoothAdapter.getDefaultAdapter() } returns null
-        mockkConstructor(OrdersPrinter::class)
-        every { anyConstructed<OrdersPrinter>().makeText(any(), any()) } returns testText
-        coEvery { anyConstructed<OrdersPrinter>().print(any()) } just runs
-        coEvery { anyConstructed<OrdersPrinter>().disconnect() } just runs
+        every { ordersPrinter.makeText(any(), any()) } returns testText
+        coEvery { ordersPrinter.print(any()) } just runs
+        coEvery { ordersPrinter.disconnect() } just runs
 
         // When
         viewModel.reprint()
         advanceUntilIdle()
 
         // Then
-        verify { anyConstructed<OrdersPrinter>().makeText(101, orderDetails) }
-        coVerify { anyConstructed<OrdersPrinter>().print(testText) }
-        coVerify { anyConstructed<OrdersPrinter>().disconnect() }
+        verify { ordersPrinter.makeText(101, orderDetails) }
+        coVerify { ordersPrinter.print(testText) }
+        coVerify { ordersPrinter.disconnect() }
     }
 
     @Test
     fun `reprint should emit toast event when no order details exist`() = runTest {
         // Given - UI state has no order details (default empty state)
-        val testViewModel = OrdersViewModel(lambdaRepository, testDispatcher)
+        val testViewModel = createViewModelWithPrinter()
 
         // Collect events before triggering the action
         val events = mutableListOf<OrdersViewModel.OrdersUiEvent>()
@@ -243,7 +246,8 @@ class OrdersViewModelTest {
     @Test
     fun `reprint should emit error event and disconnect when printing fails`() = runTest {
         // Given
-        val testViewModel = OrdersViewModel(lambdaRepository, testDispatcher)
+        val printerMock = mockk<OrdersPrinter>(relaxed = true)
+        val testViewModel = createViewModelWithPrinter(printerMock)
         val orderDetails = arrayListOf(OrdersDetailItem("Tea", 1, 1500))
         val testText = "Test Print Text"
         val errorMessage = "Printer connection failed"
@@ -254,12 +258,9 @@ class OrdersViewModelTest {
         coEvery { lambdaRepository.getOrderDetail(any(), any()) } returns orderDetails
         testViewModel.fetchOrderDetail(102)
 
-        mockkStatic(BluetoothAdapter::class)
-        every { BluetoothAdapter.getDefaultAdapter() } returns null
-        mockkConstructor(OrdersPrinter::class)
-        every { anyConstructed<OrdersPrinter>().makeText(any(), any()) } returns testText
-        coEvery { anyConstructed<OrdersPrinter>().print(any()) } throws printException
-        coEvery { anyConstructed<OrdersPrinter>().disconnect() } just runs
+        every { printerMock.makeText(any(), any()) } returns testText
+        coEvery { printerMock.print(any()) } throws printException
+        coEvery { printerMock.disconnect() } just runs
 
         // Collect events before triggering the action
         val events = mutableListOf<OrdersViewModel.OrdersUiEvent>()
@@ -280,7 +281,7 @@ class OrdersViewModelTest {
         assertNotNull(printerErrorEvent)
         val expectedErrorMessage = "Printer error: $errorMessage"
         assertEquals(expectedErrorMessage, (printerErrorEvent as OrdersViewModel.OrdersUiEvent.ShowToast).message)
-        coVerify { anyConstructed<OrdersPrinter>().disconnect() }
+        coVerify { printerMock.disconnect() }
 
         collectJob.cancel()
     }
@@ -288,7 +289,7 @@ class OrdersViewModelTest {
     @Test
     fun `deleteOrder should emit toast event when no order details exist`() = runTest {
         // Given - UI state has no order details (default empty state)
-        val testViewModel = OrdersViewModel(lambdaRepository, testDispatcher)
+        val testViewModel = createViewModelWithPrinter()
 
         // Collect events before triggering the action
         val events = mutableListOf<OrdersViewModel.OrdersUiEvent>()
