@@ -1,34 +1,21 @@
 package eloom.holybean.escpos.textparser;
 
-import java.util.Hashtable;
-
 import eloom.holybean.escpos.EscPosPrinter;
 import eloom.holybean.escpos.EscPosPrinterCommands;
-import eloom.holybean.escpos.exceptions.EscPosBarcodeException;
 import eloom.holybean.escpos.exceptions.EscPosEncodingException;
 import eloom.holybean.escpos.exceptions.EscPosParserException;
 
 public class PrinterTextParserColumn {
 
-    private static String generateSpace(int nbrSpace) {
-        StringBuilder str = new StringBuilder();
-        for (int i = 0; i < nbrSpace; i++) {
-            str.append(" ");
-        }
-        return str.toString();
-    }
-
-
     private PrinterTextParserLine textParserLine;
     private IPrinterTextParserElement[] elements = new IPrinterTextParserElement[0];
-
     /**
      * Create a new instance of PrinterTextParserColumn.
      *
      * @param textParserLine Parent PrinterTextParserLine instance
      * @param textColumn     Text that the column contain
      */
-    public PrinterTextParserColumn(PrinterTextParserLine textParserLine, String textColumn) throws EscPosParserException, EscPosBarcodeException, EscPosEncodingException {
+    public PrinterTextParserColumn(PrinterTextParserLine textParserLine, String textColumn) throws EscPosParserException, EscPosEncodingException {
         this.textParserLine = textParserLine;
         PrinterTextParser textParser = this.textParserLine.getTextParser();
         String textAlign = PrinterTextParser.TAGS_ALIGN_LEFT;
@@ -41,7 +28,7 @@ public class PrinterTextParserColumn {
 
         // =================================================================
         // Check the column alignment
-        if(textColumn.length() > 2) {
+        if (textColumn.length() > 2) {
             switch (textColumn.substring(0, 3).toUpperCase()) {
                 case "[" + PrinterTextParser.TAGS_ALIGN_LEFT + "]":
                 case "[" + PrinterTextParser.TAGS_ALIGN_CENTER + "]":
@@ -53,44 +40,30 @@ public class PrinterTextParserColumn {
         }
 
         String trimmedTextColumn = textColumn.trim();
-        boolean isImgOrBarcodeLine = false;
+        boolean isImageLine = false;
 
         if (this.textParserLine.getNbrColumns() == 1 && trimmedTextColumn.indexOf("<") == 0) {
             // =================================================================
-            // Image or Barcode Lines
+            // Image Lines
             int openTagIndex = trimmedTextColumn.indexOf("<"),
                     openTagEndIndex = trimmedTextColumn.indexOf(">", openTagIndex + 1) + 1;
 
             if (openTagIndex < openTagEndIndex) {
                 PrinterTextParserTag textParserTag = new PrinterTextParserTag(trimmedTextColumn.substring(openTagIndex, openTagEndIndex));
 
-                switch (textParserTag.getTagName()) {
-                    case PrinterTextParser.TAGS_IMAGE:
-                    case PrinterTextParser.TAGS_BARCODE:
-                    case PrinterTextParser.TAGS_QRCODE:
-                        String closeTag = "</" + textParserTag.getTagName() + ">";
-                        int closeTagPosition = trimmedTextColumn.length() - closeTag.length();
+                if (textParserTag.getTagName().equals(PrinterTextParser.TAGS_IMAGE)) {
+                    String closeTag = "</" + textParserTag.getTagName() + ">";
+                    int closeTagPosition = trimmedTextColumn.length() - closeTag.length();
 
-                        if (trimmedTextColumn.substring(closeTagPosition).equals(closeTag)) {
-                            switch (textParserTag.getTagName()) {
-                                case PrinterTextParser.TAGS_IMAGE:
-                                    this.appendImage(textAlign, trimmedTextColumn.substring(openTagEndIndex, closeTagPosition));
-                                    break;
-                                case PrinterTextParser.TAGS_BARCODE:
-                                    this.appendBarcode(textAlign, textParserTag.getAttributes(), trimmedTextColumn.substring(openTagEndIndex, closeTagPosition));
-                                    break;
-                                case PrinterTextParser.TAGS_QRCODE:
-                                    this.appendQRCode(textAlign, textParserTag.getAttributes(), trimmedTextColumn.substring(openTagEndIndex, closeTagPosition));
-                                    break;
-                            }
-                            isImgOrBarcodeLine = true;
-                        }
-                        break;
+                    if (trimmedTextColumn.substring(closeTagPosition).equals(closeTag)) {
+                        this.appendImage(textAlign, trimmedTextColumn.substring(openTagEndIndex, closeTagPosition));
+                        isImageLine = true;
+                    }
                 }
             }
         }
 
-        if (!isImgOrBarcodeLine) {
+        if (!isImageLine) {
             // =================================================================
             // If the tag is for format text
 
@@ -287,6 +260,14 @@ public class PrinterTextParserColumn {
         }
     }
 
+    private static String generateSpace(int nbrSpace) {
+        StringBuilder str = new StringBuilder();
+        for (int i = 0; i < nbrSpace; i++) {
+            str.append(" ");
+        }
+        return str.toString();
+    }
+
     private PrinterTextParserColumn prependString(String text) {
         PrinterTextParser textParser = this.textParserLine.getTextParser();
         return this.prependString(text, textParser.getLastTextSize(), textParser.getLastTextColor(), textParser.getLastTextReverseColor(), textParser.getLastTextBold(), textParser.getLastTextUnderline(), textParser.getLastTextDoubleStrike());
@@ -312,22 +293,6 @@ public class PrinterTextParserColumn {
 
     private PrinterTextParserColumn appendImage(String textAlign, String hexString) {
         return this.appendElement(new PrinterTextParserImg(this, textAlign, hexString));
-    }
-
-    private PrinterTextParserColumn prependBarcode(String textAlign, Hashtable<String, String> barcodeAttributes, String code) throws EscPosParserException, EscPosBarcodeException {
-        return this.prependElement(new PrinterTextParserBarcode(this, textAlign, barcodeAttributes, code));
-    }
-
-    private PrinterTextParserColumn appendBarcode(String textAlign, Hashtable<String, String> barcodeAttributes, String code) throws EscPosParserException, EscPosBarcodeException {
-        return this.appendElement(new PrinterTextParserBarcode(this, textAlign, barcodeAttributes, code));
-    }
-
-    private PrinterTextParserColumn prependQRCode(String textAlign, Hashtable<String, String> qrCodeAttributes, String data) throws EscPosParserException, EscPosBarcodeException {
-        return this.prependElement(new PrinterTextParserBarcode(this, textAlign, qrCodeAttributes, data));
-    }
-
-    private PrinterTextParserColumn appendQRCode(String textAlign, Hashtable<String, String> qrCodeAttributes, String data) throws EscPosParserException, EscPosBarcodeException {
-        return this.appendElement(new PrinterTextParserQRCode(this, textAlign, qrCodeAttributes, data));
     }
 
     private PrinterTextParserColumn prependElement(IPrinterTextParserElement element) {

@@ -1,12 +1,12 @@
 package eloom.holybean.escpos.textparser;
 
-import java.io.UnsupportedEncodingException;
-import java.util.Arrays;
-
 import eloom.holybean.escpos.EscPosCharsetEncoding;
 import eloom.holybean.escpos.EscPosPrinter;
 import eloom.holybean.escpos.EscPosPrinterCommands;
 import eloom.holybean.escpos.exceptions.EscPosEncodingException;
+
+import java.io.UnsupportedEncodingException;
+import java.util.Arrays;
 
 public class PrinterTextParserString implements IPrinterTextParserElement {
     private EscPosPrinter printer;
@@ -34,17 +34,17 @@ public class PrinterTextParserString implements IPrinterTextParserElement {
         EscPosCharsetEncoding charsetEncoding = this.printer.getEncoding();
 
         int coef = 1;
-        if(Arrays.equals(this.textSize, EscPosPrinterCommands.TEXT_SIZE_DOUBLE_WIDTH) || Arrays.equals(this.textSize, EscPosPrinterCommands.TEXT_SIZE_BIG))
+        if (Arrays.equals(this.textSize, EscPosPrinterCommands.TEXT_SIZE_DOUBLE_WIDTH) || Arrays.equals(this.textSize, EscPosPrinterCommands.TEXT_SIZE_BIG))
             coef = 2;
-        else if(Arrays.equals(this.textSize, EscPosPrinterCommands.TEXT_SIZE_BIG_2))
+        else if (Arrays.equals(this.textSize, EscPosPrinterCommands.TEXT_SIZE_BIG_2))
             coef = 3;
-        else if(Arrays.equals(this.textSize, EscPosPrinterCommands.TEXT_SIZE_BIG_3))
+        else if (Arrays.equals(this.textSize, EscPosPrinterCommands.TEXT_SIZE_BIG_3))
             coef = 4;
-        else if(Arrays.equals(this.textSize, EscPosPrinterCommands.TEXT_SIZE_BIG_4))
+        else if (Arrays.equals(this.textSize, EscPosPrinterCommands.TEXT_SIZE_BIG_4))
             coef = 5;
-        else if(Arrays.equals(this.textSize, EscPosPrinterCommands.TEXT_SIZE_BIG_5))
+        else if (Arrays.equals(this.textSize, EscPosPrinterCommands.TEXT_SIZE_BIG_5))
             coef = 6;
-        else if(Arrays.equals(this.textSize, EscPosPrinterCommands.TEXT_SIZE_BIG_6))
+        else if (Arrays.equals(this.textSize, EscPosPrinterCommands.TEXT_SIZE_BIG_6))
             coef = 7;
 
         if (charsetEncoding != null) {

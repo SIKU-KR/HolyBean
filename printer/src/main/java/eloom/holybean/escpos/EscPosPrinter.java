@@ -1,15 +1,10 @@
 package eloom.holybean.escpos;
 
 import eloom.holybean.escpos.connection.DeviceConnection;
-import eloom.holybean.escpos.exceptions.EscPosBarcodeException;
 import eloom.holybean.escpos.exceptions.EscPosConnectionException;
 import eloom.holybean.escpos.exceptions.EscPosEncodingException;
 import eloom.holybean.escpos.exceptions.EscPosParserException;
-import eloom.holybean.escpos.textparser.PrinterTextParser;
-import eloom.holybean.escpos.textparser.PrinterTextParserColumn;
-import eloom.holybean.escpos.textparser.IPrinterTextParserElement;
-import eloom.holybean.escpos.textparser.PrinterTextParserLine;
-import eloom.holybean.escpos.textparser.PrinterTextParserString;
+import eloom.holybean.escpos.textparser.*;
 
 public class EscPosPrinter extends EscPosPrinterSize {
 
@@ -85,7 +80,7 @@ public class EscPosPrinter extends EscPosPrinterSize {
      * @param text Formatted text to be printed.
      * @return Fluent interface
      */
-    public EscPosPrinter printFormattedText(String text) throws EscPosConnectionException, EscPosParserException, EscPosEncodingException, EscPosBarcodeException {
+    public EscPosPrinter printFormattedText(String text) throws EscPosConnectionException, EscPosParserException, EscPosEncodingException {
         return this.printFormattedText(text, 20f);
     }
 
@@ -96,7 +91,7 @@ public class EscPosPrinter extends EscPosPrinterSize {
      * @param mmFeedPaper millimeter distance feed paper at the end.
      * @return Fluent interface
      */
-    public EscPosPrinter printFormattedText(String text, float mmFeedPaper) throws EscPosConnectionException, EscPosParserException, EscPosEncodingException, EscPosBarcodeException {
+    public EscPosPrinter printFormattedText(String text, float mmFeedPaper) throws EscPosConnectionException, EscPosParserException, EscPosEncodingException {
         return this.printFormattedText(text, this.mmToPx(mmFeedPaper));
     }
 
@@ -107,7 +102,7 @@ public class EscPosPrinter extends EscPosPrinterSize {
      * @param dotsFeedPaper distance feed paper at the end.
      * @return Fluent interface
      */
-    public EscPosPrinter printFormattedText(String text, int dotsFeedPaper) throws EscPosConnectionException, EscPosParserException, EscPosEncodingException, EscPosBarcodeException {
+    public EscPosPrinter printFormattedText(String text, int dotsFeedPaper) throws EscPosConnectionException, EscPosParserException, EscPosEncodingException {
         if (this.printer == null || this.printerNbrCharactersPerLine == 0) {
             return this;
         }
@@ -146,7 +141,7 @@ public class EscPosPrinter extends EscPosPrinterSize {
      * @param text Formatted text to be printed.
      * @return Fluent interface
      */
-    public EscPosPrinter printFormattedTextAndCut(String text) throws EscPosConnectionException, EscPosParserException, EscPosEncodingException, EscPosBarcodeException {
+    public EscPosPrinter printFormattedTextAndCut(String text) throws EscPosConnectionException, EscPosParserException, EscPosEncodingException {
         return this.printFormattedTextAndCut(text, 20f);
     }
 
@@ -157,7 +152,7 @@ public class EscPosPrinter extends EscPosPrinterSize {
      * @param mmFeedPaper millimeter distance feed paper at the end.
      * @return Fluent interface
      */
-    public EscPosPrinter printFormattedTextAndCut(String text, float mmFeedPaper) throws EscPosConnectionException, EscPosParserException, EscPosEncodingException, EscPosBarcodeException {
+    public EscPosPrinter printFormattedTextAndCut(String text, float mmFeedPaper) throws EscPosConnectionException, EscPosParserException, EscPosEncodingException {
         return this.printFormattedTextAndCut(text, this.mmToPx(mmFeedPaper));
     }
 
@@ -168,7 +163,7 @@ public class EscPosPrinter extends EscPosPrinterSize {
      * @param dotsFeedPaper distance feed paper at the end.
      * @return Fluent interface
      */
-    public EscPosPrinter printFormattedTextAndCut(String text, int dotsFeedPaper) throws EscPosConnectionException, EscPosParserException, EscPosEncodingException, EscPosBarcodeException {
+    public EscPosPrinter printFormattedTextAndCut(String text, int dotsFeedPaper) throws EscPosConnectionException, EscPosParserException, EscPosEncodingException {
         if (this.printer == null || this.printerNbrCharactersPerLine == 0) {
             return this;
         }
@@ -186,7 +181,7 @@ public class EscPosPrinter extends EscPosPrinterSize {
      * @param mmFeedPaper millimeter distance feed paper at the end.
      * @return Fluent interface
      */
-    public EscPosPrinter printFormattedTextAndOpenCashBox(String text, float mmFeedPaper) throws EscPosConnectionException, EscPosParserException, EscPosEncodingException, EscPosBarcodeException {
+    public EscPosPrinter printFormattedTextAndOpenCashBox(String text, float mmFeedPaper) throws EscPosConnectionException, EscPosParserException, EscPosEncodingException {
         return this.printFormattedTextAndOpenCashBox(text, this.mmToPx(mmFeedPaper));
     }
 
@@ -197,7 +192,7 @@ public class EscPosPrinter extends EscPosPrinterSize {
      * @param dotsFeedPaper distance feed paper at the end.
      * @return Fluent interface
      */
-    public EscPosPrinter printFormattedTextAndOpenCashBox(String text, int dotsFeedPaper) throws EscPosConnectionException, EscPosParserException, EscPosEncodingException, EscPosBarcodeException {
+    public EscPosPrinter printFormattedTextAndOpenCashBox(String text, int dotsFeedPaper) throws EscPosConnectionException, EscPosParserException, EscPosEncodingException {
         if (this.printer == null || this.printerNbrCharactersPerLine == 0) {
             return this;
         }
