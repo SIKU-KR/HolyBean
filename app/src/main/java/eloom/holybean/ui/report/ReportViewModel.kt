@@ -6,7 +6,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import eloom.holybean.data.model.PrinterDTO
 import eloom.holybean.data.model.ReportDetailItem
 import eloom.holybean.network.ApiService
-import eloom.holybean.printer.ReportPrinter
+import eloom.holybean.printer.polymorphism.ReportPrinter
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.*
@@ -19,7 +19,8 @@ import javax.inject.Inject
 @HiltViewModel
 class ReportViewModel @Inject constructor(
     private val apiService: ApiService,
-    private val dispatcher: CoroutineDispatcher
+    private val dispatcher: CoroutineDispatcher,
+    private val reportPrinter: ReportPrinter,
 ) : ViewModel() {
 
     data class ReportUiState(
@@ -95,7 +96,6 @@ class ReportViewModel @Inject constructor(
 
         viewModelScope.launch(dispatcher) {
             try {
-                val reportPrinter = ReportPrinter()
                 val dateParts = title.split(" ~ ")
                 val printerDTO = PrinterDTO(dateParts[0], dateParts[1], summary, details)
                 val printText = reportPrinter.getPrintingText(printerDTO)

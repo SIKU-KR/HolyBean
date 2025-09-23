@@ -6,7 +6,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import eloom.holybean.data.model.OrderItem
 import eloom.holybean.data.model.OrdersDetailItem
 import eloom.holybean.data.repository.LambdaRepository
-import eloom.holybean.printer.OrdersPrinter
+import eloom.holybean.printer.polymorphism.OrdersPrinter
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.*
@@ -18,7 +18,8 @@ import javax.inject.Inject
 @HiltViewModel
 class OrdersViewModel @Inject constructor(
     private val lambdaRepository: LambdaRepository,
-    private val dispatcher: CoroutineDispatcher
+    private val dispatcher: CoroutineDispatcher,
+    private val ordersPrinter: OrdersPrinter,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(OrdersUiState())
@@ -106,16 +107,15 @@ class OrdersViewModel @Inject constructor(
             return
         }
 
-        val printer = OrdersPrinter()
         val orderDetailsArrayList = ArrayList(currentState.orderDetails)
-        val text = printer.makeText(currentState.selectedOrderNumber, orderDetailsArrayList)
+        val text = ordersPrinter.makeText(currentState.selectedOrderNumber, orderDetailsArrayList)
         viewModelScope.launch(dispatcher) {
             try {
-                printer.print(text)
+                ordersPrinter.print(text)
             } catch (e: Exception) {
                 _uiEvent.tryEmit(OrdersUiEvent.ShowToast("Printer error: ${e.message}"))
             } finally {
-                printer.disconnect()
+                ordersPrinter.disconnect()
             }
         }
     }
