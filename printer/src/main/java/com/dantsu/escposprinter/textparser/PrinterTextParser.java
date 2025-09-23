@@ -9,12 +9,12 @@ import com.dantsu.escposprinter.exceptions.EscPosEncodingException;
 import com.dantsu.escposprinter.exceptions.EscPosParserException;
 
 public class PrinterTextParser {
-
+    
     public static final String TAGS_ALIGN_LEFT = "L";
     public static final String TAGS_ALIGN_CENTER = "C";
     public static final String TAGS_ALIGN_RIGHT = "R";
     public static final String[] TAGS_ALIGN = {PrinterTextParser.TAGS_ALIGN_LEFT, PrinterTextParser.TAGS_ALIGN_CENTER, PrinterTextParser.TAGS_ALIGN_RIGHT};
-
+    
     public static final String TAGS_IMAGE = "img";
     public static final String TAGS_BARCODE = "barcode";
     public static final String TAGS_QRCODE = "qrcode";
@@ -60,22 +60,10 @@ public class PrinterTextParser {
     public static final String ATTR_FORMAT_TEXT_FONT_COLOR_BG_RED = "bg-red";
 
     public static final String ATTR_QRCODE_SIZE = "size";
-
+    
     private static String regexAlignTags;
-    private EscPosPrinter printer;
-    private byte[][] textSize = {EscPosPrinterCommands.TEXT_SIZE_NORMAL};
-    private byte[][] textColor = {EscPosPrinterCommands.TEXT_COLOR_BLACK};
-    private byte[][] textReverseColor = {EscPosPrinterCommands.TEXT_COLOR_REVERSE_OFF};
-    private byte[][] textBold = {EscPosPrinterCommands.TEXT_WEIGHT_NORMAL};
-    private byte[][] textUnderline = {EscPosPrinterCommands.TEXT_UNDERLINE_OFF};
-    private byte[][] textDoubleStrike = {EscPosPrinterCommands.TEXT_DOUBLE_STRIKE_OFF};
-    private String text = "";
-    public PrinterTextParser(EscPosPrinter printer) {
-        this.printer = printer;
-    }
-
     public static String getRegexAlignTags() {
-        if (PrinterTextParser.regexAlignTags == null) {
+        if(PrinterTextParser.regexAlignTags == null) {
             StringBuilder regexAlignTags = new StringBuilder();
             for (int i = 0; i < PrinterTextParser.TAGS_ALIGN.length; i++) {
                 regexAlignTags.append("|\\[").append(PrinterTextParser.TAGS_ALIGN[i]).append("\\]");
@@ -84,12 +72,12 @@ public class PrinterTextParser {
         }
         return PrinterTextParser.regexAlignTags;
     }
-
+    
     public static boolean isTagTextFormat(String tagName) {
         if (tagName.substring(0, 1).equals("/")) {
             tagName = tagName.substring(1);
         }
-
+        
         for (String tag : PrinterTextParser.TAGS_FORMAT_TEXT) {
             if (tag.equals(tagName)) {
                 return true;
@@ -97,29 +85,45 @@ public class PrinterTextParser {
         }
         return false;
     }
-
+    
     public static byte[][] arrayByteDropLast(byte[][] arr) {
         if (arr.length == 0) {
             return arr;
         }
-
+        
         byte[][] newArr = new byte[arr.length - 1][];
         System.arraycopy(arr, 0, newArr, 0, newArr.length);
-
+        
         return newArr;
     }
-
+    
     public static byte[][] arrayBytePush(byte[][] arr, byte[] add) {
         byte[][] newArr = new byte[arr.length + 1][];
         System.arraycopy(arr, 0, newArr, 0, arr.length);
         newArr[arr.length] = add;
         return newArr;
     }
-
+    
+    
+    
+    
+    private EscPosPrinter printer;
+    private byte[][] textSize = {EscPosPrinterCommands.TEXT_SIZE_NORMAL};
+    private byte[][] textColor = {EscPosPrinterCommands.TEXT_COLOR_BLACK};
+    private byte[][] textReverseColor = {EscPosPrinterCommands.TEXT_COLOR_REVERSE_OFF};
+    private byte[][] textBold = {EscPosPrinterCommands.TEXT_WEIGHT_NORMAL};
+    private byte[][] textUnderline = {EscPosPrinterCommands.TEXT_UNDERLINE_OFF};
+    private byte[][] textDoubleStrike = {EscPosPrinterCommands.TEXT_DOUBLE_STRIKE_OFF};
+    private String text = "";
+    
+    public PrinterTextParser(EscPosPrinter printer) {
+        this.printer = printer;
+    }
+    
     public EscPosPrinter getPrinter() {
         return printer;
     }
-
+    
     public PrinterTextParser setFormattedText(String text) {
         this.text = text;
         return this;
@@ -172,11 +176,11 @@ public class PrinterTextParser {
         }
         return this;
     }
-
+    
     public byte[] getLastTextBold() {
         return this.textBold[this.textBold.length - 1];
     }
-
+    
     public PrinterTextParser addTextBold(byte[] newTextBold) {
         this.textBold = PrinterTextParser.arrayBytePush(this.textBold, newTextBold);
         return this;
@@ -220,7 +224,7 @@ public class PrinterTextParser {
         }
         return this;
     }
-
+    
     public PrinterTextParserLine[] parse() throws EscPosParserException, EscPosBarcodeException, EscPosEncodingException {
         String[] stringLines = this.text.split("\n|\r\n");
         PrinterTextParserLine[] lines = new PrinterTextParserLine[stringLines.length];

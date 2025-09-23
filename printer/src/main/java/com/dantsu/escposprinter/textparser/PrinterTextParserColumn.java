@@ -10,8 +10,18 @@ import com.dantsu.escposprinter.exceptions.EscPosParserException;
 
 public class PrinterTextParserColumn {
 
+    private static String generateSpace(int nbrSpace) {
+        StringBuilder str = new StringBuilder();
+        for (int i = 0; i < nbrSpace; i++) {
+            str.append(" ");
+        }
+        return str.toString();
+    }
+
+
     private PrinterTextParserLine textParserLine;
     private IPrinterTextParserElement[] elements = new IPrinterTextParserElement[0];
+
     /**
      * Create a new instance of PrinterTextParserColumn.
      *
@@ -31,7 +41,7 @@ public class PrinterTextParserColumn {
 
         // =================================================================
         // Check the column alignment
-        if (textColumn.length() > 2) {
+        if(textColumn.length() > 2) {
             switch (textColumn.substring(0, 3).toUpperCase()) {
                 case "[" + PrinterTextParser.TAGS_ALIGN_LEFT + "]":
                 case "[" + PrinterTextParser.TAGS_ALIGN_CENTER + "]":
@@ -275,14 +285,6 @@ public class PrinterTextParserColumn {
                     .setNbrCharForgetted(nbrCharForgetted)
                     .setNbrCharColumnExceeded(nbrCharColumnExceeded);
         }
-    }
-
-    private static String generateSpace(int nbrSpace) {
-        StringBuilder str = new StringBuilder();
-        for (int i = 0; i < nbrSpace; i++) {
-            str.append(" ");
-        }
-        return str.toString();
     }
 
     private PrinterTextParserColumn prependString(String text) {

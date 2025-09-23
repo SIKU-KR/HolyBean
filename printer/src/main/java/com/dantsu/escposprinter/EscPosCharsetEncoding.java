@@ -7,7 +7,7 @@ public class EscPosCharsetEncoding {
     /**
      * Create new instance of EscPosCharsetEncoding.
      *
-     * @param charsetName     Name of charset encoding (Ex: windows-1252)
+     * @param charsetName Name of charset encoding (Ex: windows-1252)
      * @param escPosCharsetId Id of charset encoding for your printer (Ex: 16)
      */
     public EscPosCharsetEncoding(String charsetName, int escPosCharsetId) {

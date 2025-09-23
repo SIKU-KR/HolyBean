@@ -81,7 +81,7 @@ public abstract class EscPosPrinterSize {
     /**
      * Convert Bitmap object to ESC/POS image.
      *
-     * @param bitmap   Instance of Bitmap
+     * @param bitmap Instance of Bitmap
      * @param gradient false : Black and white image, true : Grayscale image
      * @return Bytes contain the image in ESC/POS command
      */

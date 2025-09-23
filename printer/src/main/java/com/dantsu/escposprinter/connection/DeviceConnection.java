@@ -15,7 +15,6 @@ public abstract class DeviceConnection {
     }
 
     public abstract DeviceConnection connect() throws EscPosConnectionException;
-
     public abstract DeviceConnection disconnect();
 
     /**
@@ -44,12 +43,11 @@ public abstract class DeviceConnection {
     public void send() throws EscPosConnectionException {
         this.send(0);
     }
-
     /**
      * Send data to the device.
      */
     public void send(int addWaitingTime) throws EscPosConnectionException {
-        if (!this.isConnected()) {
+        if(!this.isConnected()) {
             throw new EscPosConnectionException("Unable to send data to device.");
         }
         try {
@@ -57,7 +55,7 @@ public abstract class DeviceConnection {
             this.outputStream.flush();
             int waitingTime = addWaitingTime + this.data.length / 16;
             this.data = new byte[0];
-            if (waitingTime > 0) {
+            if(waitingTime > 0) {
                 Thread.sleep(waitingTime);
             }
         } catch (IOException | InterruptedException e) {
