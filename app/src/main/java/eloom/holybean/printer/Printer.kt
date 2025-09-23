@@ -2,7 +2,7 @@ package eloom.holybean.printer
 
 import eloom.holybean.escpos.EscPosCharsetEncoding
 import eloom.holybean.escpos.EscPosPrinter
-import eloom.holybean.escpos.connection.PrinterConnectionException
+import eloom.holybean.escpos.exceptions.PrinterConnectionException
 import eloom.holybean.escpos.connection.bluetooth.BluetoothConnection
 import eloom.holybean.escpos.connection.bluetooth.BluetoothPrintersConnections
 
