@@ -1,4 +1,4 @@
-package eloom.holybean.permission
+package eloom.holybean
 
 import android.Manifest
 import android.content.pm.PackageManager

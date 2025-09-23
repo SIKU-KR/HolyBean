@@ -10,8 +10,8 @@ import androidx.fragment.app.Fragment
 import com.google.android.material.navigation.NavigationView
 import dagger.hilt.android.AndroidEntryPoint
 import eloom.holybean.interfaces.MainActivityListener
-import eloom.holybean.permission.PermissionCoordinator
-import eloom.holybean.permission.PermissionCoordinator.PermissionResult
+import eloom.holybean.PermissionCoordinator
+import eloom.holybean.PermissionCoordinator.PermissionResult
 import eloom.holybean.ui.credits.CreditsFragment
 import eloom.holybean.ui.home.HomeFragment
 import eloom.holybean.ui.menumanagement.MenuManagementFragment
