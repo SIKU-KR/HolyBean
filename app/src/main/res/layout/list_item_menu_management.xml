@@ -14,12 +14,12 @@
         android:layout_height="wrap_content"
         android:layout_weight="1"
         android:fontFamily="@font/pretendard_semibold"
-        android:textSize="16sp"
         android:gravity="center"
         android:text="id:2000"
+        android:textAppearance="@style/TextAppearance.AppCompat.Body2"
         android:textColor="#A9A9A9"
-        android:textStyle="italic"
-        android:textAppearance="@style/TextAppearance.AppCompat.Body2"/>
+        android:textSize="16sp"
+        android:textStyle="italic"/>
 
     <!-- 메뉴 순서 -->
     <TextView
@@ -28,12 +28,12 @@
         android:layout_height="wrap_content"
         android:layout_weight="1"
         android:fontFamily="@font/pretendard_semibold"
-        android:textSize="16sp"
         android:gravity="center"
         android:text="순서:2000"
+        android:textAppearance="@style/TextAppearance.AppCompat.Body2"
         android:textColor="#A9A9A9"
-        android:textStyle="italic"
-        android:textAppearance="@style/TextAppearance.AppCompat.Body2"/>
+        android:textSize="16sp"
+        android:textStyle="italic"/>
 
     <!-- 메뉴 이름 -->
     <TextView
@@ -42,10 +42,10 @@
         android:layout_height="wrap_content"
         android:layout_weight="1"
         android:fontFamily="@font/pretendard_semibold"
-        android:textSize="16sp"
         android:gravity="center"
         android:text="아이스 아메리카노"
-        android:textAppearance="@style/TextAppearance.AppCompat.Body2"/>
+        android:textAppearance="@style/TextAppearance.AppCompat.Body2"
+        android:textSize="16sp"/>
 
     <!-- 메뉴 가격 -->
     <TextView
@@ -54,10 +54,10 @@
         android:layout_height="wrap_content"
         android:layout_weight="1"
         android:fontFamily="@font/pretendard_semibold"
-        android:textSize="16sp"
         android:gravity="center"
         android:text="2000"
-        android:textAppearance="@style/TextAppearance.AppCompat.Body2"/>
+        android:textAppearance="@style/TextAppearance.AppCompat.Body2"
+        android:textSize="16sp"/>
 
 
 </LinearLayout>
