@@ -1,13 +1,15 @@
 package eloom.holybean.printer.polymorphism
 
 import eloom.holybean.data.model.PrinterDTO
-import eloom.holybean.escpos.connection.bluetooth.BluetoothPrintersConnections
-import eloom.holybean.printer.Printer
 import javax.inject.Inject
+import javax.inject.Singleton
 
-class ReportPrinter @Inject constructor(
-    bluetoothPrintersConnections: BluetoothPrintersConnections,
-) : Printer(bluetoothPrintersConnections) {
+/**
+ * Text formatter for report screen prints.
+ * Generates ESC/POS formatted text for sales reports.
+ */
+@Singleton
+class ReportPrinter @Inject constructor() {
 
     fun getPrintingText(data: PrinterDTO): String = buildString {
         appendLine("[L]")

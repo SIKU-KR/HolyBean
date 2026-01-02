@@ -1,13 +1,16 @@
 package eloom.holybean.printer.polymorphism
 
 import eloom.holybean.data.model.OrdersDetailItem
-import eloom.holybean.escpos.connection.bluetooth.BluetoothPrintersConnections
-import eloom.holybean.printer.Printer
 import javax.inject.Inject
+import javax.inject.Singleton
 
-class OrdersPrinter @Inject constructor(
-    bluetoothPrintersConnections: BluetoothPrintersConnections,
-) : Printer(bluetoothPrintersConnections) {
+/**
+ * Text formatter for order list screen reprints.
+ * Generates ESC/POS formatted text for receipt reprints.
+ */
+@Singleton
+class OrdersPrinter @Inject constructor() {
+
     fun makeText(orderNum: Int, basketList: ArrayList<OrdersDetailItem>): String = buildString {
         appendLine("[R]영수증 재출력")
         appendLine("[C]=====================================")
