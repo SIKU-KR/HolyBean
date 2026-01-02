@@ -6,19 +6,25 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import eloom.holybean.data.model.OrderItem
 import eloom.holybean.data.model.OrdersDetailItem
 import eloom.holybean.data.repository.LambdaRepository
-import eloom.holybean.printer.OrdersPrinter
+import eloom.holybean.printer.PrinterConnectionManager
+import eloom.holybean.printer.polymorphism.OrdersPrinter
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 import javax.inject.Inject
+import javax.inject.Named
 
 @HiltViewModel
 class OrdersViewModel @Inject constructor(
     private val lambdaRepository: LambdaRepository,
-    private val dispatcher: CoroutineDispatcher
+    @Named("IO") private val ioDispatcher: CoroutineDispatcher,
+    @Named("ApplicationScope") private val applicationScope: CoroutineScope,
+    private val printerConnectionManager: PrinterConnectionManager,
+    private val ordersPrinter: OrdersPrinter,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(OrdersUiState())
@@ -63,7 +69,7 @@ class OrdersViewModel @Inject constructor(
     }
 
     fun loadOrdersOfDay() {
-        viewModelScope.launch(dispatcher) {
+        viewModelScope.launch(ioDispatcher) {
             try {
                 _uiState.update { it.copy(isLoading = true) }
                 val ordersList = lambdaRepository.getOrdersOfDay()
@@ -100,28 +106,29 @@ class OrdersViewModel @Inject constructor(
     fun reprint() {
         val currentState = _uiState.value
         if (currentState.orderDetails.isEmpty()) {
-            viewModelScope.launch(dispatcher) {
+            viewModelScope.launch(ioDispatcher) {
                 _uiEvent.tryEmit(OrdersUiEvent.ShowToast("주문 조회 후 클릭해주세요"))
             }
             return
         }
 
-        val printer = OrdersPrinter()
         val orderDetailsArrayList = ArrayList(currentState.orderDetails)
-        val text = printer.makeText(currentState.selectedOrderNumber, orderDetailsArrayList)
-        viewModelScope.launch(dispatcher) {
-            try {
-                printer.print(text)
-            } catch (e: Exception) {
-                _uiEvent.tryEmit(OrdersUiEvent.ShowToast("Printer error: ${e.message}"))
-            } finally {
-                printer.disconnect()
+        val text = ordersPrinter.makeText(currentState.selectedOrderNumber, orderDetailsArrayList)
+
+        // Printer I/O - Application Scope에서 실행 (ViewModel 생명주기와 독립)
+        // PrinterConnectionManager가 내부 Mutex로 동기화 보장
+        applicationScope.launch {
+            val result = runCatching {
+                printerConnectionManager.printAndDisconnect(text)
+            }
+            result.onFailure { error ->
+                _uiEvent.tryEmit(OrdersUiEvent.ShowToast("Printer error: ${error.message}"))
             }
         }
     }
 
     fun fetchOrderDetail(orderNumber: Int) {
-        viewModelScope.launch(dispatcher) {
+        viewModelScope.launch(ioDispatcher) {
             try {
                 val fetchedBasketList = lambdaRepository.getOrderDetail(getCurrentDate(), orderNumber)
                 if (fetchedBasketList.isEmpty()) {
@@ -138,13 +145,13 @@ class OrdersViewModel @Inject constructor(
     fun deleteOrder() {
         val currentState = _uiState.value
         if (currentState.orderDetails.isEmpty()) {
-            viewModelScope.launch(dispatcher) {
+            viewModelScope.launch(ioDispatcher) {
                 _uiEvent.tryEmit(OrdersUiEvent.ShowToast("주문 조회 후 클릭해주세요"))
             }
             return
         }
 
-        viewModelScope.launch(dispatcher) {
+        viewModelScope.launch(ioDispatcher) {
             try {
                 _uiState.update { it.copy(deleteStatus = DeleteStatus.Loading) }
                 val result = lambdaRepository.deleteOrder(getCurrentDate(), currentState.selectedOrderNumber)

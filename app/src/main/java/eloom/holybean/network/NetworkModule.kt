@@ -5,7 +5,10 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import javax.inject.Named
 import javax.inject.Singleton
 
 @Module
@@ -19,5 +22,19 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideCoroutineDispatcher(): CoroutineDispatcher = Dispatchers.IO
+    @Named("IO")
+    fun provideIODispatcher(): CoroutineDispatcher = Dispatchers.IO
+
+    @Provides
+    @Singleton
+    @Named("Printer")
+    fun providePrinterDispatcher(): CoroutineDispatcher =
+        Dispatchers.IO.limitedParallelism(2)
+
+    @Provides
+    @Singleton
+    @Named("ApplicationScope")
+    fun provideApplicationScope(
+        @Named("Printer") printerDispatcher: CoroutineDispatcher
+    ): CoroutineScope = CoroutineScope(SupervisorJob() + printerDispatcher)
 }

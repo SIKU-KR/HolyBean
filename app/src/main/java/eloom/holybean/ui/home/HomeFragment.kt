@@ -58,6 +58,7 @@ class HomeFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         initView()
         observeViewModel()
+        viewModel.startPrinter()
     }
 
     private fun initView() {
@@ -169,7 +170,7 @@ class HomeFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
+        viewModel.stopPrinter()
         _binding = null
     }
 }
-

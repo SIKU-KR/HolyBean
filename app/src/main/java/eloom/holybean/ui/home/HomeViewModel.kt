@@ -9,21 +9,26 @@ import eloom.holybean.data.model.Order
 import eloom.holybean.data.repository.LambdaRepository
 import eloom.holybean.data.repository.MenuRepository
 import eloom.holybean.interfaces.OrderDialogListener
-import eloom.holybean.printer.HomePrinter
+import eloom.holybean.printer.PrinterConnectionManager
+import eloom.holybean.printer.polymorphism.HomePrinter
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
+import javax.inject.Named
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val lambdaRepository: LambdaRepository,
     private val menuRepository: MenuRepository,
-    private val dispatcher: CoroutineDispatcher
+    @Named("IO") private val ioDispatcher: CoroutineDispatcher,
+    @Named("ApplicationScope") private val applicationScope: CoroutineScope,
+    private val printerConnectionManager: PrinterConnectionManager,
+    private val homePrinter: HomePrinter,
 ) : ViewModel(), OrderDialogListener {
 
     data class UiState(
@@ -60,13 +65,30 @@ class HomeViewModel @Inject constructor(
 
     init {
         // Load initial data
-        viewModelScope.launch(dispatcher) {
+        viewModelScope.launch(ioDispatcher) {
             val menus = menuRepository.getMenuListSync()
             _uiState.value = _uiState.value.copy(
                 allMenuItems = menus,
                 filteredMenuItems = menus
             )
             refreshOrderNumber()
+        }
+    }
+
+    fun startPrinter() {
+        applicationScope.launch {
+            runCatching { printerConnectionManager.connect() }
+                .onFailure { error ->
+                    _uiEvent.emit(
+                        UiEvent.ShowToast("프린터 연결 실패: ${error.message ?: "알 수 없는 오류"}")
+                    )
+                }
+        }
+    }
+
+    fun stopPrinter() {
+        applicationScope.launch {
+            runCatching { printerConnectionManager.disconnect() }
         }
     }
 
@@ -81,14 +103,14 @@ class HomeViewModel @Inject constructor(
     }
 
     fun refreshOrderNumber() {
-        viewModelScope.launch(dispatcher) {
+        viewModelScope.launch(ioDispatcher) {
             val id = lambdaRepository.getOrderNumber()
             _uiState.value = _uiState.value.copy(orderId = id)
         }
     }
 
     fun onCategorySelected(index: Int) {
-        viewModelScope.launch(dispatcher) {
+        viewModelScope.launch(ioDispatcher) {
             val filtered = if (index == 0) {
                 _uiState.value.allMenuItems
             } else {
@@ -102,7 +124,7 @@ class HomeViewModel @Inject constructor(
     }
 
     fun addToBasket(id: Int) {
-        viewModelScope.launch(dispatcher) {
+        viewModelScope.launch(ioDispatcher) {
             val currentBasket = _uiState.value.basketItems.toMutableList()
             val existing = currentBasket.find { it.id == id }
             if (existing == null) {
@@ -123,7 +145,7 @@ class HomeViewModel @Inject constructor(
     }
 
     fun deleteFromBasket(id: Int) {
-        viewModelScope.launch(dispatcher) {
+        viewModelScope.launch(ioDispatcher) {
             val currentBasket = _uiState.value.basketItems.toMutableList()
             val item = currentBasket.find { it.id == id } ?: return@launch
             if (item.count <= 1) {
@@ -144,12 +166,12 @@ class HomeViewModel @Inject constructor(
 
     fun addCoupon(amount: Int) {
         if (amount <= 0) {
-            viewModelScope.launch(dispatcher) {
+            viewModelScope.launch(ioDispatcher) {
                 _uiEvent.emit(UiEvent.ShowToast("올바른 금액이 아닙니다"))
             }
             return
         }
-        viewModelScope.launch(dispatcher) {
+        viewModelScope.launch(ioDispatcher) {
             val currentBasket = _uiState.value.basketItems.toMutableList()
             currentBasket.add(CartItem(999, "쿠폰", amount, 1, amount))
             val total = currentBasket.sumOf { it.count * it.price }
@@ -161,39 +183,33 @@ class HomeViewModel @Inject constructor(
     }
 
     override fun onOrderConfirmed(data: Order, takeOption: String) {
-        viewModelScope.launch(dispatcher) {
+        // Network I/O - 완료 대기 후 UI 업데이트
+        viewModelScope.launch(ioDispatcher) {
             try {
                 lambdaRepository.postOrder(data)
                 _uiEvent.emit(UiEvent.NavigateHome)
-                // Print receipts without blocking UI
-                try {
-                    printReceipt(data, takeOption)
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
             } catch (e: Exception) {
                 e.printStackTrace()
                 _uiEvent.emit(UiEvent.ShowToast("주문 처리 중 오류가 발생했습니다."))
             }
         }
-    }
 
-    // 영수증 출력은 요청만 보낸 후 완료 여부는 기다리지 않음
-    private suspend fun printReceipt(data: Order, takeOption: String) {
-        withContext(dispatcher) {
-            try {
-                val printer = HomePrinter()
-                val receiptForCustomer = printer.receiptTextForCustomer(data)
-                val receiptForPOS = printer.receiptTextForPOS(data, takeOption)
-                try {
-                    printer.print(receiptForCustomer)
-                    printer.print(receiptForPOS)
-                } finally {
-                    printer.disconnect()
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
+        // Printer I/O - Application Scope에서 실행 (ViewModel 생명주기와 독립)
+        // PrinterConnectionManager가 내부 Mutex로 동기화 보장
+        applicationScope.launch {
+            runCatching {
+                printReceipt(data, takeOption)
+            }.onFailure { error ->
+                error.printStackTrace()
             }
         }
+    }
+
+    // 영수증 출력은 독립적으로 실행 (Network 완료와 무관)
+    private suspend fun printReceipt(data: Order, takeOption: String) {
+        val receiptForCustomer = homePrinter.receiptTextForCustomer(data)
+        val receiptForPOS = homePrinter.receiptTextForPOS(data, takeOption)
+        printerConnectionManager.print(receiptForCustomer)
+        printerConnectionManager.print(receiptForPOS)
     }
 }

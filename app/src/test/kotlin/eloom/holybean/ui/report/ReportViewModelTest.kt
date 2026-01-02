@@ -1,12 +1,11 @@
 package eloom.holybean.ui.report
 
-import android.bluetooth.BluetoothAdapter
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import eloom.holybean.data.model.ReportDetailItem
 import eloom.holybean.network.ApiService
 import eloom.holybean.network.dto.ResponseMenuSales
 import eloom.holybean.network.dto.ResponseSalesReport
-import eloom.holybean.printer.ReportPrinter
+import eloom.holybean.printer.polymorphism.ReportPrinter
 import io.mockk.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -28,12 +27,13 @@ class ReportViewModelTest {
 
     private lateinit var viewModel: ReportViewModel
     private val apiService: ApiService = mockk()
+    private val reportPrinter: ReportPrinter = mockk(relaxed = true)
     private val testDispatcher = UnconfinedTestDispatcher()
 
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
-        viewModel = ReportViewModel(apiService, testDispatcher)
+        viewModel = ReportViewModel(apiService, testDispatcher, reportPrinter)
     }
 
     @After
@@ -152,12 +152,9 @@ class ReportViewModelTest {
         coEvery { apiService.getReport(startDate, endDate) } returns Response.success(mockResponse)
         viewModel.loadReportData(startDate, endDate)
 
-        mockkStatic(BluetoothAdapter::class)
-        every { BluetoothAdapter.getDefaultAdapter() } returns null
-        mockkConstructor(ReportPrinter::class)
-        every { anyConstructed<ReportPrinter>().getPrintingText(any()) } returns "print text"
-        every { anyConstructed<ReportPrinter>().print(any()) } just runs
-        every { anyConstructed<ReportPrinter>().disconnect() } just runs
+        every { reportPrinter.getPrintingText(any()) } returns "print text"
+        every { reportPrinter.print(any()) } just runs
+        every { reportPrinter.disconnect() } just runs
 
         // Collect events before triggering the action
         val events = mutableListOf<ReportViewModel.ReportUiEvent>()
@@ -170,9 +167,9 @@ class ReportViewModelTest {
         advanceUntilIdle()
 
         // Then
-        verify { anyConstructed<ReportPrinter>().getPrintingText(any()) }
-        verify { anyConstructed<ReportPrinter>().print("print text") }
-        verify { anyConstructed<ReportPrinter>().disconnect() }
+        verify { reportPrinter.getPrintingText(any()) }
+        verify { reportPrinter.print("print text") }
+        verify { reportPrinter.disconnect() }
         // Check success toast event
         val successEvent = events.find { it is ReportViewModel.ReportUiEvent.ShowToast }
         assertNotNull(successEvent)

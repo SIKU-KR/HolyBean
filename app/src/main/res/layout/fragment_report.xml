@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
                                                    xmlns:app="http://schemas.android.com/apk/res-auto"
+                                                   xmlns:tools="http://schemas.android.com/tools"
                                                    android:layout_width="match_parent"
-                                                   android:layout_height="match_parent"
-                                                   xmlns:tools="http://schemas.android.com/tools">
+                                                   android:layout_height="match_parent">
 
     <!-- 판매 총액 부분 -->
 
@@ -11,32 +11,32 @@
         android:id="@+id/part_left"
         android:layout_width="0dp"
         android:layout_height="match_parent"
+        android:background="#F9F7F7"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintWidth_percent="0.3"
-        android:background="#F9F7F7">
+        app:layout_constraintWidth_percent="0.3">
 
         <TextView
             android:id="@+id/report_title"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="100dp"
-            android:paddingStart="16dp"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            android:text="기간 설정 후 조회"
+            android:fontFamily="@font/pretendard_extrabold"
             android:gravity="start"
+            android:paddingStart="16dp"
+            android:text="기간 설정 후 조회"
             android:textAppearance="@style/TextAppearance.AppCompat.Medium"
-            android:fontFamily="@font/pretendard_extrabold"/>
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintTop_toTopOf="parent"/>
 
         <TextView
             android:id="@+id/totalSell"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="80dp"
-            android:paddingStart="16dp"
             android:fontFamily="@font/pretendard_extrabold"
             android:gravity="start"
+            android:paddingStart="16dp"
             android:text="총 판매금액 : 00,000"
             android:textAppearance="@style/TextAppearance.AppCompat.Medium"
             app:layout_constraintLeft_toLeftOf="parent"
@@ -47,9 +47,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="40dp"
-            android:paddingStart="16dp"
             android:fontFamily="@font/pretendard_extrabold"
             android:gravity="start"
+            android:paddingStart="16dp"
             android:text="쿠폰 판매액 : 00,000"
             android:textAppearance="@style/TextAppearance.AppCompat.Medium"
             app:layout_constraintLeft_toLeftOf="parent"
@@ -60,9 +60,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="40dp"
-            android:paddingStart="16dp"
             android:fontFamily="@font/pretendard_extrabold"
             android:gravity="start"
+            android:paddingStart="16dp"
             android:text="현금 판매액 : 00,000"
             android:textAppearance="@style/TextAppearance.AppCompat.Medium"
             app:layout_constraintLeft_toLeftOf="parent"
@@ -73,9 +73,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="40dp"
-            android:paddingStart="16dp"
             android:fontFamily="@font/pretendard_extrabold"
             android:gravity="start"
+            android:paddingStart="16dp"
             android:text="이체 판매액 : 00,000"
             android:textAppearance="@style/TextAppearance.AppCompat.Medium"
             app:layout_constraintLeft_toLeftOf="parent"
@@ -86,9 +86,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="40dp"
-            android:paddingStart="16dp"
             android:fontFamily="@font/pretendard_extrabold"
             android:gravity="start"
+            android:paddingStart="16dp"
             android:text="외상 판매액 : 00,000"
             android:textAppearance="@style/TextAppearance.AppCompat.Medium"
             app:layout_constraintLeft_toLeftOf="parent"
@@ -99,9 +99,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="40dp"
-            android:paddingStart="16dp"
             android:fontFamily="@font/pretendard_extrabold"
             android:gravity="start"
+            android:paddingStart="16dp"
             android:text="무료쿠폰 판매액 : 00,000"
             android:textAppearance="@style/TextAppearance.AppCompat.Medium"
             app:layout_constraintLeft_toLeftOf="parent"
@@ -112,9 +112,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="40dp"
-            android:paddingStart="16dp"
             android:fontFamily="@font/pretendard_extrabold"
             android:gravity="start"
+            android:paddingStart="16dp"
             android:text="무료제공 금액 : 00,000"
             android:textAppearance="@style/TextAppearance.AppCompat.Medium"
             app:layout_constraintLeft_toLeftOf="parent"
@@ -126,10 +126,10 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="0dp"
         android:layout_height="match_parent"
-        app:layout_constraintWidth_percent="0.4"
-        app:layout_constraintStart_toEndOf="@id/part_left"
         app:layout_constraintEnd_toStartOf="@id/part_right"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintStart_toEndOf="@id/part_left"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintWidth_percent="0.4">
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/report_detail"
@@ -143,14 +143,14 @@
 
         <android.widget.Button
             android:id="@+id/print_button"
+            style="@style/SecondaryButtonStyle"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:layout_margin="40dp"
-            style="@style/SecondaryButtonStyle"
             android:text="출 력"
             android:textSize="24sp"
-            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHeight_percent="0.07"
             app:layout_constraintWidth_percent="0.3"/>
 
@@ -172,15 +172,15 @@
             android:id="@+id/optionTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginTop="100dp"
             android:fontFamily="@font/pretendard_extrabold"
             android:gravity="center"
             android:text="매출 조회 옵션"
             android:textAppearance="@style/TextAppearance.AppCompat.Large"
             android:textColor="#000000"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            android:layout_marginTop="100dp"/>
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"/>
 
         <!-- 시작일 부분 -->
         <LinearLayout
@@ -189,9 +189,9 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="50dp"
             android:orientation="horizontal"
-            app:layout_constraintTop_toBottomOf="@id/optionTitle"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent">
+            app:layout_constraintTop_toBottomOf="@id/optionTitle">
 
             <TextView
                 android:layout_width="wrap_content"
@@ -240,9 +240,9 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="5dp"
             android:orientation="horizontal"
-            app:layout_constraintTop_toBottomOf="@id/start_date"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent">
+            app:layout_constraintTop_toBottomOf="@id/start_date">
 
             <TextView
                 android:layout_width="wrap_content"
@@ -288,15 +288,15 @@
         <!-- 조회 버튼 -->
         <android.widget.Button
             android:id="@+id/load_button"
+            style="@style/PrimaryButtonStyle"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_margin="40dp"
-            style="@style/PrimaryButtonStyle"
             android:text="조 회"
             android:textSize="24sp"
-            app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintHeight_percent="0.07"/>
+            app:layout_constraintHeight_percent="0.07"
+            app:layout_constraintStart_toStartOf="parent"/>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

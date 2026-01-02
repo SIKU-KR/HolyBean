@@ -12,4 +12,5 @@ lambda.http
 /app/release
 GEMINI.md
 CLAUDE.md
+AGENTS.md
 /.cursor

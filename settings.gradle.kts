@@ -15,4 +15,5 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "HolyBean"
-include(":app")
+include(":app", ":printer")
+
