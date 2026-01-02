@@ -9,6 +9,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import eloom.holybean.escpos.connection.bluetooth.BluetoothPrintersConnections
+import javax.inject.Singleton
 import eloom.holybean.escpos.connection.di.BluetoothAdapterProvider
 import eloom.holybean.escpos.connection.BluetoothPermissionChecker
 import eloom.holybean.printer.bluetooth.AndroidBluetoothPermissionChecker
@@ -36,6 +37,7 @@ interface BluetoothBindings {
         ) { "BluetoothManager unavailable" }
 
         @Provides
+        @Singleton
         fun provideBluetoothPrintersConnections(
             @ApplicationContext context: Context,
             adapterProvider: BluetoothAdapterProvider,
