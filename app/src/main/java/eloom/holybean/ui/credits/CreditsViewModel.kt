@@ -11,11 +11,12 @@ import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import javax.inject.Named
 
 @HiltViewModel
 class CreditsViewModel @Inject constructor(
     private val lambdaRepository: LambdaRepository,
-    private val dispatcher: CoroutineDispatcher
+    @Named("IO") private val dispatcher: CoroutineDispatcher
 ) : ViewModel() {
 
     data class CreditsUiState(
