@@ -6,8 +6,10 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import eloom.holybean.data.model.PrinterDTO
 import eloom.holybean.data.model.ReportDetailItem
 import eloom.holybean.network.ApiService
+import eloom.holybean.printer.PrinterConnectionManager
 import eloom.holybean.printer.polymorphism.ReportPrinter
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -15,11 +17,14 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.*
 import javax.inject.Inject
+import javax.inject.Named
 
 @HiltViewModel
 class ReportViewModel @Inject constructor(
     private val apiService: ApiService,
-    private val dispatcher: CoroutineDispatcher,
+    @Named("IO") private val ioDispatcher: CoroutineDispatcher,
+    @Named("ApplicationScope") private val applicationScope: CoroutineScope,
+    private val printerConnectionManager: PrinterConnectionManager,
     private val reportPrinter: ReportPrinter,
 ) : ViewModel() {
 
@@ -48,7 +53,7 @@ class ReportViewModel @Inject constructor(
     private val dateFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd", Locale.ROOT)
 
     fun loadReportData(startDate: String, endDate: String) {
-        viewModelScope.launch(dispatcher) {
+        viewModelScope.launch(ioDispatcher) {
             if (!isValidDateRange(startDate, endDate)) {
                 _uiEvent.tryEmit(ReportUiEvent.ShowError("잘못된 날짜 범위입니다"))
                 return@launch
@@ -88,19 +93,20 @@ class ReportViewModel @Inject constructor(
         val title = currentState.reportTitle
 
         if (summary.isEmpty() || details.isEmpty() || title.isEmpty()) {
-            viewModelScope.launch(dispatcher) {
+            viewModelScope.launch(ioDispatcher) {
                 _uiEvent.tryEmit(ReportUiEvent.ShowError("인쇄할 데이터가 없습니다"))
             }
             return
         }
 
-        viewModelScope.launch(dispatcher) {
+        // Printer I/O - Application Scope에서 실행 (ViewModel 생명주기와 독립)
+        // PrinterConnectionManager가 내부 Mutex로 동기화 보장
+        applicationScope.launch {
             val result = runCatching {
                 val dateParts = title.split(" ~ ")
                 val printerDTO = PrinterDTO(dateParts[0], dateParts[1], summary, details)
                 val printText = reportPrinter.getPrintingText(printerDTO)
-                reportPrinter.connect()
-                reportPrinter.print(printText)
+                printerConnectionManager.printAndDisconnect(printText)
             }
             result
                 .onSuccess {
@@ -109,7 +115,6 @@ class ReportViewModel @Inject constructor(
                 .onFailure { error ->
                     _uiEvent.tryEmit(ReportUiEvent.ShowError("인쇄 실패 : ${error.localizedMessage}"))
                 }
-            runCatching { reportPrinter.disconnect() }
         }
     }
 
