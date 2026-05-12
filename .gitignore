@@ -1,16 +1,19 @@
 *.iml
 .gradle
-/local.properties
-/.idea
 .DS_Store
-/build
-/captures
 .externalNativeBuild
 .cxx
 local.properties
 lambda.http
-/app/release
 GEMINI.md
 CLAUDE.md
 AGENTS.md
 /.cursor
+/.idea
+
+# android module
+/android/.idea
+/android/build
+/android/captures
+/android/local.properties
+/android/app/release
