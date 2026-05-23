@@ -22,3 +22,5 @@ AGENTS.md
 firebase/serviceAccount.json
 firebase/data/
 firebase/node_modules/
+firebase/firestore-debug.log
+firebase/.firebase/
