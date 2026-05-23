@@ -6,6 +6,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import eloom.holybean.ui.theme.Dimens
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -30,5 +31,6 @@ fun SettingsSheet(
 @Composable
 private fun SettingsRow(label: String, onClick: () -> Unit) {
     Text(label, style = MaterialTheme.typography.bodyLarge,
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(16.dp))
+        modifier = Modifier.fillMaxWidth().heightIn(min = Dimens.minTouchTarget)
+            .clickable(onClick = onClick).padding(16.dp))
 }
