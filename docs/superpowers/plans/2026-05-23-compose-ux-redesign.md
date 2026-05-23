@@ -28,7 +28,12 @@
 - **로직(ViewModel·순수 함수):** 로컬 JVM 테스트. 실행 `./gradlew :app:testDebugUnitTest --tests "<FQN>"`. 기존 mockk 패턴(`HomeViewModelTest`) 재사용.
 - **Compose UI:** `androidTest` 의 `createComposeRule()` 로 stateless Composable 단위 테스트. 실행 `./gradlew :app:connectedDebugAndroidTest`(에뮬레이터/기기 필요; 에뮬레이터는 Java 21 필요 — `build-environment-quirks` 참고).
 - **빌드 검증:** `./gradlew :app:assembleDebug`.
-- UI 테스트가 에뮬레이터 부재로 막히면, 최소한 로직 테스트 + `assembleDebug` 통과를 게이트로 삼고 UI 테스트는 코드만 커밋한다.
+- **차단 게이트(blocking) = 로직 단위 테스트(JVM) 통과 + `assembleDebug` 성공.** Compose UI 테스트는 에뮬레이터가 있으면 실행하고, 없으면 코드만 작성·커밋(비차단). 따라서 **각 화면의 핵심 분기는 반드시 순수 로직/ViewModel 단위 테스트로 커버**한다(UI 테스트에 의존하지 않는다).
+
+## 선행 조건 (Prerequisites)
+
+- **백엔드 마이그레이션이 먼저 빌드 가능해야 한다.** 현재 `HomeViewModel` 은 생성자에 `firestoreRepository` 를 주입받지만 본문(`onOrderConfirmed`, `refreshOrderNumber`)이 아직 `lambdaRepository` 를 참조하는 **반쯤 깨진 상태**다. Phase 1 시작 전 이 참조를 `firestoreRepository.postOrder(...)` / `firestoreRepository.getOrderNumber()` 로 정리해 `:app:assembleDebug` 가 통과하는지 확인한다.
+- `FirestoreRepository` 의 시그니처(`getOrderNumber`, `postOrder`, `getOrdersOfDay`, `getOrderDetail`, `getReport`, `getCreditsList`, `setCreditOrderPaid`, `deleteOrder`)를 변경하지 않는다 — UI 계획은 이 인터페이스 위에 올린다.
 
 ## 파일 구조 (생성/수정 맵)
 
@@ -471,7 +476,9 @@ git commit -m "feat(components): MenuTile and BasketRow with preview and UI test
 Run: `cd android && ./gradlew :app:testDebugUnitTest --tests "eloom.holybean.ui.home.HomeViewModelTest"`
 Expected: 기존 `addCoupon` 구현이 이미 양수 한 줄 추가이므로 PASS. (회귀 가드.) 실패하면 `addCoupon` 의 양수/합계 로직을 점검.
 
-- [ ] **Step 3: NavigateToPayment 이벤트 추가**
+- [ ] **Step 3: 내비게이션 이벤트 재전송 방지 — `replay=0` (리뷰 #3)**
+
+`_uiEvent` 선언의 `replay = 1` 을 `replay = 0` 으로 변경한다. 이유: 공유 ViewModel이라 Home 재구성 시 `LaunchedEffect` 가 재수집하는데 `replay=1` 이면 마지막 `NavigateToPayment`/`NavigateHome` 이 재전송되어 결제로 다시 튕기거나 중복 pop이 발생한다. `extraBufferCapacity = 16, DROP_OLDEST` 가 있어 수집 전 발행 이벤트는 버퍼로 보존되므로 안전하다.
 
 `UiEvent` 에 추가:
 
@@ -488,16 +495,61 @@ Expected: 기존 `addCoupon` 구현이 이미 양수 한 줄 추가이므로 PAS
     }
 ```
 
-- [ ] **Step 4: 빌드/테스트**
+- [ ] **Step 4: 실패 테스트 — 주문 성공 시 장바구니/주문번호 리셋 (리뷰 #1)**
+
+```kotlin
+    @Test
+    fun `successful order resets basket and refreshes order number`() = runTest {
+        coEvery { firestoreRepository.getOrderNumber() } returnsMany listOf(10, 11)
+        coEvery { firestoreRepository.postOrder(any()) } returns Unit
+        homeViewModel.addCoupon(3000)
+        advanceUntilIdle()
+        val order = Order("2026-05-23", 10, 0, "", listOf(CartItem(999, "쿠폰", 3000, 1, 3000)),
+            listOf(PaymentMethod("현금", 3000)), 3000)
+        homeViewModel.onOrderConfirmed(order, "일회용컵")
+        advanceUntilIdle()
+        val state = homeViewModel.uiState.value
+        assertTrue(state.basketItems.isEmpty())
+        assertEquals(0, state.totalPrice)
+        assertEquals(11, state.orderId) // 다음 주문번호로 갱신
+    }
+```
+
+> `postOrder` 가 `suspend` 가 아니면(현재 동기 `fun`) `coEvery` 대신 `every { ... } returns Unit` 로 맞춘다. 구현 시 `FirestoreRepository.postOrder` 시그니처를 확인.
+
+- [ ] **Step 5: 실패 확인 → 리셋 구현**
 
 Run: `cd android && ./gradlew :app:testDebugUnitTest --tests "eloom.holybean.ui.home.HomeViewModelTest"`
-Expected: PASS
+Expected: FAIL (리셋 없음).
 
-- [ ] **Step 5: 커밋**
+`onOrderConfirmed` 의 네트워크 성공 분기를 수정 — `NavigateHome` 직전에 상태를 리셋하고 주문번호를 다시 채번한다:
+
+```kotlin
+        viewModelScope.launch(ioDispatcher) {
+            try {
+                firestoreRepository.postOrder(data)
+                _uiState.update { it.copy(basketItems = emptyList(), totalPrice = 0) }
+                refreshOrderNumber()           // 다음 주문번호 채번
+                _uiEvent.emit(UiEvent.NavigateHome)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                _uiEvent.emit(UiEvent.ShowToast("주문 처리 중 오류가 발생했습니다."))
+            }
+        }
+```
+
+(이미 `import kotlinx.coroutines.flow.update` 가 없다면 추가.)
+
+- [ ] **Step 6: 통과 확인 & 빌드**
+
+Run: `cd android && ./gradlew :app:testDebugUnitTest --tests "eloom.holybean.ui.home.HomeViewModelTest"`
+Expected: PASS (신규 2건 포함)
+
+- [ ] **Step 7: 커밋**
 
 ```bash
 git add android/app/src/main/java/eloom/holybean/ui/home/HomeViewModel.kt android/app/src/test/kotlin/eloom/holybean/ui/home/HomeViewModelTest.kt
-git commit -m "feat(home): NavigateToPayment event and coupon regression test"
+git commit -m "feat(home): NavigateToPayment, reset basket+order# on success, one-shot events"
 ```
 
 ## Task 6: 타입세이프 라우트 & NavHost 셸
@@ -513,14 +565,15 @@ package eloom.holybean.ui.navigation
 
 import kotlinx.serialization.Serializable
 
+// 라우트(목적지) object는 `*Dest`, Composable 진입점은 `*Route` 로 명명 → 이름 충돌/alias 방지.
 @Serializable object OrderFlow      // 주문+결제 공유 그래프
-@Serializable object HomeRoute
-@Serializable object PaymentRoute
-@Serializable object OrdersRoute
-@Serializable object MenuMgmtRoute
-@Serializable object CreditsRoute
-@Serializable object ReportRoute
-@Serializable object DevToolsRoute
+@Serializable object HomeDest
+@Serializable object PaymentDest
+@Serializable object OrdersDest
+@Serializable object MenuMgmtDest
+@Serializable object CreditsDest
+@Serializable object ReportDest
+@Serializable object DevToolsDest
 ```
 
 - [ ] **Step 2: HolyBeanNavHost.kt 생성 (Home 자리표시 포함, 이후 Task에서 화면 연결)**
@@ -536,30 +589,27 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.toRoute
-import eloom.holybean.ui.home.HomeRoute as HomeScreenRoute
+import eloom.holybean.ui.home.HomeRoute
 
 @Composable
 fun HolyBeanNavHost(navController: NavHostController = rememberNavController()) {
     NavHost(navController = navController, startDestination = OrderFlow) {
-        navigation<OrderFlow>(startDestination = HomeRoute) {
-            composable<HomeRoute> { entry ->
-                HomeScreenRoute(
+        navigation<OrderFlow>(startDestination = HomeDest) {
+            composable<HomeDest> { entry ->
+                HomeRoute(
                     sharedViewModel = entry.sharedOrderViewModel(navController),
-                    onNavigateToPayment = { navController.navigate(PaymentRoute) },
-                    onNavigateToOrders = { navController.navigate(OrdersRoute) },
-                    onNavigateToSettings = { /* Task: 설정 시트 */ },
+                    onNavigateToPayment = { navController.navigate(PaymentDest) },
+                    onNavigateToOrders = { navController.navigate(OrdersDest) },
+                    onNavigateToSettings = { /* Task 15: 설정 시트 */ },
                 )
             }
-            composable<PaymentRoute> { entry ->
-                // Phase 2 에서 연결
-            }
+            composable<PaymentDest> { /* Task 11 에서 연결 */ }
         }
-        composable<OrdersRoute> { /* Phase 3 */ }
-        composable<MenuMgmtRoute> { /* Phase 4 */ }
-        composable<CreditsRoute> { /* Phase 4 */ }
-        composable<ReportRoute> { /* Phase 4 */ }
-        composable<DevToolsRoute> { /* Phase 4 */ }
+        composable<OrdersDest> { /* Task 14 */ }
+        composable<MenuMgmtDest> { /* Task 19 */ }
+        composable<CreditsDest> { /* Task 18 */ }
+        composable<ReportDest> { /* Task 17 */ }
+        composable<DevToolsDest> { /* Task 16 */ }
     }
 }
 
@@ -574,10 +624,12 @@ fun NavBackStackEntry.sharedOrderViewModel(nav: NavHostController): eloom.holybe
 ```
 
 > 베스트 프랙티스: 주문→결제는 장바구니 상태를 공유해야 하므로 `OrderFlow` 중첩 그래프 백스택 엔트리에 스코프된 단일 ViewModel을 쓴다.
+>
+> ⚠️ **공유 ViewModel 함정(리뷰 #1·#3 반영):** 결제 후 같은 `HomeViewModel` 인스턴스로 Home에 돌아오므로 **(a)** 주문 성공 시 장바구니/주문번호를 반드시 리셋해야 하고(Task 5에서 처리), **(b)** 내비게이션 이벤트가 `replay` 로 재전송되면 결제로 다시 튕기므로 `_uiEvent` 의 `replay=0` 을 보장한다(Task 5에서 처리).
 
-- [ ] **Step 3: 빌드 (HomeScreenRoute 가 아직 없으면 다음 Task와 함께 컴파일)**
+- [ ] **Step 3: 빌드 (`HomeRoute` Composable 이 아직 없으면 Task 7과 함께 컴파일)**
 
-이 Task는 Task 7과 함께 컴파일된다. Step 4 커밋은 Task 7 후에 한다.
+이 Task는 Task 7과 함께 컴파일된다. 커밋은 Task 7 Step 5에서 함께 한다.
 
 ## Task 7: HomeScreen (stateless) + HomeRoute
 
@@ -733,7 +785,8 @@ private fun BasketPane(
                 OutlinedButton(onClick = onHistory) { Text("주문기록") }
             }
             LazyColumn(Modifier.weight(1f)) {
-                items(basket, key = { it.id }) { item ->
+                // 리뷰 #2: 쿠폰은 항상 id=999 라 key=it.id 면 중복 → 인덱스 키 사용.
+                itemsIndexed(basket, key = { index, _ -> index }) { _, item ->
                     BasketRow(item.name, item.count, item.count * item.price) { onItemClick(item.id) }
                     HorizontalDivider(color = DividerGray)
                 }
@@ -1123,6 +1176,7 @@ package eloom.holybean.ui.payment
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -1199,7 +1253,10 @@ fun PaymentScreen(
                 Column(Modifier.padding(12.dp)) {
                     Text("주문 요약", style = MaterialTheme.typography.labelSmall, color = OnSurfaceMuted)
                     LazyColumn(Modifier.weight(1f)) {
-                        items(items, key = { it.id }) { BasketRow(it.name, it.count, it.count * it.price) {} }
+                        // 리뷰 #2: 쿠폰 중복 id 대비 인덱스 키
+                        itemsIndexed(items, key = { index, _ -> index }) { _, it ->
+                            BasketRow(it.name, it.count, it.count * it.price) {}
+                        }
                     }
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text("합계", style = MaterialTheme.typography.titleMedium)
@@ -1289,19 +1346,19 @@ import 보강: `import androidx.compose.foundation.background`.
 
 - [ ] **Step 2: NavHost 의 PaymentRoute 연결**
 
-`HolyBeanNavHost.kt` 의 `composable<PaymentRoute>` 를 교체:
+`HolyBeanNavHost.kt` 의 `composable<PaymentDest>` 자리표시를 교체:
 
 ```kotlin
-            composable<PaymentRoute> { entry ->
+            composable<PaymentDest> { entry ->
                 eloom.holybean.ui.payment.PaymentRoute(
                     sharedViewModel = entry.sharedOrderViewModel(navController),
                     onClose = { navController.popBackStack() },
-                    onPaid = { navController.popBackStack(HomeRoute, inclusive = false) },
+                    onPaid = { navController.popBackStack(HomeDest, inclusive = false) },
                 )
             }
 ```
 
-(필요 import: `import androidx.navigation.compose.popBackStack` 불필요 — `popBackStack` 은 NavController 멤버.)
+(`popBackStack` 은 NavController 멤버라 별도 import 불필요.)
 
 - [ ] **Step 3: UI 테스트**
 
@@ -1428,7 +1485,9 @@ git commit -m "feat(payment): full-screen Compose payment with split and orderer
 - [ ] **Step 3: 테스트 통과 확인**
 
 Run: `cd android && ./gradlew :app:testDebugUnitTest --tests "eloom.holybean.ui.orderlist.OrdersViewModelTest"`
-Expected: PASS (기존 테스트의 생성자 호출에 `reportPrinter = mockk(relaxed=true)` 추가 필요 — 같이 수정).
+Expected: PASS.
+
+> 기존 테스트 수정 필수: (1) 생성자에 `reportPrinter = mockk(relaxed = true)` 추가. (2) `init` 이 이제 `loadTodaySummary()` 도 호출하므로 `@Before` 에서 `coEvery { firestoreRepository.getReport(any(), any()) } returns SalesReport(emptyList(), mapOf("총합" to 0))` 와 `coEvery { firestoreRepository.getOrdersOfDay() } returns arrayListOf()` 를 스텁(미스텁 시 relaxed mock의 `SalesReport` 접근에서 깨질 수 있음).
 
 - [ ] **Step 4: 커밋**
 
@@ -1489,6 +1548,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -1591,7 +1651,8 @@ fun OrdersScreen(
                 Column(Modifier.padding(12.dp)) {
                     Text("${selectedOrderNumber}번 주문", style = MaterialTheme.typography.titleMedium)
                     LazyColumn(Modifier.weight(1f)) {
-                        items(details, key = { it.name }) { d -> BasketRow(d.name, d.count, d.subtotal) {} }
+                        // 리뷰 #2: 상세 항목명 중복 대비 인덱스 키
+                        itemsIndexed(details, key = { index, _ -> index }) { _, d -> BasketRow(d.name, d.count, d.subtotal) {} }
                     }
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text("합계", style = MaterialTheme.typography.titleMedium)
@@ -1645,7 +1706,7 @@ private fun OrdersPreview() = HolyBeanTheme {
 - [ ] **Step 2: NavHost 의 OrdersRoute 연결**
 
 ```kotlin
-        composable<OrdersRoute> {
+        composable<OrdersDest> {
             eloom.holybean.ui.orders.OrdersRoute(onClose = { navController.popBackStack() })
         }
 ```
@@ -1753,10 +1814,10 @@ private fun SettingsRow(label: String, onClick: () -> Unit) {
     if (showSettings) {
         eloom.holybean.ui.settings.SettingsSheet(
             onDismiss = { showSettings = false },
-            onMenuMgmt = { showSettings = false; navController.navigate(MenuMgmtRoute) },
-            onCredits = { showSettings = false; navController.navigate(CreditsRoute) },
-            onReport = { showSettings = false; navController.navigate(ReportRoute) },
-            onDevTools = { showSettings = false; navController.navigate(DevToolsRoute) },
+            onMenuMgmt = { showSettings = false; navController.navigate(MenuMgmtDest) },
+            onCredits = { showSettings = false; navController.navigate(CreditsDest) },
+            onReport = { showSettings = false; navController.navigate(ReportDest) },
+            onDevTools = { showSettings = false; navController.navigate(DevToolsDest) },
         )
     }
 ```
@@ -1781,9 +1842,29 @@ git commit -m "feat(settings): settings bottom sheet entered from menu tile"
 - Test: `android/app/src/test/kotlin/eloom/holybean/ui/settings/DevToolsViewModelTest.kt`
 - Modify: `android/app/src/main/java/eloom/holybean/ui/navigation/HolyBeanNavHost.kt`
 
-> `PiPrintClient` 의 health 체크 API를 사용한다. 실제 메서드명은 구현 시 `PiPrintClient` 를 확인해 맞춘다(예: `suspend fun health(): Boolean`). 없으면 `PrintServerApi` 의 `/health` 호출을 래핑하는 `suspend fun checkHealth(): Boolean` 를 `PiPrintClient` 에 추가하고 단위 테스트로 커버.
+> 확인된 사실: `PiPrintClient` 에는 `suspend fun print(commands)` 만 있다. `PrintServerApi` 에는 `@GET("health") suspend fun health(): Response<Unit>` 가 이미 존재한다. 따라서 `PiPrintClient` 에 `checkHealth()`/`printTestReceipt()` 래퍼를 먼저 추가한다.
 
-- [ ] **Step 1: 실패 테스트 작성**
+- [ ] **Step 1: PiPrintClient 에 checkHealth / printTestReceipt 추가**
+
+`android/app/src/main/java/eloom/holybean/printer/PiPrintClient.kt` 에 메서드 추가:
+
+```kotlin
+    /** /health 핑. 예외/실패는 false. */
+    suspend fun checkHealth(): Boolean = withContext(printerDispatcher) {
+        runCatching { api.health().isSuccessful }.getOrDefault(false)
+    }
+
+    /** 진단용 테스트 영수증 1장 출력. */
+    suspend fun printTestReceipt() = print(
+        listOf(
+            PrintCommandDto(type = "text", content = "HolyBean 테스트 출력", align = "center", bold = true),
+            PrintCommandDto(type = "text", content = java.time.LocalDateTime.now().toString(), align = "center"),
+            PrintCommandDto(type = "cut"),
+        )
+    )
+```
+
+- [ ] **Step 2: 실패 테스트 작성**
 
 ```kotlin
 package eloom.holybean.ui.settings
@@ -1791,6 +1872,7 @@ package eloom.holybean.ui.settings
 import eloom.holybean.printer.PiPrintClient
 import io.mockk.coEvery
 import io.mockk.mockk
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -1801,7 +1883,7 @@ class DevToolsViewModelTest {
 
     @Test fun `health success sets printer ok`() = runTest {
         coEvery { pi.checkHealth() } returns true
-        val vm = DevToolsViewModel(pi)
+        val vm = DevToolsViewModel(pi, UnconfinedTestDispatcher())
         vm.refresh()
         advanceUntilIdle()
         assertEquals(true, vm.uiState.value.printerOk)
@@ -1809,7 +1891,7 @@ class DevToolsViewModelTest {
 }
 ```
 
-- [ ] **Step 2: DevToolsViewModel 구현**
+- [ ] **Step 3: DevToolsViewModel 구현**
 
 ```kotlin
 package eloom.holybean.ui.settings
@@ -1829,32 +1911,33 @@ import javax.inject.Inject
 @HiltViewModel
 class DevToolsViewModel @Inject constructor(
     private val piPrintClient: PiPrintClient,
+    @javax.inject.Named("IO") private val ioDispatcher: kotlinx.coroutines.CoroutineDispatcher,
 ) : ViewModel() {
     data class State(val printerOk: Boolean? = null, val printerUrl: String = BuildConfig.PRINT_SERVER_URL)
     private val _uiState = MutableStateFlow(State())
     val uiState: StateFlow<State> = _uiState.asStateFlow()
 
     fun refresh() {
-        viewModelScope.launch {
+        viewModelScope.launch(ioDispatcher) {
             val ok = runCatching { piPrintClient.checkHealth() }.getOrDefault(false)
             _uiState.update { it.copy(printerOk = ok) }
         }
     }
 
     fun testPrint() {
-        viewModelScope.launch { runCatching { piPrintClient.printTestReceipt() } }
+        viewModelScope.launch(ioDispatcher) { runCatching { piPrintClient.printTestReceipt() } }
     }
 }
 ```
 
-> `PiPrintClient.checkHealth()` / `printTestReceipt()` 가 없으면 `PiPrintClient` 에 추가(각각 `/health` GET, 고정 테스트 커맨드 출력). 추가 시 그 함수에 대한 단위 테스트도 작성.
+> `viewModelScope.launch` 를 그냥 쓰면 `Dispatchers.Main` 으로 떨어져 JVM 단위 테스트에서 깨진다. 주입된 `ioDispatcher` 로 launch 해야 `UnconfinedTestDispatcher` 로 테스트 가능.
 
-- [ ] **Step 3: 테스트 통과 확인**
+- [ ] **Step 4: 테스트 통과 확인**
 
 Run: `cd android && ./gradlew :app:testDebugUnitTest --tests "eloom.holybean.ui.settings.DevToolsViewModelTest"`
 Expected: PASS
 
-- [ ] **Step 4: DevToolsScreen 구현**
+- [ ] **Step 5: DevToolsScreen 구현**
 
 ```kotlin
 package eloom.holybean.ui.settings
@@ -1910,10 +1993,10 @@ private fun HealthRow(label: String, ok: Boolean?) {
 
 import: `import androidx.compose.foundation.background`.
 
-- [ ] **Step 5: NavHost 연결 + 커밋**
+- [ ] **Step 6: NavHost 연결 + 커밋**
 
 ```kotlin
-        composable<DevToolsRoute> {
+        composable<DevToolsDest> {
             eloom.holybean.ui.settings.DevToolsRoute(onClose = { navController.popBackStack() })
         }
 ```
@@ -2006,7 +2089,7 @@ private fun MenuSalesRow(d: ReportDetailItem) {
 - [ ] **Step 2: NavHost 연결**
 
 ```kotlin
-        composable<ReportRoute> {
+        composable<ReportDest> {
             eloom.holybean.ui.report.ReportRoute(onClose = { navController.popBackStack() })
         }
 ```
@@ -2026,13 +2109,14 @@ git commit -m "feat(report): Compose period sales report (ported)"
 - Create: `android/app/src/main/java/eloom/holybean/ui/credits/CreditsScreen.kt`
 - Modify: `android/app/src/main/java/eloom/holybean/ui/navigation/HolyBeanNavHost.kt`
 
-> 기존 `CreditsViewModel`(`CreditsUiState`, `loadCredits()`, `selectOrder(num,total,date)`, `fetchOrderDetail()`, `handleDeleteButton()`) 재사용. 구현 전 `CreditsViewModel.kt` 의 `CreditsUiState` 필드를 확인해 아래 바인딩을 정확히 맞춘다(목록/선택/상세). 패턴은 `OrdersScreen` 과 동일한 2-pane.
+> 확인된 `CreditsUiState` 필드: `creditsList: List<CreditItem>`, `selectedOrderNumber`, `selectedOrderTotal`, `selectedOrderDate`, `orderDetails: List<OrdersDetailItem>`. `CreditItem(orderId, totalAmount, date, orderer)`. 메서드: `loadCredits()`, `selectOrder(num, total, date)`(상세는 자동조회 안 함), `fetchOrderDetail()`(선택 후 호출), `handleDeleteButton()`(=외상 결제완료 처리). 이벤트: `ShowToast`, `RefreshCredits`. **목록 항목 클릭 시 `selectOrder(...)` → `fetchOrderDetail()` 를 연달아 호출**해야 우측 상세가 채워진다.
 
 - [ ] **Step 1: CreditsScreen.kt 구현** (OrdersScreen 패턴 재사용, 외상 목록 + 상세 + "결제완료 처리" 버튼)
 
 ```kotlin
 package eloom.holybean.ui.credits
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -2050,6 +2134,16 @@ import kotlinx.collections.immutable.toImmutableList
 @Composable
 fun CreditsRoute(onClose: () -> Unit, vm: CreditsViewModel = hiltViewModel()) {
     val state by vm.uiState.collectAsStateWithLifecycle()
+    val context = androidx.compose.ui.platform.LocalContext.current
+    LaunchedEffect(Unit) {
+        vm.uiEvent.collect { e ->
+            when (e) {
+                is CreditsViewModel.CreditsUiEvent.ShowToast ->
+                    android.widget.Toast.makeText(context, e.message, android.widget.Toast.LENGTH_SHORT).show()
+                CreditsViewModel.CreditsUiEvent.RefreshCredits -> vm.loadCredits()
+            }
+        }
+    }
     Column(Modifier.fillMaxSize().padding(16.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text("외상 관리", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
@@ -2059,7 +2153,11 @@ fun CreditsRoute(onClose: () -> Unit, vm: CreditsViewModel = hiltViewModel()) {
             Surface(Modifier.fillMaxWidth(0.46f).fillMaxHeight(), color = MaterialTheme.colorScheme.surface) {
                 LazyColumn(Modifier.padding(12.dp)) {
                     items(state.creditsList.toImmutableList(), key = { it.orderId }) { c ->
-                        Column(Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+                        Column(
+                            Modifier.fillMaxWidth()
+                                .clickable { vm.selectOrder(c.orderId, c.totalAmount, c.date); vm.fetchOrderDetail() }
+                                .padding(vertical = 8.dp)
+                        ) {
                             Text("${c.orderId}번 · ${c.orderer}", style = MaterialTheme.typography.bodyMedium)
                             Text("%,d원 · ${c.date}".format(c.totalAmount), style = MaterialTheme.typography.labelSmall)
                         }
@@ -2085,12 +2183,10 @@ fun CreditsRoute(onClose: () -> Unit, vm: CreditsViewModel = hiltViewModel()) {
 }
 ```
 
-> `CreditsUiState` 의 실제 필드명(`creditsList`, `orderDetails` 등)이 다르면 구현 시 맞춘다.
-
 - [ ] **Step 2: NavHost 연결**
 
 ```kotlin
-        composable<CreditsRoute> {
+        composable<CreditsDest> {
             eloom.holybean.ui.credits.CreditsRoute(onClose = { navController.popBackStack() })
         }
 ```
@@ -2133,7 +2229,7 @@ import kotlinx.collections.immutable.toImmutableList
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
-private const val MENU_PASSWORD = "0000" // 기존 PasswordDialog 와 동일 값으로 맞춘다
+private const val MENU_PASSWORD = "1031" // PasswordDialog.correctPassword 와 동일 (확인됨)
 
 @Composable
 fun MenuManagementRoute(onClose: () -> Unit, vm: MenuManagementViewModel = hiltViewModel()) {
@@ -2154,8 +2250,19 @@ fun MenuManagementRoute(onClose: () -> Unit, vm: MenuManagementViewModel = hiltV
             Spacer(Modifier.width(8.dp))
             OutlinedButton(onClick = onClose) { Text("닫기") }
         }
+        // 카테고리 칩(기본 선택 = ICE커피, index 1). 전체(0)는 정렬 의미가 없어 1~5만 노출.
+        androidx.compose.foundation.lazy.LazyRow(
+            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(5.dp),
+            modifier = Modifier.padding(top = 8.dp),
+        ) {
+            items(eloom.holybean.ui.home.MenuCategories.names.drop(1)) { name ->
+                val idx = eloom.holybean.ui.home.MenuCategories.names.indexOf(name)
+                FilterChip(selected = idx == state.selectedCategoryIndex, onClick = { vm.onCategorySelected(idx) },
+                    label = { Text(name) })
+            }
+        }
         LazyColumn(state = listState, modifier = Modifier.weight(1f).padding(top = 10.dp)) {
-            items(state.filteredMenuList.toImmutableList(), key = { it.id }) { item ->
+            items(state.filteredMenuItems.toImmutableList(), key = { it.id }) { item ->
                 ReorderableItem(reorderState, key = item.id) {
                     ListItem(
                         headlineContent = { Text(item.name) },
@@ -2181,7 +2288,7 @@ private fun PasswordGate(onPass: () -> Unit, onCancel: () -> Unit) {
 }
 ```
 
-> `UiState` 의 실제 목록 필드명(`filteredMenuList` 등)과 비밀번호 상수는 기존 `PasswordDialog`/`MenuManagementViewModel` 을 확인해 맞춘다. 추가/수정 다이얼로그(addMenu/updateMenu/toggleMenuInUse)는 기존 `MenuAddDialog`/`MenuEditDialog` 의 입력 항목(이름·가격)을 그대로 Compose `AlertDialog` 로 옮긴다.
+> 확인된 사실: `UiState(allMenuItems, filteredMenuItems, selectedCategoryIndex=1 기본 ICE커피, isLoading)`, 비밀번호 `1031`, `UiEvent`(`ShowToast`, `RefreshMenu`). `moveItem(from, to)` 는 **현재 필터된 목록의 위치 인덱스**를 받는다. 추가/수정 다이얼로그(`addMenu`/`updateMenu`/`toggleMenuInUse`)는 기존 `MenuAddDialog`/`MenuEditDialog` 의 입력 항목(이름·가격)을 그대로 Compose `AlertDialog`(Step 2) 로 옮긴다.
 
 - [ ] **Step 2: 추가/수정 다이얼로그 구현** (기존 MenuAddDialog/MenuEditDialog 의 필드 그대로: 이름, 가격)
 
@@ -2208,7 +2315,7 @@ fun MenuEditDialog(initialName: String, initialPrice: String, onConfirm: (String
 - [ ] **Step 3: NavHost 연결**
 
 ```kotlin
-        composable<MenuMgmtRoute> {
+        composable<MenuMgmtDest> {
             eloom.holybean.ui.menumanagement.MenuManagementRoute(onClose = { navController.popBackStack() })
         }
 ```
@@ -2283,3 +2390,13 @@ git commit -m "refactor: remove Fragments/XML/ViewBinding after Compose migratio
 - 희귀화면(기간리포트/외상/메뉴관리) 기능 포팅+테마 → Task 17,18,19 ✅
 - 드로어/Fragment/XML 제거, 단일 Activity Compose → Task 8,20 ✅
 - 아키텍처(상태 호이스팅, collectAsStateWithLifecycle, 타입세이프 Nav, ImmutableList, 순수로직 TDD) → 전 Task 규칙 적용 ✅
+
+## 비판적 리뷰 보정 (반영 완료)
+
+- **#1 주문 후 상태 리셋:** 공유 ViewModel이라 결제 후 장바구니/주문번호가 안 지워지는 버그 → Task 5 Step 4·5 에서 `onOrderConfirmed` 성공 시 `basketItems` 비우고 `refreshOrderNumber()` 호출 + 회귀 테스트.
+- **#2 LazyColumn 키 중복:** 쿠폰 id=999 중복으로 인한 크래시 → Task 7·11·14 의 장바구니/요약/상세 리스트를 인덱스 키(`itemsIndexed`)로 변경.
+- **#3 내비 이벤트 재전송:** `_uiEvent` `replay=1` → `0` 으로(Task 5 Step 3). Home 재구성 시 결제로 재진입/중복 pop 방지.
+- **#4 플레이스홀더 제거:** 비밀번호 `1031`(확정), `CreditsUiState`/`MenuManagement UiState` 실제 필드명 반영, 외상 `selectOrder→fetchOrderDetail` 배선, `PiPrintClient.checkHealth()/printTestReceipt()` 구체 구현(Task 16 Step 1) + DevToolsViewModel 디스패처 주입으로 테스트 가능화.
+- **#5 네이밍 충돌:** 라우트 object를 `*Dest`, Composable 진입점을 `*Route` 로 분리(alias 해킹 제거).
+- **#6 테스트 게이트:** 차단 게이트 = 로직 단위 테스트(JVM) + `assembleDebug`. Compose UI 테스트는 비차단.
+- **#7 선행 조건:** Firestore 마이그레이션의 `lambdaRepository` 잔여 참조 정리를 Phase 1 선행 조건으로 명시.
