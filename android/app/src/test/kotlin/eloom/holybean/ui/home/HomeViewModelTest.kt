@@ -221,6 +221,57 @@ class HomeViewModelTest {
         coVerify(exactly = 2) { piPrintClient.print(any<List<PrintCommandDto>>()) }
     }
 
+    @Test
+    fun `addCoupon adds a positive cart line and increases total`() = runTest(testDispatcher) {
+        // Given
+        coEvery { menuRepository.getMenuListSync() } returns emptyList()
+
+        // When
+        homeViewModel.addCoupon(3000)
+        advanceUntilIdle()
+
+        // Then
+        val state = homeViewModel.uiState.value
+        assertEquals(1, state.basketItems.size)
+        assertEquals("쿠폰", state.basketItems.first().name)
+        assertEquals(3000, state.totalPrice)
+    }
+
+    @Test
+    fun `successful order resets basket and refreshes order number`() = runTest(testDispatcher) {
+        // Given - getOrderNumber()를 [초기 채번 10, 성공 후 재채번 11]로 스텁한 뒤
+        // ViewModel을 재구성해 init이 10을, 주문 성공 분기가 11을 소비하도록 한다.
+        coEvery { firestoreRepository.getOrderNumber() } returnsMany listOf(10, 11)
+        every { firestoreRepository.postOrder(any()) } returns Unit
+        homeViewModel = HomeViewModel(
+            firestoreRepository,
+            menuRepository,
+            testDispatcher,
+            CoroutineScope(SupervisorJob() + testDispatcher),
+            piPrintClient,
+            homePrinter,
+        )
+        advanceUntilIdle()
+        homeViewModel.addCoupon(3000)
+        advanceUntilIdle()
+
+        val order = Order(
+            "2026-05-23", 10, 0, "",
+            listOf(CartItem(999, "쿠폰", 3000, 1, 3000)),
+            listOf(PaymentMethod("현금", 3000)), 3000
+        )
+
+        // When
+        homeViewModel.onOrderConfirmed(order, "일회용컵")
+        advanceUntilIdle()
+
+        // Then
+        val state = homeViewModel.uiState.value
+        assertTrue(state.basketItems.isEmpty())
+        assertEquals(0, state.totalPrice)
+        assertEquals(11, state.orderId) // 다음 주문번호로 갱신
+    }
+
     // 헬퍼 메서드: 테스트용 Order 객체 생성
     private fun createTestOrder(orderNum: Int = 1): Order {
         val cartItems = listOf(

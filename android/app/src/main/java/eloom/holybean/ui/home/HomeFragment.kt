@@ -164,6 +164,9 @@ class HomeFragment : Fragment() {
 
             is HomeViewModel.UiEvent.NavigateHome ->
                 mainListener?.replaceHomeFragment()
+
+            // 결제 화면 이동은 Compose 레이어에서만 처리 (레거시 Fragment 미사용)
+            HomeViewModel.UiEvent.NavigateToPayment -> Unit
         }
     }
 

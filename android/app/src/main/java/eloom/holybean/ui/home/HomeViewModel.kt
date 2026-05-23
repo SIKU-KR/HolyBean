@@ -51,13 +51,14 @@ class HomeViewModel @Inject constructor(
     sealed class UiEvent {
         data class ShowToast(val message: String) : UiEvent()
         object NavigateHome : UiEvent()
+        object NavigateToPayment : UiEvent()
     }
 
     private val _uiState = MutableStateFlow(UiState())
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
 
     private val _uiEvent = MutableSharedFlow<UiEvent>(
-        replay = 1,
+        replay = 0,
         extraBufferCapacity = 16,
         onBufferOverflow = BufferOverflow.DROP_OLDEST
     )
@@ -165,6 +166,11 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    fun onCheckoutClicked() {
+        if (_uiState.value.basketItems.isEmpty()) return
+        _uiEvent.tryEmit(UiEvent.NavigateToPayment)
+    }
+
     override fun onOrderConfirmed(data: Order, takeOption: String) {
         // 주문번호 조회 실패(-1) 등 유효하지 않은 주문번호는 절대 저장하지 않는다
         if (data.orderNum <= 0) {
@@ -178,6 +184,8 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch(ioDispatcher) {
             try {
                 firestoreRepository.postOrder(data)
+                _uiState.value = _uiState.value.copy(basketItems = emptyList(), totalPrice = 0)
+                refreshOrderNumber()           // 다음 주문번호 채번
                 _uiEvent.emit(UiEvent.NavigateHome)
             } catch (e: Exception) {
                 e.printStackTrace()
