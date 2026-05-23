@@ -4,7 +4,7 @@ import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import eloom.holybean.data.model.CartItem
 import eloom.holybean.data.model.Order
 import eloom.holybean.data.model.PaymentMethod
-import eloom.holybean.data.repository.LambdaRepository
+import eloom.holybean.data.repository.FirestoreRepository
 import eloom.holybean.data.repository.MenuRepository
 import eloom.holybean.printer.PiPrintClient
 import eloom.holybean.printer.network.PrintCommandDto
@@ -12,7 +12,9 @@ import eloom.holybean.printer.polymorphism.HomePrinter
 import io.mockk.clearAllMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
@@ -37,7 +39,7 @@ class HomeViewModelTest {
     val instantExecutorRule = InstantTaskExecutorRule()
 
     private lateinit var homeViewModel: HomeViewModel
-    private val lambdaRepository: LambdaRepository = mockk(relaxed = true)
+    private val firestoreRepository: FirestoreRepository = mockk(relaxed = true)
     private val menuRepository: MenuRepository = mockk(relaxed = true)
     private val homePrinter: HomePrinter = mockk(relaxed = true)
     private val piPrintClient: PiPrintClient = mockk(relaxed = true)
@@ -46,11 +48,11 @@ class HomeViewModelTest {
     @Before
     fun setUp() {
         coEvery { menuRepository.getMenuListSync() } returns emptyList()
-        coEvery { lambdaRepository.getOrderNumber() } returns 1
+        coEvery { firestoreRepository.getOrderNumber() } returns 1
         coEvery { homePrinter.receiptForCustomer(any()) } returns emptyList()
         coEvery { homePrinter.receiptForPOS(any(), any()) } returns emptyList()
         homeViewModel = HomeViewModel(
-            lambdaRepository,
+            firestoreRepository,
             menuRepository,
             testDispatcher,
             CoroutineScope(SupervisorJob() + testDispatcher),
@@ -132,7 +134,7 @@ class HomeViewModelTest {
         // Given
         val testOrder = createTestOrder()
         val takeOption = "포장"
-        coEvery { lambdaRepository.postOrder(any()) } returns Unit
+        every { firestoreRepository.postOrder(any()) } returns Unit
 
         val events = mutableListOf<HomeViewModel.UiEvent>()
         val job: Job = launch { homeViewModel.uiEvent.collect { events.add(it) } }
@@ -142,7 +144,7 @@ class HomeViewModelTest {
         advanceUntilIdle()
 
         // Then
-        coVerify(exactly = 1) { lambdaRepository.postOrder(testOrder) }
+        verify(exactly = 1) { firestoreRepository.postOrder(testOrder) }
         assertTrue(events.any { it is HomeViewModel.UiEvent.NavigateHome })
         job.cancel()
     }
@@ -153,7 +155,7 @@ class HomeViewModelTest {
         val testOrder = createTestOrder()
         val takeOption = "매장"
         val testException = Exception("Network Error")
-        coEvery { lambdaRepository.postOrder(any()) } throws testException
+        every { firestoreRepository.postOrder(any()) } throws testException
 
         val events = mutableListOf<HomeViewModel.UiEvent>()
         val job: Job = launch { homeViewModel.uiEvent.collect { events.add(it) } }
@@ -163,7 +165,7 @@ class HomeViewModelTest {
         advanceUntilIdle()
 
         // Then
-        coVerify(exactly = 1) { lambdaRepository.postOrder(testOrder) }
+        verify(exactly = 1) { firestoreRepository.postOrder(testOrder) }
         assertTrue(events.firstOrNull() is HomeViewModel.UiEvent.ShowToast)
         job.cancel()
     }
@@ -173,7 +175,7 @@ class HomeViewModelTest {
         // Given
         val testOrder1 = createTestOrder(orderNum = 1)
         val testOrder2 = createTestOrder(orderNum = 2)
-        coEvery { lambdaRepository.postOrder(any()) } returns Unit
+        every { firestoreRepository.postOrder(any()) } returns Unit
 
         // When
         homeViewModel.onOrderConfirmed(testOrder1, "포장")
@@ -181,7 +183,7 @@ class HomeViewModelTest {
         advanceUntilIdle()
 
         // Then
-        coVerify(exactly = 2) { lambdaRepository.postOrder(any()) }
+        verify(exactly = 2) { firestoreRepository.postOrder(any()) }
         // Navigation events should be emitted twice
         // (optional explicit check omitted for brevity)
     }
@@ -190,7 +192,7 @@ class HomeViewModelTest {
     fun `onOrderConfirmed should call piPrintClient with receipt commands`() = runTest(testDispatcher) {
         // Given
         val testOrder = createTestOrder()
-        coEvery { lambdaRepository.postOrder(any()) } returns Unit
+        every { firestoreRepository.postOrder(any()) } returns Unit
 
         // When
         homeViewModel.onOrderConfirmed(testOrder, "포장")

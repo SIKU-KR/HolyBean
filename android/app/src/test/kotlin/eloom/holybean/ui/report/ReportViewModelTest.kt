@@ -2,9 +2,8 @@ package eloom.holybean.ui.report
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import eloom.holybean.data.model.ReportDetailItem
-import eloom.holybean.network.ApiService
-import eloom.holybean.network.dto.ResponseMenuSales
-import eloom.holybean.network.dto.ResponseSalesReport
+import eloom.holybean.data.model.SalesReport
+import eloom.holybean.data.repository.FirestoreRepository
 import eloom.holybean.printer.PiPrintClient
 import eloom.holybean.printer.network.PrintCommandDto
 import eloom.holybean.printer.polymorphism.ReportPrinter
@@ -21,7 +20,6 @@ import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import retrofit2.Response
 
 @ExperimentalCoroutinesApi
 class ReportViewModelTest {
@@ -30,7 +28,7 @@ class ReportViewModelTest {
     val instantExecutorRule = InstantTaskExecutorRule()
 
     private lateinit var viewModel: ReportViewModel
-    private val apiService: ApiService = mockk()
+    private val firestoreRepository: FirestoreRepository = mockk()
     private val reportPrinter: ReportPrinter = mockk(relaxed = true)
     private val piPrintClient: PiPrintClient = mockk(relaxed = true)
     private val testDispatcher = UnconfinedTestDispatcher()
@@ -40,7 +38,7 @@ class ReportViewModelTest {
         Dispatchers.setMain(testDispatcher)
         coEvery { reportPrinter.makeCommands(any()) } returns emptyList()
         viewModel = ReportViewModel(
-            apiService,
+            firestoreRepository,
             testDispatcher,
             CoroutineScope(SupervisorJob() + testDispatcher),
             piPrintClient,
@@ -79,19 +77,19 @@ class ReportViewModelTest {
         // Given
         val startDate = "2024-01-01"
         val endDate = "2024-01-31"
-        val mockResponse = ResponseSalesReport(
-            menuSales = mapOf("Coffee" to ResponseMenuSales(10, 50000)),
-            paymentMethodSales = mapOf("Card" to 50000)
+        val report = SalesReport(
+            menuSales = listOf(ReportDetailItem("Coffee", 10, 50000)),
+            paymentSales = mapOf("Card" to 50000, "총합" to 50000)
         )
-        coEvery { apiService.getReport(startDate, endDate) } returns Response.success(mockResponse)
+        coEvery { firestoreRepository.getReport(startDate, endDate) } returns report
 
         // When
         viewModel.loadReportData(startDate, endDate)
 
         // Then
         val uiState = viewModel.uiState.first()
-        assertEquals(mockResponse.paymentMethodSales, uiState.reportData)
-        assertEquals(listOf(ReportDetailItem("Coffee", 10, 50000)), uiState.reportDetailData)
+        assertEquals(report.paymentSales, uiState.reportData)
+        assertEquals(report.menuSales, uiState.reportDetailData)
         assertEquals("$startDate ~ $endDate", uiState.reportTitle)
         assertEquals(false, uiState.isLoading)
     }
@@ -118,18 +116,18 @@ class ReportViewModelTest {
         assertEquals(1, events.size)
         assertTrue(events.first() is ReportViewModel.ReportUiEvent.ShowError)
         assertEquals("잘못된 날짜 범위입니다", (events.first() as ReportViewModel.ReportUiEvent.ShowError).message)
-        coVerify(exactly = 0) { apiService.getReport(any(), any()) }
+        coVerify(exactly = 0) { firestoreRepository.getReport(any(), any()) }
 
         collectJob.cancel()
     }
 
     @Test
-    fun `loadReportData should emit error event on api failure`() = runTest {
+    fun `loadReportData should emit error event on repository failure`() = runTest {
         // Given
         val startDate = "2024-01-01"
         val endDate = "2024-01-31"
         val exception = RuntimeException("Network failed")
-        coEvery { apiService.getReport(startDate, endDate) } throws exception
+        coEvery { firestoreRepository.getReport(startDate, endDate) } throws exception
 
         // Collect events before triggering the action
         val events = mutableListOf<ReportViewModel.ReportUiEvent>()
@@ -157,11 +155,11 @@ class ReportViewModelTest {
         // Given
         val startDate = "2024-01-01"
         val endDate = "2024-01-31"
-        val mockResponse = ResponseSalesReport(
-            menuSales = mapOf("Coffee" to ResponseMenuSales(10, 50000)),
-            paymentMethodSales = mapOf("Card" to 50000)
+        val report = SalesReport(
+            menuSales = listOf(ReportDetailItem("Coffee", 10, 50000)),
+            paymentSales = mapOf("Card" to 50000, "총합" to 50000)
         )
-        coEvery { apiService.getReport(startDate, endDate) } returns Response.success(mockResponse)
+        coEvery { firestoreRepository.getReport(startDate, endDate) } returns report
         viewModel.loadReportData(startDate, endDate)
 
         // Collect events before triggering the action

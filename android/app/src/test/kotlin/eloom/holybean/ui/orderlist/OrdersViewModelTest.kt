@@ -3,7 +3,7 @@ package eloom.holybean.ui.orderlist
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import eloom.holybean.data.model.OrderItem
 import eloom.holybean.data.model.OrdersDetailItem
-import eloom.holybean.data.repository.LambdaRepository
+import eloom.holybean.data.repository.FirestoreRepository
 import eloom.holybean.printer.PiPrintClient
 import eloom.holybean.printer.network.PrintCommandDto
 import eloom.holybean.printer.polymorphism.OrdersPrinter
@@ -30,7 +30,7 @@ class OrdersViewModelTest {
     val instantExecutorRule = InstantTaskExecutorRule()
 
     private lateinit var viewModel: OrdersViewModel
-    private val lambdaRepository: LambdaRepository = mockk()
+    private val firestoreRepository: FirestoreRepository = mockk()
     private val testDispatcher = UnconfinedTestDispatcher()
     private lateinit var ordersPrinter: OrdersPrinter
     private lateinit var piPrintClient: PiPrintClient
@@ -39,9 +39,9 @@ class OrdersViewModelTest {
         printer: OrdersPrinter = mockk(relaxed = true),
         client: PiPrintClient = mockk(relaxed = true),
     ): OrdersViewModel {
-        coEvery { lambdaRepository.getOrdersOfDay() } returns arrayListOf()
+        coEvery { firestoreRepository.getOrdersOfDay() } returns arrayListOf()
         return OrdersViewModel(
-            lambdaRepository,
+            firestoreRepository,
             testDispatcher,
             CoroutineScope(SupervisorJob() + testDispatcher),
             client,
@@ -53,11 +53,11 @@ class OrdersViewModelTest {
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         // Mock the initial loadOrdersOfDay call to prevent automatic execution
-        coEvery { lambdaRepository.getOrdersOfDay() } returns arrayListOf()
+        coEvery { firestoreRepository.getOrdersOfDay() } returns arrayListOf()
         ordersPrinter = mockk(relaxed = true)
         piPrintClient = mockk(relaxed = true)
         viewModel = OrdersViewModel(
-            lambdaRepository,
+            firestoreRepository,
             testDispatcher,
             CoroutineScope(SupervisorJob() + testDispatcher),
             piPrintClient,
@@ -96,8 +96,8 @@ class OrdersViewModelTest {
             OrdersDetailItem(name = "Americano", count = 2, subtotal = 8000)
         )
 
-        coEvery { lambdaRepository.getOrdersOfDay() } returns mockOrders
-        coEvery { lambdaRepository.getOrderDetail(any(), any()) } returns mockOrderDetails
+        coEvery { firestoreRepository.getOrdersOfDay() } returns mockOrders
+        coEvery { firestoreRepository.getOrderDetail(any(), any()) } returns mockOrderDetails
 
         // When
         testViewModel.loadOrdersOfDay()
@@ -120,7 +120,7 @@ class OrdersViewModelTest {
             OrdersDetailItem(name = "Latte", count = 1, subtotal = 4500)
         )
 
-        coEvery { lambdaRepository.getOrderDetail(any(), any()) } returns mockOrderDetails
+        coEvery { firestoreRepository.getOrderDetail(any(), any()) } returns mockOrderDetails
 
         // When
         viewModel.selectOrder(orderNumber, totalAmount)
@@ -142,13 +142,13 @@ class OrdersViewModelTest {
         )
 
         val currentDate = viewModel.getCurrentDate()
-        coEvery { lambdaRepository.getOrderDetail(currentDate, orderNumber) } returns mockOrderDetails
+        coEvery { firestoreRepository.getOrderDetail(currentDate, orderNumber) } returns mockOrderDetails
 
         // When
         viewModel.fetchOrderDetail(orderNumber)
 
         // Then
-        coVerify { lambdaRepository.getOrderDetail(currentDate, orderNumber) }
+        coVerify { firestoreRepository.getOrderDetail(currentDate, orderNumber) }
         val uiState = viewModel.uiState.first()
         assertEquals(mockOrderDetails, uiState.orderDetails)
     }
@@ -160,7 +160,7 @@ class OrdersViewModelTest {
         val orderNumber = 123
 
         val currentDate = testViewModel.getCurrentDate()
-        coEvery { lambdaRepository.getOrderDetail(currentDate, orderNumber) } returns arrayListOf()
+        coEvery { firestoreRepository.getOrderDetail(currentDate, orderNumber) } returns arrayListOf()
 
         // Collect events before triggering the action
         val events = mutableListOf<OrdersViewModel.OrdersUiEvent>()
@@ -175,7 +175,7 @@ class OrdersViewModelTest {
         advanceUntilIdle()
 
         // Then
-        coVerify { lambdaRepository.getOrderDetail(currentDate, orderNumber) }
+        coVerify { firestoreRepository.getOrderDetail(currentDate, orderNumber) }
         assertEquals(1, events.size)
         assertTrue(events.first() is OrdersViewModel.OrdersUiEvent.ShowToast)
         assertEquals("주문 내역이 없습니다.", (events.first() as OrdersViewModel.OrdersUiEvent.ShowToast).message)
@@ -191,7 +191,7 @@ class OrdersViewModelTest {
         val errorMessage = "Network error"
         val exception = RuntimeException(errorMessage)
 
-        coEvery { lambdaRepository.getOrderDetail(any(), any()) } throws exception
+        coEvery { firestoreRepository.getOrderDetail(any(), any()) } throws exception
 
         // Collect events before triggering the action
         val events = mutableListOf<OrdersViewModel.OrdersUiEvent>()
@@ -221,7 +221,7 @@ class OrdersViewModelTest {
 
         // Set up the UI state with order details
         viewModel.selectOrder(101, 1000)
-        coEvery { lambdaRepository.getOrderDetail(any(), any()) } returns orderDetails
+        coEvery { firestoreRepository.getOrderDetail(any(), any()) } returns orderDetails
         viewModel.fetchOrderDetail(101)
 
         every { ordersPrinter.makeCommands(any(), any()) } returns emptyList()
@@ -272,7 +272,7 @@ class OrdersViewModelTest {
 
         // Set up the UI state with order details
         testViewModel.selectOrder(102, 1500)
-        coEvery { lambdaRepository.getOrderDetail(any(), any()) } returns orderDetails
+        coEvery { firestoreRepository.getOrderDetail(any(), any()) } returns orderDetails
         testViewModel.fetchOrderDetail(102)
 
         every { printerMock.makeCommands(any(), any()) } returns emptyList()
@@ -335,16 +335,16 @@ class OrdersViewModelTest {
 
         // Set up the UI state with order details
         viewModel.selectOrder(orderNumber, 1000)
-        coEvery { lambdaRepository.getOrderDetail(any(), any()) } returns orderDetails
+        coEvery { firestoreRepository.getOrderDetail(any(), any()) } returns orderDetails
         viewModel.fetchOrderDetail(orderNumber)
 
-        coEvery { lambdaRepository.deleteOrder(currentDate, orderNumber) } returns true
+        coEvery { firestoreRepository.deleteOrder(currentDate, orderNumber) } returns true
 
         // When
         viewModel.deleteOrder()
 
         // Then
-        coVerify { lambdaRepository.deleteOrder(currentDate, orderNumber) }
+        coVerify { firestoreRepository.deleteOrder(currentDate, orderNumber) }
         val finalState = viewModel.uiState.first()
         assertTrue(finalState.deleteStatus is OrdersViewModel.DeleteStatus.Success)
     }
@@ -358,16 +358,16 @@ class OrdersViewModelTest {
 
         // Set up the UI state with order details
         viewModel.selectOrder(orderNumber, 1000)
-        coEvery { lambdaRepository.getOrderDetail(any(), any()) } returns orderDetails
+        coEvery { firestoreRepository.getOrderDetail(any(), any()) } returns orderDetails
         viewModel.fetchOrderDetail(orderNumber)
 
-        coEvery { lambdaRepository.deleteOrder(currentDate, orderNumber) } returns false
+        coEvery { firestoreRepository.deleteOrder(currentDate, orderNumber) } returns false
 
         // When
         viewModel.deleteOrder()
 
         // Then
-        coVerify { lambdaRepository.deleteOrder(currentDate, orderNumber) }
+        coVerify { firestoreRepository.deleteOrder(currentDate, orderNumber) }
         val finalState = viewModel.uiState.first()
         assertTrue(finalState.deleteStatus is OrdersViewModel.DeleteStatus.Error)
         assertEquals("주문 삭제에 실패했습니다.", (finalState.deleteStatus as OrdersViewModel.DeleteStatus.Error).message)
@@ -383,10 +383,10 @@ class OrdersViewModelTest {
 
         // Set up the UI state with order details
         viewModel.selectOrder(orderNumber, 1000)
-        coEvery { lambdaRepository.getOrderDetail(any(), any()) } returns orderDetails
+        coEvery { firestoreRepository.getOrderDetail(any(), any()) } returns orderDetails
         viewModel.fetchOrderDetail(orderNumber)
 
-        coEvery { lambdaRepository.deleteOrder(any(), any()) } throws exception
+        coEvery { firestoreRepository.deleteOrder(any(), any()) } throws exception
 
         // When
         viewModel.deleteOrder()

@@ -2,7 +2,6 @@ package eloom.holybean.ui.menumanagement
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import eloom.holybean.data.model.MenuItem
-import eloom.holybean.data.repository.LambdaRepository
 import eloom.holybean.data.repository.MenuRepository
 import io.mockk.*
 import kotlinx.coroutines.Dispatchers
@@ -25,7 +24,6 @@ class MenuManagementViewModelTest {
 
     private lateinit var viewModel: MenuManagementViewModel
     private val menuRepository: MenuRepository = mockk(relaxed = true)
-    private val lambdaRepository: LambdaRepository = mockk(relaxed = true)
     private val testDispatcher = UnconfinedTestDispatcher()
 
     @Before
@@ -33,8 +31,7 @@ class MenuManagementViewModelTest {
         Dispatchers.setMain(testDispatcher)
         // Mock initial state
         every { menuRepository.getMenuList() } returns flowOf(emptyList())
-        coEvery { lambdaRepository.getLastedSavedMenuList() } returns arrayListOf()
-        viewModel = MenuManagementViewModel(menuRepository, lambdaRepository, testDispatcher)
+        viewModel = MenuManagementViewModel(menuRepository, testDispatcher)
     }
 
     @After
@@ -65,7 +62,7 @@ class MenuManagementViewModelTest {
         every { menuRepository.getMenuList() } returns flowOf(mockMenuList)
 
         // When - ViewModel loads menu on init
-        val testViewModel = MenuManagementViewModel(menuRepository, lambdaRepository, testDispatcher)
+        val testViewModel = MenuManagementViewModel(menuRepository, testDispatcher)
 
         // Then
         val uiState = testViewModel.uiState.first()
@@ -80,7 +77,7 @@ class MenuManagementViewModelTest {
             MenuItem(2001, "Green Tea", 3000, 2001, true)
         )
         every { menuRepository.getMenuList() } returns flowOf(mockMenuList)
-        val testViewModel = MenuManagementViewModel(menuRepository, lambdaRepository, testDispatcher)
+        val testViewModel = MenuManagementViewModel(menuRepository, testDispatcher)
 
         // When
         testViewModel.onCategorySelected(0) // Category 1 (ICE커피)
@@ -201,7 +198,7 @@ class MenuManagementViewModelTest {
             MenuItem(1003, "Cappuccino", 4700, 1003, true)
         )
         every { menuRepository.getMenuList() } returns flowOf(mockMenuList)
-        val testViewModel = MenuManagementViewModel(menuRepository, lambdaRepository, testDispatcher)
+        val testViewModel = MenuManagementViewModel(menuRepository, testDispatcher)
 
         // When
         testViewModel.moveItem(0, 2) // Move first item to third position
@@ -221,7 +218,7 @@ class MenuManagementViewModelTest {
         )
         every { menuRepository.getMenuList() } returns flowOf(mockMenuList)
         coEvery { menuRepository.saveMenuOrders(any()) } just runs
-        val testViewModel = MenuManagementViewModel(menuRepository, lambdaRepository, testDispatcher)
+        val testViewModel = MenuManagementViewModel(menuRepository, testDispatcher)
 
         val events = mutableListOf<MenuManagementViewModel.UiEvent>()
         val collectJob = launch { testViewModel.uiEvent.collect { events.add(it) } }
@@ -236,83 +233,6 @@ class MenuManagementViewModelTest {
         assertTrue(events[0] is MenuManagementViewModel.UiEvent.ShowToast)
         assertEquals("저장되었습니다.", (events[0] as MenuManagementViewModel.UiEvent.ShowToast).message)
         assertTrue(events[1] is MenuManagementViewModel.UiEvent.RefreshMenu)
-
-        collectJob.cancel()
-    }
-
-    @Test
-    fun `getMenuListFromServer should update local DB on success`() = runTest(testDispatcher) {
-        // Given
-        val remoteMenuList = arrayListOf(
-            MenuItem(1001, "Remote Americano", 4200, 1001, true),
-            MenuItem(1002, "Remote Latte", 4700, 1002, true)
-        )
-        coEvery { lambdaRepository.getLastedSavedMenuList() } returns remoteMenuList
-        coEvery { menuRepository.overwriteMenuList(any()) } just runs
-        every { menuRepository.getMenuList() } returns flowOf(emptyList())
-
-        val events = mutableListOf<MenuManagementViewModel.UiEvent>()
-        val collectJob = launch { viewModel.uiEvent.collect { events.add(it) } }
-
-        // When
-        viewModel.getMenuListFromServer()
-        advanceUntilIdle()
-
-        // Then
-        coVerify { lambdaRepository.getLastedSavedMenuList() }
-        coVerify { menuRepository.overwriteMenuList(remoteMenuList) }
-        assertEquals(2, events.size)
-        assertTrue(events[0] is MenuManagementViewModel.UiEvent.ShowToast)
-        assertEquals("태블릿에 저장 완료", (events[0] as MenuManagementViewModel.UiEvent.ShowToast).message)
-        assertTrue(events[1] is MenuManagementViewModel.UiEvent.RefreshMenu)
-
-        collectJob.cancel()
-    }
-
-    @Test
-    fun `getMenuListFromServer should emit toast event on repository failure`() = runTest(testDispatcher) {
-        // Given
-        val errorMessage = "Sync failed"
-        coEvery { lambdaRepository.getLastedSavedMenuList() } throws RuntimeException(errorMessage)
-
-        val events = mutableListOf<MenuManagementViewModel.UiEvent>()
-        val collectJob = launch { viewModel.uiEvent.collect { events.add(it) } }
-
-        // When
-        viewModel.getMenuListFromServer()
-        advanceUntilIdle()
-
-        // Then
-        coVerify(exactly = 0) { menuRepository.overwriteMenuList(any()) }
-        assertEquals(1, events.size)
-        assertTrue(events.first() is MenuManagementViewModel.UiEvent.ShowToast)
-        val expectedMessage = "데이터 가져오기 실패: $errorMessage"
-        assertEquals(expectedMessage, (events.first() as MenuManagementViewModel.UiEvent.ShowToast).message)
-
-        collectJob.cancel()
-    }
-
-    @Test
-    fun `saveMenuListToServer should emit success message on success`() = runTest(testDispatcher) {
-        // Given
-        val menuList = listOf(
-            MenuItem(1001, "Americano", 4000, 1001, true)
-        )
-        coEvery { menuRepository.getMenuListSync() } returns menuList
-        coEvery { lambdaRepository.saveMenuListToServer(any()) } just runs
-
-        val events = mutableListOf<MenuManagementViewModel.UiEvent>()
-        val collectJob = launch { viewModel.uiEvent.collect { events.add(it) } }
-
-        // When
-        viewModel.saveMenuListToServer()
-        advanceUntilIdle()
-
-        // Then
-        coVerify { lambdaRepository.saveMenuListToServer(menuList) }
-        assertEquals(1, events.size)
-        assertTrue(events.first() is MenuManagementViewModel.UiEvent.ShowToast)
-        assertEquals("서버에 저장 완료", (events.first() as MenuManagementViewModel.UiEvent.ShowToast).message)
 
         collectJob.cancel()
     }
