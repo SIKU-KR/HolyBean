@@ -8,7 +8,6 @@ import eloom.holybean.data.model.MenuItem
 import eloom.holybean.data.model.Order
 import eloom.holybean.data.repository.FirestoreRepository
 import eloom.holybean.data.repository.MenuRepository
-import eloom.holybean.interfaces.OrderDialogListener
 import eloom.holybean.printer.PiPrintClient
 import eloom.holybean.printer.polymorphism.HomePrinter
 import kotlinx.coroutines.CoroutineDispatcher
@@ -29,7 +28,7 @@ class HomeViewModel @Inject constructor(
     @Named("ApplicationScope") private val applicationScope: CoroutineScope,
     private val piPrintClient: PiPrintClient,
     private val homePrinter: HomePrinter,
-) : ViewModel(), OrderDialogListener {
+) : ViewModel() {
 
     data class UiState(
         val allMenuItems: List<MenuItem> = emptyList(),
@@ -176,7 +175,7 @@ class HomeViewModel @Inject constructor(
         _uiEvent.tryEmit(UiEvent.NavigateToPayment)
     }
 
-    override fun onOrderConfirmed(data: Order, takeOption: String) {
+    fun onOrderConfirmed(data: Order, takeOption: String) {
         // 주문번호 조회 실패(-1) 등 유효하지 않은 주문번호는 절대 저장하지 않는다
         if (data.orderNum <= 0) {
             viewModelScope.launch(ioDispatcher) {
