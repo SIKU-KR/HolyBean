@@ -1,5 +1,6 @@
 package eloom.holybean.ui.orders
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -11,6 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -76,22 +78,33 @@ fun OrdersScreen(
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(Dimens.screenPadding)) {
         Row(Modifier.fillMaxWidth().padding(bottom = 10.dp), verticalAlignment = Alignment.CenterVertically) {
             Text("주문기록", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-            OutlinedButton(onClick = onClose) { Text("✕ 닫기") }
+            OutlinedButton(
+                onClick = onClose,
+                shape = RoundedCornerShape(Dimens.radiusButton),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = OnSurfaceMuted),
+            ) { Text("✕ 닫기") }
         }
         Surface(Modifier.fillMaxWidth().padding(bottom = 10.dp), shape = RoundedCornerShape(Dimens.paneRadius),
-            color = MaterialTheme.colorScheme.surface) {
+            color = MaterialTheme.colorScheme.surface, shadowElevation = Dimens.paneElevation) {
             Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-                StatChip("오늘 총 판매", "%,d원".format(summary.totalSales), Orange)
+                horizontalArrangement = Arrangement.spacedBy(Dimens.spaceMd)) {
+                StatChip("오늘 총 판매", "%,d원".format(summary.totalSales), OrangeOnContainer)
+                VerticalDivider(Modifier.height(32.dp), color = DividerGray)
                 StatChip("총 건수", "${summary.orderCount}건")
+                VerticalDivider(Modifier.height(32.dp), color = DividerGray)
                 StatChip("총 잔수", "${summary.drinkCount}잔")
                 Spacer(Modifier.weight(1f))
-                OutlinedButton(onClick = onPrintReport) { Text("보고서 출력") }
+                OutlinedButton(
+                    onClick = onPrintReport,
+                    shape = RoundedCornerShape(Dimens.radiusButton),
+                    border = BorderStroke(2.dp, Orange),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Orange),
+                ) { Text("보고서 출력", fontWeight = FontWeight.Bold) }
             }
         }
         Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(Dimens.gap)) {
             Surface(Modifier.fillMaxWidth(0.46f).fillMaxHeight(), shape = RoundedCornerShape(Dimens.paneRadius),
-                color = MaterialTheme.colorScheme.surface) {
+                color = MaterialTheme.colorScheme.surface, shadowElevation = Dimens.paneElevation) {
                 LazyColumn(Modifier.padding(12.dp)) {
                     items(orders, key = { it.orderId }) { o ->
                         OrderListItem(o, o.orderId == selectedOrderNumber) { onSelect(o) }
@@ -100,7 +113,7 @@ fun OrdersScreen(
                 }
             }
             Surface(Modifier.weight(1f).fillMaxHeight(), shape = RoundedCornerShape(Dimens.paneRadius),
-                color = MaterialTheme.colorScheme.surface) {
+                color = MaterialTheme.colorScheme.surface, shadowElevation = Dimens.paneElevation) {
                 Column(Modifier.padding(12.dp)) {
                     Text(
                         if (selectedOrderNumber == 0) "주문을 선택하세요" else "${selectedOrderNumber}번 주문",
@@ -109,14 +122,20 @@ fun OrdersScreen(
                     LazyColumn(Modifier.weight(1f)) {
                         itemsIndexed(details, key = { index, _ -> index }) { _, d -> BasketRow(d.name, d.count, d.subtotal) {} }
                     }
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    HorizontalDivider(color = DividerGray)
+                    Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text("합계", style = MaterialTheme.typography.titleMedium)
-                        Text("%,d원".format(selectedTotal), style = MaterialTheme.typography.titleMedium, color = Orange)
+                        Text("%,d원".format(selectedTotal), style = MaterialTheme.typography.titleMedium, color = OrangeOnContainer)
                     }
                     Row(Modifier.fillMaxWidth().padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Button(onClick = onReprint, modifier = Modifier.weight(1f),
-                            colors = ButtonDefaults.buttonColors(containerColor = Orange)) { Text("재출력") }
-                        OutlinedButton(onClick = onDelete,
+                        Button(onClick = onReprint, modifier = Modifier.weight(1f).height(Dimens.primaryTouchTarget),
+                            shape = RoundedCornerShape(Dimens.radiusButton),
+                            colors = ButtonDefaults.buttonColors(containerColor = Orange)) {
+                            Text("재출력", fontWeight = FontWeight.Bold)
+                        }
+                        OutlinedButton(onClick = onDelete, modifier = Modifier.height(Dimens.primaryTouchTarget),
+                            shape = RoundedCornerShape(Dimens.radiusButton),
+                            border = BorderStroke(2.dp, DangerRed),
                             colors = ButtonDefaults.outlinedButtonColors(contentColor = DangerRed)) { Text("삭제") }
                     }
                 }
@@ -129,14 +148,14 @@ fun OrdersScreen(
 @Composable
 private fun OrderListItem(o: OrderItem, selected: Boolean, onClick: () -> Unit) {
     Surface(
-        onClick = onClick, shape = RoundedCornerShape(9.dp),
-        color = if (selected) OrangeContainer else MaterialTheme.colorScheme.surface,
-        border = androidx.compose.foundation.BorderStroke(1.dp, if (selected) Orange else DividerGray),
+        onClick = onClick, shape = RoundedCornerShape(Dimens.radiusButton),
+        color = if (selected) OrderSelectedBg else MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.dp, if (selected) Orange else DividerGray),
     ) {
         Column(Modifier.fillMaxWidth().padding(10.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("${o.orderId}번", style = MaterialTheme.typography.bodyMedium)
-                Text("%,d원".format(o.totalAmount), style = MaterialTheme.typography.bodyMedium)
+                Text("${o.orderId}번", style = MaterialTheme.typography.titleMedium)
+                Text("%,d원".format(o.totalAmount), style = MaterialTheme.typography.titleMedium)
             }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(o.orderer.ifBlank { "—" }, style = MaterialTheme.typography.labelSmall, color = OnSurfaceMuted)
