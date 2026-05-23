@@ -15,6 +15,5 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "HolyBean"
-include(":app", ":printer")
-project(":printer").projectDir = file("../_legacy/escpos")
+include(":app")
 
