@@ -15,9 +15,9 @@ val Pretendard = FontFamily(
 )
 
 val HolyBeanTypography = Typography(
-    titleLarge = TextStyle(fontFamily = Pretendard, fontSize = 22.sp),
-    titleMedium = TextStyle(fontFamily = Pretendard, fontSize = 16.sp),
-    bodyLarge = TextStyle(fontFamily = Pretendard, fontSize = 15.sp),
-    bodyMedium = TextStyle(fontFamily = Pretendard, fontSize = 13.sp),
-    labelSmall = TextStyle(fontFamily = Pretendard, fontSize = 11.sp),
+    titleLarge  = TextStyle(fontFamily = Pretendard, fontWeight = FontWeight.ExtraBold, fontSize = 22.sp),
+    titleMedium = TextStyle(fontFamily = Pretendard, fontWeight = FontWeight.Bold,      fontSize = 18.sp),
+    bodyLarge   = TextStyle(fontFamily = Pretendard, fontWeight = FontWeight.Medium,    fontSize = 16.sp),
+    bodyMedium  = TextStyle(fontFamily = Pretendard, fontWeight = FontWeight.Medium,    fontSize = 15.sp),
+    labelSmall  = TextStyle(fontFamily = Pretendard, fontWeight = FontWeight.Medium,    fontSize = 14.sp),
 )
