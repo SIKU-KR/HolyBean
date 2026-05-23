@@ -4,6 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,6 +19,16 @@ import kotlinx.collections.immutable.toImmutableList
 fun CreditsRoute(onClose: () -> Unit, vm: CreditsViewModel = hiltViewModel()) {
     val state by vm.uiState.collectAsStateWithLifecycle()
     val context = androidx.compose.ui.platform.LocalContext.current
+    var confirmPaid by remember { mutableStateOf(false) }
+    if (confirmPaid) {
+        AlertDialog(
+            onDismissRequest = { confirmPaid = false },
+            title = { Text("외상 결제완료") },
+            text = { Text("${state.selectedOrderNumber}번 외상을 결제완료 처리하시겠습니까?") },
+            confirmButton = { TextButton(onClick = { vm.handleDeleteButton(); confirmPaid = false }) { Text("처리") } },
+            dismissButton = { TextButton(onClick = { confirmPaid = false }) { Text("취소") } },
+        )
+    }
     LaunchedEffect(Unit) {
         vm.uiEvent.collect { e ->
             when (e) {
@@ -52,11 +63,15 @@ fun CreditsRoute(onClose: () -> Unit, vm: CreditsViewModel = hiltViewModel()) {
                 Column(Modifier.padding(12.dp)) {
                     Text("상세", style = MaterialTheme.typography.titleMedium)
                     LazyColumn(Modifier.weight(1f)) {
-                        items(state.orderDetails.toImmutableList(), key = { it.name }) {
+                        itemsIndexed(state.orderDetails.toImmutableList(), key = { index, _ -> index }) { _, it ->
                             BasketRow(it.name, it.count, it.subtotal) {}
                         }
                     }
-                    Button(onClick = { vm.handleDeleteButton() }, modifier = Modifier.fillMaxWidth()) {
+                    Button(
+                        onClick = { confirmPaid = true },
+                        enabled = state.selectedOrderNumber != 0,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
                         Text("외상 결제완료 처리")
                     }
                 }
