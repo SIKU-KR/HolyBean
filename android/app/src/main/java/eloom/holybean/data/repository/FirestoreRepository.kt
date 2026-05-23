@@ -12,6 +12,7 @@ import eloom.holybean.data.firestore.ReportAggregation.DailyRollup
 import eloom.holybean.data.firestore.ReportAggregation.MenuSale
 import eloom.holybean.data.model.*
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withTimeout
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
@@ -33,6 +34,18 @@ class FirestoreRepository @Inject constructor(
             e.printStackTrace()
             FirebaseCrashlytics.getInstance().recordException(e)
             -1
+        }
+    }
+
+    /** 개발자도구용 best-effort 연결 점검. 3초 내 작은 읽기 성공 시 true. */
+    suspend fun checkConnection(): Boolean {
+        return try {
+            withTimeout(3000) {
+                db.collection(FirestoreSchema.DAY_SUMMARIES).document(today()).get().await()
+            }
+            true
+        } catch (e: Exception) {
+            false
         }
     }
 
