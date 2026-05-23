@@ -45,6 +45,20 @@ class PiPrintClient @Inject constructor(
         }
     }
 
+    /** /health 핑. 예외/실패는 false. */
+    suspend fun checkHealth(): Boolean = withContext(printerDispatcher) {
+        runCatching { api.health().isSuccessful }.getOrDefault(false)
+    }
+
+    /** 진단용 테스트 영수증 1장 출력. */
+    suspend fun printTestReceipt() = print(
+        listOf(
+            PrintCommandDto(type = "text", content = "HolyBean 테스트 출력", align = "center", bold = true),
+            PrintCommandDto(type = "text", content = java.time.LocalDateTime.now().toString(), align = "center"),
+            PrintCommandDto(type = "cut"),
+        )
+    )
+
     private suspend fun <T> withRetry(block: suspend () -> T): T {
         var attempt = 1
         while (true) {
