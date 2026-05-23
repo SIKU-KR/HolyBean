@@ -1,8 +1,12 @@
 package eloom.holybean.ui.settings
 
+import eloom.holybean.data.repository.FirestoreRepository
+import eloom.holybean.diag.NetworkStatus
+import eloom.holybean.diag.NetworkStatusProvider
 import eloom.holybean.printer.PiPrintClient
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -14,25 +18,41 @@ import org.junit.Test
 
 class DevToolsViewModelTest {
     private val pi: PiPrintClient = mockk(relaxed = true)
+    private val firestore: FirestoreRepository = mockk(relaxed = true)
+    private val network: NetworkStatusProvider = mockk(relaxed = true)
 
-    @Test fun `health success sets printer ok`() = runTest {
+    private fun vm() = DevToolsViewModel(pi, firestore, network, UnconfinedTestDispatcher())
+
+    @Test fun `refresh populates printer network and firestore status`() = runTest {
         coEvery { pi.checkHealth() } returns true
-        val vm = DevToolsViewModel(pi, UnconfinedTestDispatcher())
+        coEvery { firestore.checkConnection() } returns true
+        every { network.current() } returns NetworkStatus(true, "Wi-Fi")
+        val vm = vm()
         vm.refresh()
         advanceUntilIdle()
-        assertEquals(true, vm.uiState.value.printerOk)
+        val s = vm.uiState.value
+        assertEquals(true, s.printerOk)
+        assertEquals(true, s.networkOk)
+        assertEquals("Wi-Fi", s.networkInfo)
+        assertEquals(true, s.firestoreOk)
+        assertTrue(s.printerLatencyMs != null)
     }
 
-    @Test fun `health failure sets printer not ok`() = runTest {
+    @Test fun `refresh reflects failures`() = runTest {
         coEvery { pi.checkHealth() } returns false
-        val vm = DevToolsViewModel(pi, UnconfinedTestDispatcher())
+        coEvery { firestore.checkConnection() } returns false
+        every { network.current() } returns NetworkStatus(false, "연결 없음")
+        val vm = vm()
         vm.refresh()
         advanceUntilIdle()
-        assertEquals(false, vm.uiState.value.printerOk)
+        val s = vm.uiState.value
+        assertEquals(false, s.printerOk)
+        assertEquals(false, s.networkOk)
+        assertEquals(false, s.firestoreOk)
     }
 
     @Test fun `test print delegates to client`() = runTest {
-        val vm = DevToolsViewModel(pi, UnconfinedTestDispatcher())
+        val vm = vm()
         vm.testPrint()
         advanceUntilIdle()
         coVerify { pi.printTestReceipt() }
@@ -40,7 +60,7 @@ class DevToolsViewModelTest {
 
     @Test fun `test print failure emits show toast`() = runTest {
         coEvery { pi.printTestReceipt() } throws RuntimeException("boom")
-        val vm = DevToolsViewModel(pi, UnconfinedTestDispatcher())
+        val vm = vm()
         val events = mutableListOf<DevToolsViewModel.DevToolsUiEvent>()
         val collector = launch(UnconfinedTestDispatcher(testScheduler)) {
             vm.uiEvent.collect { events.add(it) }

@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import eloom.holybean.BuildConfig
+import eloom.holybean.data.repository.FirestoreRepository
+import eloom.holybean.diag.NetworkStatusProvider
 import eloom.holybean.printer.PiPrintClient
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.channels.BufferOverflow
@@ -21,10 +23,16 @@ import javax.inject.Named
 @HiltViewModel
 class DevToolsViewModel @Inject constructor(
     private val piPrintClient: PiPrintClient,
+    private val firestoreRepository: FirestoreRepository,
+    private val networkStatusProvider: NetworkStatusProvider,
     @Named("IO") private val ioDispatcher: CoroutineDispatcher,
 ) : ViewModel() {
     data class State(
         val printerOk: Boolean? = null,
+        val printerLatencyMs: Long? = null,
+        val networkOk: Boolean? = null,
+        val networkInfo: String = "",
+        val firestoreOk: Boolean? = null,
         val printerUrl: String = BuildConfig.PRINT_SERVER_URL,
     )
 
@@ -47,8 +55,16 @@ class DevToolsViewModel @Inject constructor(
 
     fun refresh() {
         viewModelScope.launch(ioDispatcher) {
-            val ok = piPrintClient.checkHealth()
-            _uiState.update { it.copy(printerOk = ok) }
+            val net = networkStatusProvider.current()
+            _uiState.update { it.copy(networkOk = net.connected, networkInfo = net.info) }
+
+            val start = System.currentTimeMillis()
+            val printerHealthy = piPrintClient.checkHealth()
+            val latency = System.currentTimeMillis() - start
+            _uiState.update { it.copy(printerOk = printerHealthy, printerLatencyMs = latency) }
+
+            val fs = firestoreRepository.checkConnection()
+            _uiState.update { it.copy(firestoreOk = fs) }
         }
     }
 
