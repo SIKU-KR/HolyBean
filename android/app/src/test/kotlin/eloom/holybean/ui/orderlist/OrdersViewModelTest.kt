@@ -4,10 +4,14 @@ import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import eloom.holybean.data.model.OrderItem
 import eloom.holybean.data.model.OrdersDetailItem
 import eloom.holybean.data.repository.LambdaRepository
+import eloom.holybean.printer.PiPrintClient
+import eloom.holybean.printer.network.PrintCommandDto
 import eloom.holybean.printer.polymorphism.OrdersPrinter
 import io.mockk.*
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.*
@@ -29,10 +33,20 @@ class OrdersViewModelTest {
     private val lambdaRepository: LambdaRepository = mockk()
     private val testDispatcher = UnconfinedTestDispatcher()
     private lateinit var ordersPrinter: OrdersPrinter
+    private lateinit var piPrintClient: PiPrintClient
 
-    private fun createViewModelWithPrinter(printer: OrdersPrinter = mockk(relaxed = true)): OrdersViewModel {
+    private fun createViewModelWithPrinter(
+        printer: OrdersPrinter = mockk(relaxed = true),
+        client: PiPrintClient = mockk(relaxed = true),
+    ): OrdersViewModel {
         coEvery { lambdaRepository.getOrdersOfDay() } returns arrayListOf()
-        return OrdersViewModel(lambdaRepository, testDispatcher, printer)
+        return OrdersViewModel(
+            lambdaRepository,
+            testDispatcher,
+            CoroutineScope(SupervisorJob() + testDispatcher),
+            client,
+            printer,
+        )
     }
 
     @Before
@@ -41,7 +55,14 @@ class OrdersViewModelTest {
         // Mock the initial loadOrdersOfDay call to prevent automatic execution
         coEvery { lambdaRepository.getOrdersOfDay() } returns arrayListOf()
         ordersPrinter = mockk(relaxed = true)
-        viewModel = OrdersViewModel(lambdaRepository, testDispatcher, ordersPrinter)
+        piPrintClient = mockk(relaxed = true)
+        viewModel = OrdersViewModel(
+            lambdaRepository,
+            testDispatcher,
+            CoroutineScope(SupervisorJob() + testDispatcher),
+            piPrintClient,
+            ordersPrinter,
+        )
     }
 
     @After
@@ -194,28 +215,24 @@ class OrdersViewModelTest {
     }
 
     @Test
-    fun `reprint should call printer methods correctly when order details exist`() = runTest {
+    fun `reprint should call piPrintClient when order details exist`() = runTest {
         // Given
         val orderDetails = arrayListOf(OrdersDetailItem("Coffee", 1, 1000))
-        val testText = "Test Print Text"
 
         // Set up the UI state with order details
         viewModel.selectOrder(101, 1000)
         coEvery { lambdaRepository.getOrderDetail(any(), any()) } returns orderDetails
         viewModel.fetchOrderDetail(101)
 
-        every { ordersPrinter.makeText(any(), any()) } returns testText
-        coEvery { ordersPrinter.print(any()) } just runs
-        coEvery { ordersPrinter.disconnect() } just runs
+        every { ordersPrinter.makeCommands(any(), any()) } returns emptyList()
 
         // When
         viewModel.reprint()
         advanceUntilIdle()
 
         // Then
-        verify { ordersPrinter.makeText(101, orderDetails) }
-        coVerify { ordersPrinter.print(testText) }
-        coVerify { ordersPrinter.disconnect() }
+        verify { ordersPrinter.makeCommands(101, any()) }
+        coVerify { piPrintClient.print(any<List<PrintCommandDto>>()) }
     }
 
     @Test
@@ -244,12 +261,12 @@ class OrdersViewModelTest {
     }
 
     @Test
-    fun `reprint should emit error event and disconnect when printing fails`() = runTest {
+    fun `reprint should emit error event when printing fails`() = runTest {
         // Given
         val printerMock = mockk<OrdersPrinter>(relaxed = true)
-        val testViewModel = createViewModelWithPrinter(printerMock)
+        val clientMock = mockk<PiPrintClient>()
+        val testViewModel = createViewModelWithPrinter(printerMock, clientMock)
         val orderDetails = arrayListOf(OrdersDetailItem("Tea", 1, 1500))
-        val testText = "Test Print Text"
         val errorMessage = "Printer connection failed"
         val printException = Exception(errorMessage)
 
@@ -258,9 +275,8 @@ class OrdersViewModelTest {
         coEvery { lambdaRepository.getOrderDetail(any(), any()) } returns orderDetails
         testViewModel.fetchOrderDetail(102)
 
-        every { printerMock.makeText(any(), any()) } returns testText
-        coEvery { printerMock.print(any()) } throws printException
-        coEvery { printerMock.disconnect() } just runs
+        every { printerMock.makeCommands(any(), any()) } returns emptyList()
+        coEvery { clientMock.print(any()) } throws printException
 
         // Collect events before triggering the action
         val events = mutableListOf<OrdersViewModel.OrdersUiEvent>()
@@ -281,7 +297,6 @@ class OrdersViewModelTest {
         assertNotNull(printerErrorEvent)
         val expectedErrorMessage = "Printer error: $errorMessage"
         assertEquals(expectedErrorMessage, (printerErrorEvent as OrdersViewModel.OrdersUiEvent.ShowToast).message)
-        coVerify { printerMock.disconnect() }
 
         collectJob.cancel()
     }

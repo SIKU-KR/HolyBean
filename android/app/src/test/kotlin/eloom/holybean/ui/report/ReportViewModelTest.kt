@@ -5,10 +5,14 @@ import eloom.holybean.data.model.ReportDetailItem
 import eloom.holybean.network.ApiService
 import eloom.holybean.network.dto.ResponseMenuSales
 import eloom.holybean.network.dto.ResponseSalesReport
+import eloom.holybean.printer.PiPrintClient
+import eloom.holybean.printer.network.PrintCommandDto
 import eloom.holybean.printer.polymorphism.ReportPrinter
 import io.mockk.*
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.*
@@ -28,12 +32,20 @@ class ReportViewModelTest {
     private lateinit var viewModel: ReportViewModel
     private val apiService: ApiService = mockk()
     private val reportPrinter: ReportPrinter = mockk(relaxed = true)
+    private val piPrintClient: PiPrintClient = mockk(relaxed = true)
     private val testDispatcher = UnconfinedTestDispatcher()
 
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
-        viewModel = ReportViewModel(apiService, testDispatcher, reportPrinter)
+        coEvery { reportPrinter.makeCommands(any()) } returns emptyList()
+        viewModel = ReportViewModel(
+            apiService,
+            testDispatcher,
+            CoroutineScope(SupervisorJob() + testDispatcher),
+            piPrintClient,
+            reportPrinter,
+        )
     }
 
     @After
@@ -141,7 +153,7 @@ class ReportViewModelTest {
     }
 
     @Test
-    fun `printReport should call printer methods when data is available`() = runTest {
+    fun `printReport should call piPrintClient when data is available`() = runTest {
         // Given
         val startDate = "2024-01-01"
         val endDate = "2024-01-31"
@@ -151,10 +163,6 @@ class ReportViewModelTest {
         )
         coEvery { apiService.getReport(startDate, endDate) } returns Response.success(mockResponse)
         viewModel.loadReportData(startDate, endDate)
-
-        every { reportPrinter.getPrintingText(any()) } returns "print text"
-        every { reportPrinter.print(any()) } just runs
-        every { reportPrinter.disconnect() } just runs
 
         // Collect events before triggering the action
         val events = mutableListOf<ReportViewModel.ReportUiEvent>()
@@ -167,9 +175,8 @@ class ReportViewModelTest {
         advanceUntilIdle()
 
         // Then
-        verify { reportPrinter.getPrintingText(any()) }
-        verify { reportPrinter.print("print text") }
-        verify { reportPrinter.disconnect() }
+        verify { reportPrinter.makeCommands(any()) }
+        coVerify { piPrintClient.print(any<List<PrintCommandDto>>()) }
         // Check success toast event
         val successEvent = events.find { it is ReportViewModel.ReportUiEvent.ShowToast }
         assertNotNull(successEvent)

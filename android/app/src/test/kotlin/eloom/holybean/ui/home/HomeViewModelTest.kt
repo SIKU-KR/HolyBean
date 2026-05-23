@@ -6,13 +6,17 @@ import eloom.holybean.data.model.Order
 import eloom.holybean.data.model.PaymentMethod
 import eloom.holybean.data.repository.LambdaRepository
 import eloom.holybean.data.repository.MenuRepository
+import eloom.holybean.printer.PiPrintClient
+import eloom.holybean.printer.network.PrintCommandDto
 import eloom.holybean.printer.polymorphism.HomePrinter
 import io.mockk.clearAllMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -36,13 +40,23 @@ class HomeViewModelTest {
     private val lambdaRepository: LambdaRepository = mockk(relaxed = true)
     private val menuRepository: MenuRepository = mockk(relaxed = true)
     private val homePrinter: HomePrinter = mockk(relaxed = true)
+    private val piPrintClient: PiPrintClient = mockk(relaxed = true)
     private val testDispatcher = UnconfinedTestDispatcher()
 
     @Before
     fun setUp() {
         coEvery { menuRepository.getMenuListSync() } returns emptyList()
         coEvery { lambdaRepository.getOrderNumber() } returns 1
-        homeViewModel = HomeViewModel(lambdaRepository, menuRepository, testDispatcher, homePrinter)
+        coEvery { homePrinter.receiptForCustomer(any()) } returns emptyList()
+        coEvery { homePrinter.receiptForPOS(any(), any()) } returns emptyList()
+        homeViewModel = HomeViewModel(
+            lambdaRepository,
+            menuRepository,
+            testDispatcher,
+            CoroutineScope(SupervisorJob() + testDispatcher),
+            piPrintClient,
+            homePrinter,
+        )
     }
 
     @After
@@ -170,6 +184,20 @@ class HomeViewModelTest {
         coVerify(exactly = 2) { lambdaRepository.postOrder(any()) }
         // Navigation events should be emitted twice
         // (optional explicit check omitted for brevity)
+    }
+
+    @Test
+    fun `onOrderConfirmed should call piPrintClient with receipt commands`() = runTest(testDispatcher) {
+        // Given
+        val testOrder = createTestOrder()
+        coEvery { lambdaRepository.postOrder(any()) } returns Unit
+
+        // When
+        homeViewModel.onOrderConfirmed(testOrder, "포장")
+        advanceUntilIdle()
+
+        // Then
+        coVerify { piPrintClient.print(any<List<PrintCommandDto>>()) }
     }
 
     // 헬퍼 메서드: 테스트용 Order 객체 생성

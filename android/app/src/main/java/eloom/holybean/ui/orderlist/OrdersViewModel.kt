@@ -6,7 +6,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import eloom.holybean.data.model.OrderItem
 import eloom.holybean.data.model.OrdersDetailItem
 import eloom.holybean.data.repository.LambdaRepository
-import eloom.holybean.printer.PrinterConnectionManager
+import eloom.holybean.printer.PiPrintClient
 import eloom.holybean.printer.polymorphism.OrdersPrinter
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -23,7 +23,7 @@ class OrdersViewModel @Inject constructor(
     private val lambdaRepository: LambdaRepository,
     @Named("IO") private val ioDispatcher: CoroutineDispatcher,
     @Named("ApplicationScope") private val applicationScope: CoroutineScope,
-    private val printerConnectionManager: PrinterConnectionManager,
+    private val piPrintClient: PiPrintClient,
     private val ordersPrinter: OrdersPrinter,
 ) : ViewModel() {
 
@@ -113,13 +113,12 @@ class OrdersViewModel @Inject constructor(
         }
 
         val orderDetailsArrayList = ArrayList(currentState.orderDetails)
-        val text = ordersPrinter.makeText(currentState.selectedOrderNumber, orderDetailsArrayList)
+        val commands = ordersPrinter.makeCommands(currentState.selectedOrderNumber, orderDetailsArrayList)
 
         // Printer I/O - Application Scope에서 실행 (ViewModel 생명주기와 독립)
-        // PrinterConnectionManager가 내부 Mutex로 동기화 보장
         applicationScope.launch {
             val result = runCatching {
-                printerConnectionManager.printAndDisconnect(text)
+                piPrintClient.print(commands)
             }
             result.onFailure { error ->
                 _uiEvent.tryEmit(OrdersUiEvent.ShowToast("Printer error: ${error.message}"))

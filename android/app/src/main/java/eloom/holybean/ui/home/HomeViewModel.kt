@@ -9,7 +9,7 @@ import eloom.holybean.data.model.Order
 import eloom.holybean.data.repository.LambdaRepository
 import eloom.holybean.data.repository.MenuRepository
 import eloom.holybean.interfaces.OrderDialogListener
-import eloom.holybean.printer.PrinterConnectionManager
+import eloom.holybean.printer.PiPrintClient
 import eloom.holybean.printer.polymorphism.HomePrinter
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -27,7 +27,7 @@ class HomeViewModel @Inject constructor(
     private val menuRepository: MenuRepository,
     @Named("IO") private val ioDispatcher: CoroutineDispatcher,
     @Named("ApplicationScope") private val applicationScope: CoroutineScope,
-    private val printerConnectionManager: PrinterConnectionManager,
+    private val piPrintClient: PiPrintClient,
     private val homePrinter: HomePrinter,
 ) : ViewModel(), OrderDialogListener {
 
@@ -72,23 +72,6 @@ class HomeViewModel @Inject constructor(
                 filteredMenuItems = menus
             )
             refreshOrderNumber()
-        }
-    }
-
-    fun startPrinter() {
-        applicationScope.launch {
-            runCatching { printerConnectionManager.connect() }
-                .onFailure { error ->
-                    _uiEvent.emit(
-                        UiEvent.ShowToast("프린터 연결 실패: ${error.message ?: "알 수 없는 오류"}")
-                    )
-                }
-        }
-    }
-
-    fun stopPrinter() {
-        applicationScope.launch {
-            runCatching { printerConnectionManager.disconnect() }
         }
     }
 
@@ -195,7 +178,6 @@ class HomeViewModel @Inject constructor(
         }
 
         // Printer I/O - Application Scope에서 실행 (ViewModel 생명주기와 독립)
-        // PrinterConnectionManager가 내부 Mutex로 동기화 보장
         applicationScope.launch {
             runCatching {
                 printReceipt(data, takeOption)
@@ -207,9 +189,9 @@ class HomeViewModel @Inject constructor(
 
     // 영수증 출력은 독립적으로 실행 (Network 완료와 무관)
     private suspend fun printReceipt(data: Order, takeOption: String) {
-        val receiptForCustomer = homePrinter.receiptTextForCustomer(data)
-        val receiptForPOS = homePrinter.receiptTextForPOS(data, takeOption)
-        printerConnectionManager.print(receiptForCustomer)
-        printerConnectionManager.print(receiptForPOS)
+        val customerCommands = homePrinter.receiptForCustomer(data)
+        val posCommands = homePrinter.receiptForPOS(data, takeOption)
+        piPrintClient.print(customerCommands)
+        piPrintClient.print(posCommands)
     }
 }

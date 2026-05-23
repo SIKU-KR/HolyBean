@@ -6,7 +6,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import eloom.holybean.data.model.PrinterDTO
 import eloom.holybean.data.model.ReportDetailItem
 import eloom.holybean.network.ApiService
-import eloom.holybean.printer.PrinterConnectionManager
+import eloom.holybean.printer.PiPrintClient
 import eloom.holybean.printer.polymorphism.ReportPrinter
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -24,7 +24,7 @@ class ReportViewModel @Inject constructor(
     private val apiService: ApiService,
     @Named("IO") private val ioDispatcher: CoroutineDispatcher,
     @Named("ApplicationScope") private val applicationScope: CoroutineScope,
-    private val printerConnectionManager: PrinterConnectionManager,
+    private val piPrintClient: PiPrintClient,
     private val reportPrinter: ReportPrinter,
 ) : ViewModel() {
 
@@ -99,14 +99,12 @@ class ReportViewModel @Inject constructor(
             return
         }
 
-        // Printer I/O - Application Scope에서 실행 (ViewModel 생명주기와 독립)
-        // PrinterConnectionManager가 내부 Mutex로 동기화 보장
         applicationScope.launch {
             val result = runCatching {
                 val dateParts = title.split(" ~ ")
                 val printerDTO = PrinterDTO(dateParts[0], dateParts[1], summary, details)
-                val printText = reportPrinter.getPrintingText(printerDTO)
-                printerConnectionManager.printAndDisconnect(printText)
+                val commands = reportPrinter.makeCommands(printerDTO)
+                piPrintClient.print(commands)
             }
             result
                 .onSuccess {
