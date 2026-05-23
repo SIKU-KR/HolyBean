@@ -84,7 +84,7 @@ fun SplashScreen(
                 Button(onClick = onRetry) { Text("다시 시도") }
             }
             // 데이터 성공 + 프린터 실패 → 경고 후 진입 허용
-            state.canEnter && state.printer == StepStatus.Failed -> {
+            state.data == StepStatus.Success && state.printer == StepStatus.Failed -> {
                 Text(
                     "프린터에 연결할 수 없습니다",
                     style = MaterialTheme.typography.titleMedium,
