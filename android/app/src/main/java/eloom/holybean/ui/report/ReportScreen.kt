@@ -15,7 +15,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import eloom.holybean.data.model.ReportDetailItem
 import eloom.holybean.ui.components.StatChip
-import eloom.holybean.ui.theme.Orange
+import eloom.holybean.ui.theme.OrangeOnContainer
 import java.util.Calendar
 
 @Composable
@@ -56,7 +56,7 @@ fun ReportRoute(onClose: () -> Unit, vm: ReportViewModel = hiltViewModel()) {
         }
         Text(state.reportTitle, style = MaterialTheme.typography.bodyMedium)
         Row(Modifier.padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            StatChip("총합", "%,d".format(state.reportData["총합"] ?: 0), Orange)
+            StatChip("총합", "%,d".format(state.reportData["총합"] ?: 0), OrangeOnContainer)
             StatChip("현금", "%,d".format(state.reportData["현금"] ?: 0))
             StatChip("계좌이체", "%,d".format(state.reportData["계좌이체"] ?: 0))
             StatChip("쿠폰", "%,d".format(state.reportData["쿠폰"] ?: 0))

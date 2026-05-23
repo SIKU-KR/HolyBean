@@ -73,21 +73,19 @@ fun DevToolsScreen(
             }
         }
         Spacer(Modifier.height(12.dp))
-        HealthRow(
-            label = "Pi 프린터 (/health)",
-            ok = state.printerOk,
-            value = state.printerLatencyMs?.let { "정상 · ${it}ms" } ?: "—",
-        )
+        HealthRow("Pi 프린터 (/health)", state.printerOk,
+            when (state.printerOk) {
+                true -> state.printerLatencyMs?.let { "정상 · ${it}ms" } ?: "정상"
+                false -> "응답 실패"
+                null -> "—"
+            })
         HealthRow(
             label = "네트워크 연결",
             ok = state.networkOk,
             value = state.networkInfo,
         )
-        HealthRow(
-            label = "Firestore",
-            ok = state.firestoreOk,
-            value = if (state.firestoreOk == true) "정상" else "응답 없음",
-        )
+        HealthRow("Firestore", state.firestoreOk,
+            when (state.firestoreOk) { true -> "정상"; false -> "응답 없음"; null -> "—" })
         Text(
             "프린터 서버 URL: ${state.printerUrl}",
             style = MaterialTheme.typography.bodyMedium,
