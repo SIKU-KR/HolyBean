@@ -3,10 +3,13 @@ package eloom.holybean.ui.orderlist
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import eloom.holybean.data.model.OrderItem
 import eloom.holybean.data.model.OrdersDetailItem
+import eloom.holybean.data.model.ReportDetailItem
+import eloom.holybean.data.model.SalesReport
 import eloom.holybean.data.repository.FirestoreRepository
 import eloom.holybean.printer.PiPrintClient
 import eloom.holybean.printer.network.PrintCommandDto
 import eloom.holybean.printer.polymorphism.OrdersPrinter
+import eloom.holybean.printer.polymorphism.ReportPrinter
 import io.mockk.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -34,34 +37,43 @@ class OrdersViewModelTest {
     private val testDispatcher = UnconfinedTestDispatcher()
     private lateinit var ordersPrinter: OrdersPrinter
     private lateinit var piPrintClient: PiPrintClient
+    private lateinit var reportPrinter: ReportPrinter
 
     private fun createViewModelWithPrinter(
         printer: OrdersPrinter = mockk(relaxed = true),
         client: PiPrintClient = mockk(relaxed = true),
+        report: ReportPrinter = mockk(relaxed = true),
     ): OrdersViewModel {
         coEvery { firestoreRepository.getOrdersOfDay() } returns arrayListOf()
+        coEvery { firestoreRepository.getReport(any(), any()) } returns
+            SalesReport(emptyList(), mapOf("총합" to 0))
         return OrdersViewModel(
             firestoreRepository,
             testDispatcher,
             CoroutineScope(SupervisorJob() + testDispatcher),
             client,
             printer,
+            report,
         )
     }
 
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
-        // Mock the initial loadOrdersOfDay call to prevent automatic execution
+        // Mock the initial loadOrdersOfDay / loadTodaySummary calls to prevent automatic execution
         coEvery { firestoreRepository.getOrdersOfDay() } returns arrayListOf()
+        coEvery { firestoreRepository.getReport(any(), any()) } returns
+            SalesReport(emptyList(), mapOf("총합" to 0))
         ordersPrinter = mockk(relaxed = true)
         piPrintClient = mockk(relaxed = true)
+        reportPrinter = mockk(relaxed = true)
         viewModel = OrdersViewModel(
             firestoreRepository,
             testDispatcher,
             CoroutineScope(SupervisorJob() + testDispatcher),
             piPrintClient,
             ordersPrinter,
+            reportPrinter,
         )
     }
 
@@ -395,6 +407,26 @@ class OrdersViewModelTest {
         val finalState = viewModel.uiState.first()
         assertTrue(finalState.deleteStatus is OrdersViewModel.DeleteStatus.Error)
         assertEquals("오류가 발생했습니다. 다시 시도해주세요.", (finalState.deleteStatus as OrdersViewModel.DeleteStatus.Error).message)
+    }
+
+    @Test
+    fun `loadTodaySummary populates totals`() = runTest {
+        coEvery { firestoreRepository.getReport(any(), any()) } returns
+            SalesReport(
+                menuSales = listOf(ReportDetailItem("아메리카노", 5, 17500)),
+                paymentSales = mapOf("총합" to 100000),
+            )
+        coEvery { firestoreRepository.getOrdersOfDay() } returns arrayListOf(
+            OrderItem(1, 5000, "현금", "")
+        )
+
+        viewModel.loadTodaySummary()
+        advanceUntilIdle()
+
+        val s = viewModel.uiState.value.todaySummary
+        assertEquals(100000, s.totalSales)
+        assertEquals(1, s.orderCount)
+        assertEquals(5, s.drinkCount)
     }
 
     @Test

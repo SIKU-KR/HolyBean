@@ -5,9 +5,11 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import eloom.holybean.data.model.OrderItem
 import eloom.holybean.data.model.OrdersDetailItem
+import eloom.holybean.data.model.PrinterDTO
 import eloom.holybean.data.repository.FirestoreRepository
 import eloom.holybean.printer.PiPrintClient
 import eloom.holybean.printer.polymorphism.OrdersPrinter
+import eloom.holybean.printer.polymorphism.ReportPrinter
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.BufferOverflow
@@ -25,6 +27,7 @@ class OrdersViewModel @Inject constructor(
     @Named("ApplicationScope") private val applicationScope: CoroutineScope,
     private val piPrintClient: PiPrintClient,
     private val ordersPrinter: OrdersPrinter,
+    private val reportPrinter: ReportPrinter,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(OrdersUiState())
@@ -43,7 +46,14 @@ class OrdersViewModel @Inject constructor(
         val selectedOrderTotal: Int = 0,
         val orderDetails: List<OrdersDetailItem> = emptyList(),
         val isLoading: Boolean = false,
-        val deleteStatus: DeleteStatus = DeleteStatus.Idle
+        val deleteStatus: DeleteStatus = DeleteStatus.Idle,
+        val todaySummary: TodaySummary = TodaySummary()
+    )
+
+    data class TodaySummary(
+        val totalSales: Int = 0,
+        val orderCount: Int = 0,
+        val drinkCount: Int = 0
     )
 
     sealed class OrdersUiEvent {
@@ -60,6 +70,7 @@ class OrdersViewModel @Inject constructor(
 
     init {
         loadOrdersOfDay()
+        loadTodaySummary()
     }
 
     fun getCurrentDate(): String {
@@ -164,6 +175,38 @@ class OrdersViewModel @Inject constructor(
             } catch (e: Exception) {
                 e.printStackTrace()
                 _uiState.update { it.copy(deleteStatus = DeleteStatus.Error("오류가 발생했습니다. 다시 시도해주세요.")) }
+            }
+        }
+    }
+
+    fun loadTodaySummary() {
+        viewModelScope.launch(ioDispatcher) {
+            runCatching {
+                val today = getCurrentDate()
+                val report = firestoreRepository.getReport(today, today)
+                val orders = firestoreRepository.getOrdersOfDay()
+                TodaySummary(
+                    totalSales = report.paymentSales["총합"] ?: 0,
+                    orderCount = orders.size,
+                    drinkCount = report.menuSales.filter { it.name != "쿠폰" }.sumOf { it.quantity },
+                )
+            }.onSuccess { summary ->
+                _uiState.update { it.copy(todaySummary = summary) }
+            }
+        }
+    }
+
+    fun printTodayReport() {
+        applicationScope.launch {
+            runCatching {
+                val today = getCurrentDate()
+                val report = firestoreRepository.getReport(today, today)
+                val dto = PrinterDTO(today, today, report.paymentSales, report.menuSales)
+                piPrintClient.print(reportPrinter.makeCommands(dto))
+            }.onFailure {
+                _uiEvent.tryEmit(OrdersUiEvent.ShowToast("보고서 출력 실패: ${it.message}"))
+            }.onSuccess {
+                _uiEvent.tryEmit(OrdersUiEvent.ShowToast("보고서 출력 완료"))
             }
         }
     }
