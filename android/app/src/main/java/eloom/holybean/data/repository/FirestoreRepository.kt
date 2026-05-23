@@ -236,4 +236,50 @@ class FirestoreRepository @Inject constructor(
             e.printStackTrace()
         }
     }
+
+    /** 주문 삭제: 정산분이면 reportRollups 감산, 미수면 openCredits 제거. lastOrderNum은 되돌리지 않음(번호 재사용 금지). */
+    suspend fun deleteOrder(date: String, num: Int): Boolean {
+        return try {
+            val orderRef = db.collection(FirestoreSchema.ORDERS)
+                .document(FirestoreSchema.orderId(date, num))
+            val snap = orderRef.get().await()
+            if (!snap.exists()) return false
+            val creditStatus = (snap.getLong("creditStatus") ?: 0L).toInt()
+
+            val batch = db.batch()
+            batch.delete(orderRef)
+            batch.update(
+                db.collection(FirestoreSchema.DAY_SUMMARIES).document(date),
+                FieldPath.of("orders", num.toString()), FieldValue.delete()
+            )
+            if (creditStatus == FirestoreSchema.CREDIT_SETTLED) {
+                @Suppress("UNCHECKED_CAST")
+                val items = (snap.get("items") as? List<Map<String, Any>>) ?: emptyList()
+                @Suppress("UNCHECKED_CAST")
+                val payments = (snap.get("payments") as? List<Map<String, Any>>) ?: emptyList()
+                val cartItems = items.map {
+                    eloom.holybean.data.model.CartItem(
+                        0, it["name"] as? String ?: "", (it["unitPrice"] as? Number)?.toInt() ?: 0,
+                        (it["quantity"] as? Number)?.toInt() ?: 0, (it["subtotal"] as? Number)?.toInt() ?: 0
+                    )
+                }
+                val paymentMethods = payments.map {
+                    eloom.holybean.data.model.PaymentMethod(
+                        it["method"] as? String ?: "", (it["amount"] as? Number)?.toInt() ?: 0
+                    )
+                }
+                applyRollupDelta(batch, date, OrderAggregation.rollupDelta(cartItems, paymentMethods), sign = -1)
+            } else {
+                batch.update(
+                    db.collection(FirestoreSchema.AGGREGATES).document(FirestoreSchema.OPEN_CREDITS_DOC),
+                    FieldPath.of("items", FirestoreSchema.creditKey(date, num)), FieldValue.delete()
+                )
+            }
+            batch.commit().await()
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
 }
