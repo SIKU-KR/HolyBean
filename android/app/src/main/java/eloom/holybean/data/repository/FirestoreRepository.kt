@@ -1,7 +1,11 @@
 package eloom.holybean.data.repository
 
+import com.google.firebase.firestore.FieldPath
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 import eloom.holybean.data.firestore.FirestoreSchema
+import eloom.holybean.data.firestore.OrderAggregation
 import eloom.holybean.data.firestore.ReportAggregation
 import eloom.holybean.data.firestore.ReportAggregation.DailyRollup
 import eloom.holybean.data.firestore.ReportAggregation.MenuSale
@@ -124,5 +128,68 @@ class FirestoreRepository @Inject constructor(
             e.printStackTrace()
             SalesReport(emptyList(), mapOf("총합" to 0))
         }
+    }
+
+    /** 핫패스: 로컬에 즉시 적용되고 동기화는 백그라운드(NFR-7). 서버 ack를 await하지 않는다. */
+    fun postOrder(data: Order) {
+        val batch = db.batch()
+        val orderRef = db.collection(FirestoreSchema.ORDERS)
+            .document(FirestoreSchema.orderId(data.orderDate, data.orderNum))
+        batch.set(orderRef, OrderAggregation.orderDoc(data) + mapOf("createdAt" to FieldValue.serverTimestamp()))
+
+        val dayRef = db.collection(FirestoreSchema.DAY_SUMMARIES).document(data.orderDate)
+        batch.set(
+            dayRef,
+            mapOf(
+                "lastOrderNum" to data.orderNum,
+                "orders" to mapOf(data.orderNum.toString() to OrderAggregation.daySummaryEntry(data))
+            ),
+            SetOptions.merge()
+        )
+
+        if (data.creditStatus == FirestoreSchema.CREDIT_SETTLED) {
+            applyRollupDelta(batch, data.orderDate, OrderAggregation.rollupDelta(data), sign = 1)
+        } else {
+            val creditsRef = db.collection(FirestoreSchema.AGGREGATES)
+                .document(FirestoreSchema.OPEN_CREDITS_DOC)
+            batch.set(
+                creditsRef,
+                mapOf("items" to mapOf(
+                    FirestoreSchema.creditKey(data.orderDate, data.orderNum) to mapOf(
+                        "customerName" to data.customerName,
+                        "totalAmount" to data.totalAmount,
+                        "orderNum" to data.orderNum,
+                        "orderDate" to data.orderDate
+                    )
+                )),
+                SetOptions.merge()
+            )
+        }
+        batch.commit()  // await 하지 않음 — 로컬 즉시 반영, 동기화는 SDK가 큐잉
+    }
+
+    private fun applyRollupDelta(
+        batch: com.google.firebase.firestore.WriteBatch,
+        date: String,
+        delta: OrderAggregation.RollupDelta,
+        sign: Int
+    ) {
+        val ref = db.collection(FirestoreSchema.REPORT_ROLLUPS).document(date)
+        val menu = delta.menuSales.mapValues { (_, v) ->
+            mapOf(
+                "quantity" to FieldValue.increment((v.quantity * sign).toLong()),
+                "sales" to FieldValue.increment((v.sales * sign).toLong())
+            )
+        }
+        val pay = delta.paymentSales.mapValues { (_, v) -> FieldValue.increment((v * sign).toLong()) }
+        batch.set(
+            ref,
+            mapOf(
+                "menuSales" to menu,
+                "paymentSales" to pay,
+                "total" to FieldValue.increment((delta.total * sign).toLong())
+            ),
+            SetOptions.merge()
+        )
     }
 }
