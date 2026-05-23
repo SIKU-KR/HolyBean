@@ -15,6 +15,12 @@ import javax.inject.Singleton
 class MenuRepository @Inject constructor(
     private val db: FirebaseFirestore
 ) {
+    @Volatile
+    private var cachedMenu: List<MenuItem>? = null
+
+    /** 스플래시에서 채운 메뉴 캐시. 없으면 null. */
+    fun getCachedMenu(): List<MenuItem>? = cachedMenu
+
     private fun menuDoc() = db.collection(FirestoreSchema.MENU).document(FirestoreSchema.MENU_CURRENT_DOC)
 
     private fun parse(raw: Any?): List<MenuItem> {
@@ -46,6 +52,7 @@ class MenuRepository @Inject constructor(
 
     suspend fun getMenuListSync(): List<MenuItem> =
         parse(menuDoc().get().await().get("items")).sortedBy { it.id }
+            .also { cachedMenu = it }
 
     private suspend fun writeAll(items: List<MenuItem>) {
         menuDoc().set(mapOf("items" to serialize(items), "updatedAt" to FieldValue.serverTimestamp())).await()
