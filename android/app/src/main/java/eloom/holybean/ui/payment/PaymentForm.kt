@@ -4,6 +4,8 @@ import eloom.holybean.data.model.CartItem
 import eloom.holybean.data.model.Order
 import eloom.holybean.data.model.PaymentMethod
 
+data class SplitLine(val label: String, val amount: Int)
+
 data class PaymentSelection(
     val cupOption: String,
     val firstMethod: String,
@@ -19,6 +21,18 @@ object PaymentForm {
     private fun needsOrderer(m: String?) = m == "계좌이체" || m == "외상"
 
     fun secondCandidates(first: String): List<String> = secondPool.filter { it != first }
+
+    /** 분할결제 ON 시 1번째(잔액)·2번째 수단의 금액 분배 라인. 입력이 유효하지 않으면 빈 리스트. */
+    fun splitBreakdown(first: String, second: String?, total: Int, secondAmountText: String): List<SplitLine> {
+        if (second == null) return emptyList()
+        val secondAmount = secondAmountText.toIntOrNull() ?: return emptyList()
+        val remainder = total - secondAmount
+        if (secondAmount <= 0 || remainder <= 0) return emptyList()
+        return listOf(
+            SplitLine("$first (잔액)", remainder),
+            SplitLine(second, secondAmount),
+        )
+    }
 
     fun build(sel: PaymentSelection, cart: List<CartItem>, total: Int, orderId: Int, date: String): Result<Order> {
         val first = sel.firstMethod

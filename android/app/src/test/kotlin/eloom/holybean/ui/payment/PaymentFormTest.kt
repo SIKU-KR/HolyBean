@@ -54,4 +54,20 @@ class PaymentFormTest {
         assertEquals(listOf("계좌이체", "쿠폰", "무료쿠폰"), PaymentForm.secondCandidates("현금"))
         assertEquals(listOf("현금", "쿠폰", "무료쿠폰"), PaymentForm.secondCandidates("계좌이체"))
     }
+
+    @Test fun `split breakdown returns first-remainder and second-amount lines`() {
+        val lines = PaymentForm.splitBreakdown(first = "현금", second = "계좌이체", total = 15000, secondAmountText = "5000")
+        assertEquals(2, lines.size)
+        assertEquals("현금 (잔액)", lines[0].label)
+        assertEquals(10000, lines[0].amount)
+        assertEquals("계좌이체", lines[1].label)
+        assertEquals(5000, lines[1].amount)
+    }
+
+    @Test fun `split breakdown empty when amount invalid or non-positive remainder`() {
+        assertTrue(PaymentForm.splitBreakdown("현금", "계좌이체", 15000, "").isEmpty())
+        assertTrue(PaymentForm.splitBreakdown("현금", "계좌이체", 15000, "0").isEmpty())
+        assertTrue(PaymentForm.splitBreakdown("현금", "계좌이체", 15000, "15000").isEmpty())
+        assertTrue(PaymentForm.splitBreakdown("현금", null, 15000, "5000").isEmpty())
+    }
 }
