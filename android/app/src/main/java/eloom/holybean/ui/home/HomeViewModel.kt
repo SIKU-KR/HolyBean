@@ -57,6 +57,8 @@ class HomeViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(UiState())
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
 
+    // replay = 0: 내비게이션/토스트 같은 일회성 이벤트이므로 새 구독자(재구성, STOP→START 등)에게
+    // 다시 재생되면 안 된다. 재생될 경우 중복 내비게이션이 발생한다.
     private val _uiEvent = MutableSharedFlow<UiEvent>(
         replay = 0,
         extraBufferCapacity = 16,
@@ -184,8 +186,9 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch(ioDispatcher) {
             try {
                 firestoreRepository.postOrder(data)
-                _uiState.value = _uiState.value.copy(basketItems = emptyList(), totalPrice = 0)
-                refreshOrderNumber()           // 다음 주문번호 채번
+                // 다음 주문번호를 동기적으로 채번하여 NavigateHome 전에 상태가 확정되도록 한다
+                val nextOrderId = firestoreRepository.getOrderNumber()
+                _uiState.value = _uiState.value.copy(basketItems = emptyList(), totalPrice = 0, orderId = nextOrderId)
                 _uiEvent.emit(UiEvent.NavigateHome)
             } catch (e: Exception) {
                 e.printStackTrace()

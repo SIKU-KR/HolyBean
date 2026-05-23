@@ -223,9 +223,6 @@ class HomeViewModelTest {
 
     @Test
     fun `addCoupon adds a positive cart line and increases total`() = runTest(testDispatcher) {
-        // Given
-        coEvery { menuRepository.getMenuListSync() } returns emptyList()
-
         // When
         homeViewModel.addCoupon(3000)
         advanceUntilIdle()
