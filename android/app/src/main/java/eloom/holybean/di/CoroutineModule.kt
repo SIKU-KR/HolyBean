@@ -1,4 +1,4 @@
-package eloom.holybean.network
+package eloom.holybean.di
 
 import dagger.Module
 import dagger.Provides
@@ -13,27 +13,15 @@ import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
-object NetworkModule {
+object CoroutineModule {
 
-    @Provides
-    @Singleton
-    fun provideApiService(): ApiService =
-        RetrofitClient.retrofit.create(ApiService::class.java)
-
-    @Provides
-    @Singleton
-    @Named("IO")
+    @Provides @Singleton @Named("IO")
     fun provideIODispatcher(): CoroutineDispatcher = Dispatchers.IO
 
-    @Provides
-    @Singleton
-    @Named("Printer")
-    fun providePrinterDispatcher(): CoroutineDispatcher =
-        Dispatchers.IO.limitedParallelism(2)
+    @Provides @Singleton @Named("Printer")
+    fun providePrinterDispatcher(): CoroutineDispatcher = Dispatchers.IO.limitedParallelism(2)
 
-    @Provides
-    @Singleton
-    @Named("ApplicationScope")
+    @Provides @Singleton @Named("ApplicationScope")
     fun provideApplicationScope(
         @Named("Printer") printerDispatcher: CoroutineDispatcher
     ): CoroutineScope = CoroutineScope(SupervisorJob() + printerDispatcher)
