@@ -78,15 +78,16 @@ class CreditsViewModelTest {
     @Test
     fun `loadCredits should emit toast event on repository failure`() = runTest {
         // Given
-        val testViewModel = CreditsViewModel(firestoreRepository, testDispatcher)
+        val dispatcher = UnconfinedTestDispatcher(testScheduler)
+        val testViewModel = CreditsViewModel(firestoreRepository, dispatcher)
         val errorMessage = "Network error"
         val exception = RuntimeException(errorMessage)
 
         coEvery { firestoreRepository.getCreditsList() } throws exception
 
-        // Collect events before triggering the action
+        // Collect events before triggering the action (replay = 0 일회성 이벤트)
         val events = mutableListOf<CreditsViewModel.CreditsUiEvent>()
-        val collectJob = launch {
+        val collectJob = launch(dispatcher) {
             testViewModel.uiEvent.collect { events.add(it) }
         }
 
@@ -148,11 +149,12 @@ class CreditsViewModelTest {
     @Test
     fun `fetchOrderDetail should emit toast event when no order selected`() = runTest {
         // Given - no order selected (default state)
-        val testViewModel = CreditsViewModel(firestoreRepository, testDispatcher)
+        val dispatcher = UnconfinedTestDispatcher(testScheduler)
+        val testViewModel = CreditsViewModel(firestoreRepository, dispatcher)
 
-        // Collect events before triggering the action
+        // Collect events before triggering the action (replay = 0 일회성 이벤트)
         val events = mutableListOf<CreditsViewModel.CreditsUiEvent>()
-        val collectJob = launch {
+        val collectJob = launch(dispatcher) {
             testViewModel.uiEvent.collect { events.add(it) }
         }
 
@@ -173,16 +175,17 @@ class CreditsViewModelTest {
     @Test
     fun `fetchOrderDetail should emit toast event when order list is empty`() = runTest {
         // Given
-        val testViewModel = CreditsViewModel(firestoreRepository, testDispatcher)
+        val dispatcher = UnconfinedTestDispatcher(testScheduler)
+        val testViewModel = CreditsViewModel(firestoreRepository, dispatcher)
         val orderNumber = 123
         val date = "2024-01-01"
 
         testViewModel.selectOrder(orderNumber, 5000, date)
         coEvery { firestoreRepository.getOrderDetail(date, orderNumber) } returns arrayListOf()
 
-        // Collect events before triggering the action
+        // Collect events before triggering the action (replay = 0 일회성 이벤트)
         val events = mutableListOf<CreditsViewModel.CreditsUiEvent>()
-        val collectJob = launch {
+        val collectJob = launch(dispatcher) {
             testViewModel.uiEvent.collect { events.add(it) }
         }
 
@@ -212,9 +215,9 @@ class CreditsViewModelTest {
         testViewModel.selectOrder(orderNumber, 5000, date)
         coEvery { firestoreRepository.getOrderDetail(any(), any()) } throws exception
 
-        // Collect events before triggering the action
+        // Collect events before triggering the action (replay = 0 일회성 이벤트)
         val events = mutableListOf<CreditsViewModel.CreditsUiEvent>()
-        val collectJob = launch {
+        val collectJob = launch(testDispatcher) {
             testViewModel.uiEvent.collect { events.add(it) }
         }
 
@@ -236,11 +239,12 @@ class CreditsViewModelTest {
     @Test
     fun `handleDeleteButton should emit toast event when no order selected`() = runTest {
         // Given - no order selected (default state)
-        val testViewModel = CreditsViewModel(firestoreRepository, testDispatcher)
+        val dispatcher = UnconfinedTestDispatcher(testScheduler)
+        val testViewModel = CreditsViewModel(firestoreRepository, dispatcher)
 
-        // Collect events before triggering the action
+        // Collect events before triggering the action (replay = 0 일회성 이벤트)
         val events = mutableListOf<CreditsViewModel.CreditsUiEvent>()
-        val collectJob = launch {
+        val collectJob = launch(dispatcher) {
             testViewModel.uiEvent.collect { events.add(it) }
         }
 
@@ -301,14 +305,15 @@ class CreditsViewModelTest {
         val date = "2024-01-01"
         val errorMessage = "Network error"
         val exception = RuntimeException(errorMessage)
-        val testViewModel = CreditsViewModel(firestoreRepository, testDispatcher)
+        val dispatcher = UnconfinedTestDispatcher(testScheduler)
+        val testViewModel = CreditsViewModel(firestoreRepository, dispatcher)
 
         testViewModel.selectOrder(orderNumber, 5000, date)
         coEvery { firestoreRepository.setCreditOrderPaid(any(), any()) } throws exception
 
-        // Collect events before triggering the action
+        // Collect events before triggering the action (replay = 0 일회성 이벤트)
         val events = mutableListOf<CreditsViewModel.CreditsUiEvent>()
-        val collectJob = launch {
+        val collectJob = launch(dispatcher) {
             testViewModel.uiEvent.collect { events.add(it) }
         }
 

@@ -29,8 +29,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 
 @ExperimentalCoroutinesApi
 class HomeViewModelTest {
@@ -64,69 +62,6 @@ class HomeViewModelTest {
     @After
     fun tearDown() {
         clearAllMocks()
-    }
-
-    @Test
-    fun `getCurrentDate should return current date in yyyy-MM-dd format`() {
-        // Given
-        val expectedDate = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
-
-        // When
-        val actualDate = homeViewModel.getCurrentDate()
-
-        // Then
-        assertEquals(expectedDate, actualDate)
-    }
-
-    @Test
-    fun `getTotal should calculate correct total for empty basket`() {
-        // Given
-        val emptyBasket = arrayListOf<CartItem>()
-
-        // When
-        val total = homeViewModel.getTotal(emptyBasket)
-
-        // Then
-        assertEquals(0, total)
-    }
-
-    @Test
-    fun `getTotal should calculate correct total for single item`() {
-        // Given
-        val cartItem = CartItem(
-            id = 1,
-            name = "아메리카노",
-            price = 4000,
-            count = 2,
-            total = 0 // 초기값
-        )
-        val basket = arrayListOf(cartItem)
-
-        // When
-        val total = homeViewModel.getTotal(basket)
-
-        // Then
-        assertEquals(8000, total)
-        assertEquals(8000, cartItem.total) // CartItem의 total도 업데이트되었는지 확인
-    }
-
-    @Test
-    fun `getTotal should calculate correct total for multiple items`() {
-        // Given
-        val cartItem1 = CartItem(1, "아메리카노", 4000, 2, 0)
-        val cartItem2 = CartItem(2, "라떼", 4500, 1, 0)
-        val cartItem3 = CartItem(3, "케이크", 6000, 3, 0)
-        val basket = arrayListOf(cartItem1, cartItem2, cartItem3)
-
-        // When
-        val total = homeViewModel.getTotal(basket)
-
-        // Then
-        val expectedTotal = (4000 * 2) + (4500 * 1) + (6000 * 3) // 8000 + 4500 + 18000 = 30500
-        assertEquals(expectedTotal, total)
-        assertEquals(8000, cartItem1.total)
-        assertEquals(4500, cartItem2.total)
-        assertEquals(18000, cartItem3.total)
     }
 
     @Test

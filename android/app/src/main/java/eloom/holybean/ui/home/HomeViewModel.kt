@@ -80,16 +80,6 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    fun getCurrentDate(): String {
-        val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
-        return LocalDate.now().format(formatter)
-    }
-
-    fun getTotal(basketList: ArrayList<CartItem>): Int {
-        basketList.forEach { it.total = it.count * it.price }
-        return basketList.sumOf { it.total }
-    }
-
     fun refreshOrderNumber() {
         viewModelScope.launch(ioDispatcher) {
             val id = firestoreRepository.getOrderNumber()

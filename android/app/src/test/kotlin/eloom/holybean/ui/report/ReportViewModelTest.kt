@@ -102,7 +102,7 @@ class ReportViewModelTest {
 
         // Collect events before triggering the action
         val events = mutableListOf<ReportViewModel.ReportUiEvent>()
-        val collectJob = launch {
+        val collectJob = launch(testDispatcher) {
             viewModel.uiEvent.collect { events.add(it) }
         }
 
@@ -131,7 +131,7 @@ class ReportViewModelTest {
 
         // Collect events before triggering the action
         val events = mutableListOf<ReportViewModel.ReportUiEvent>()
-        val collectJob = launch {
+        val collectJob = launch(testDispatcher) {
             viewModel.uiEvent.collect { events.add(it) }
         }
 
@@ -164,7 +164,7 @@ class ReportViewModelTest {
 
         // Collect events before triggering the action
         val events = mutableListOf<ReportViewModel.ReportUiEvent>()
-        val collectJob = launch {
+        val collectJob = launch(testDispatcher) {
             viewModel.uiEvent.collect { events.add(it) }
         }
 
@@ -189,7 +189,7 @@ class ReportViewModelTest {
 
         // Collect events before triggering the action
         val events = mutableListOf<ReportViewModel.ReportUiEvent>()
-        val collectJob = launch {
+        val collectJob = launch(testDispatcher) {
             viewModel.uiEvent.collect { events.add(it) }
         }
 

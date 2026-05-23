@@ -43,8 +43,10 @@ class ReportViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(ReportUiState())
     val uiState: StateFlow<ReportUiState> = _uiState.asStateFlow()
 
+    // replay = 0: 토스트/에러 같은 일회성 이벤트이므로 새 구독자(재구성 등)에게
+    // 다시 재생되면 안 된다. 재생될 경우 오래된 토스트가 다시 표시된다.
     private val _uiEvent = MutableSharedFlow<ReportUiEvent>(
-        replay = 1,
+        replay = 0,
         extraBufferCapacity = 16,
         onBufferOverflow = BufferOverflow.DROP_OLDEST
     )

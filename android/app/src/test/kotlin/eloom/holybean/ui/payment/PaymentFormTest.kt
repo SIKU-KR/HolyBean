@@ -45,6 +45,11 @@ class PaymentFormTest {
         assertTrue(PaymentForm.build(sel, cart, 7000, 5, "2026-05-23").isFailure)
     }
 
+    @Test fun `split second amount must be positive`() {
+        val sel = base().copy(splitEnabled = true, secondMethod = "쿠폰", secondAmountText = "0")
+        assertTrue(PaymentForm.build(sel, cart, 7000, 5, "2026-05-23").isFailure)
+    }
+
     @Test fun `second method candidates exclude chosen first`() {
         assertEquals(listOf("계좌이체", "쿠폰", "무료쿠폰"), PaymentForm.secondCandidates("현금"))
         assertEquals(listOf("현금", "쿠폰", "무료쿠폰"), PaymentForm.secondCandidates("계좌이체"))

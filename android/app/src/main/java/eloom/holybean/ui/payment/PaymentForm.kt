@@ -33,6 +33,7 @@ object PaymentForm {
         val second = sel.secondMethod ?: return Result.failure(IllegalStateException("2번째 수단을 선택하세요"))
         val secondAmount = sel.secondAmountText.toIntOrNull()
             ?: return Result.failure(IllegalStateException("올바른 금액이 아닙니다"))
+        if (secondAmount <= 0) return Result.failure(IllegalStateException("올바른 금액이 아닙니다"))
         val remainder = total - secondAmount
         if (remainder <= 0) return Result.failure(IllegalStateException("분할 금액을 확인하세요"))
         if ((needsOrderer(first) || needsOrderer(second)) && sel.ordererName.isBlank())
