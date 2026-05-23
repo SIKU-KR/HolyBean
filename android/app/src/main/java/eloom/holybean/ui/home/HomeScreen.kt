@@ -1,6 +1,7 @@
 package eloom.holybean.ui.home
 
 import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -17,6 +18,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -30,9 +32,11 @@ import eloom.holybean.ui.components.BasketRow
 import eloom.holybean.ui.components.MenuTile
 import eloom.holybean.ui.components.TileStyle
 import eloom.holybean.ui.theme.Dimens
-import eloom.holybean.ui.theme.DividerGray
 import eloom.holybean.ui.theme.HolyBeanTheme
+import eloom.holybean.ui.theme.OnSurface
+import eloom.holybean.ui.theme.OnSurfaceMuted
 import eloom.holybean.ui.theme.Orange
+import eloom.holybean.ui.theme.OrangeOnContainer
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -143,7 +147,21 @@ private fun CategoryChips(categories: ImmutableList<String>, selected: Int, onSe
         horizontalArrangement = Arrangement.spacedBy(5.dp),
     ) {
         itemsIndexed(categories) { index, name ->
-            FilterChip(selected = index == selected, onClick = { onSelect(index) }, label = { Text(name) })
+            FilterChip(
+                selected = index == selected,
+                onClick = { onSelect(index) },
+                label = { Text(name) },
+                shape = RoundedCornerShape(14.dp),
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = Orange,
+                    selectedLabelColor = OnSurface,
+                ),
+                border = FilterChipDefaults.filterChipBorder(
+                    enabled = true,
+                    selected = index == selected,
+                    selectedBorderColor = Orange,
+                ),
+            )
         }
     }
 }
@@ -153,28 +171,42 @@ private fun BasketPane(
     orderId: Int, basket: ImmutableList<CartItem>, total: Int,
     onItemClick: (Int) -> Unit, onHistory: () -> Unit, onCheckout: () -> Unit, modifier: Modifier,
 ) {
-    Surface(modifier, shape = RoundedCornerShape(Dimens.paneRadius), color = MaterialTheme.colorScheme.surface) {
+    Surface(modifier, shape = RoundedCornerShape(Dimens.paneRadius),
+        color = MaterialTheme.colorScheme.surface, shadowElevation = Dimens.paneElevation) {
         Column(Modifier.padding(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("${orderId}번 주문", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-                OutlinedButton(onClick = onHistory) { Text("주문기록") }
+                OutlinedButton(
+                    onClick = onHistory,
+                    shape = RoundedCornerShape(Dimens.radiusButton),
+                    border = BorderStroke(2.dp, Orange),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Orange),
+                ) { Text("주문기록", fontWeight = FontWeight.Bold) }
             }
-            LazyColumn(Modifier.weight(1f)) {
-                // 쿠폰은 항상 id=999 라 key=it.id 면 중복 → 인덱스 키 사용.
-                itemsIndexed(basket, key = { index, _ -> index }) { _, item ->
-                    BasketRow(item.name, item.count, item.count * item.price) { onItemClick(item.id) }
-                    HorizontalDivider(color = DividerGray)
+            if (basket.isEmpty()) {
+                Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    Text("담긴 상품이 없습니다", style = MaterialTheme.typography.bodyMedium, color = OnSurfaceMuted)
+                }
+            } else {
+                LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Dimens.spaceXs)) {
+                    // 쿠폰은 항상 id=999 라 key=it.id 면 중복 → 인덱스 키 사용.
+                    itemsIndexed(basket, key = { index, _ -> index }) { _, item ->
+                        BasketRow(item.name, item.count, item.count * item.price, isCoupon = item.id == 999) {
+                            onItemClick(item.id)
+                        }
+                    }
                 }
             }
             Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalArrangement = Arrangement.End) {
                 Text("합계 ", style = MaterialTheme.typography.titleMedium)
-                Text("%,d원".format(total), style = MaterialTheme.typography.titleMedium, color = Orange)
+                Text("%,d원".format(total), style = MaterialTheme.typography.titleMedium, color = OrangeOnContainer)
             }
             Button(
                 onClick = onCheckout, enabled = basket.isNotEmpty(),
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().height(Dimens.primaryTouchTarget),
+                shape = RoundedCornerShape(Dimens.radiusButton),
                 colors = ButtonDefaults.buttonColors(containerColor = Orange),
-            ) { Text("결제 →") }
+            ) { Text("결제 →", fontWeight = FontWeight.Bold) }
         }
     }
 }
