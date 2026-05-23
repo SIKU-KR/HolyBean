@@ -14,6 +14,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -30,6 +31,7 @@ import eloom.holybean.ui.theme.DividerGray
 import eloom.holybean.ui.theme.HolyBeanTheme
 import eloom.holybean.ui.theme.OnSurfaceMuted
 import eloom.holybean.ui.theme.Orange
+import eloom.holybean.ui.theme.OrangeOnContainer
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -94,29 +96,40 @@ fun PaymentScreen(
     ) {
         Row(Modifier.fillMaxWidth().padding(bottom = 10.dp), verticalAlignment = Alignment.CenterVertically) {
             Text("${orderId}번 주문 · 결제", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-            OutlinedButton(onClick = onCancel) { Text("✕ 취소") }
+            OutlinedButton(
+                onClick = onCancel,
+                shape = RoundedCornerShape(Dimens.radiusButton),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = OnSurfaceMuted),
+            ) { Text("✕ 취소") }
         }
         Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(Dimens.gap)) {
             Surface(
                 Modifier.fillMaxWidth(0.38f).fillMaxHeight(), shape = RoundedCornerShape(Dimens.paneRadius),
-                color = MaterialTheme.colorScheme.surface
+                color = MaterialTheme.colorScheme.surface, shadowElevation = Dimens.paneElevation
             ) {
                 Column(Modifier.padding(12.dp)) {
                     Text("주문 요약", style = MaterialTheme.typography.labelSmall, color = OnSurfaceMuted)
-                    LazyColumn(Modifier.weight(1f)) {
-                        itemsIndexed(items, key = { index, _ -> index }) { _, it ->
-                            BasketRow(it.name, it.count, it.count * it.price) {}
+                    if (items.isEmpty()) {
+                        Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                            Text("담긴 상품이 없습니다", style = MaterialTheme.typography.bodyMedium, color = OnSurfaceMuted)
+                        }
+                    } else {
+                        LazyColumn(Modifier.weight(1f)) {
+                            itemsIndexed(items, key = { index, _ -> index }) { _, it ->
+                                BasketRow(it.name, it.count, it.count * it.price, isCoupon = it.id == 999) {}
+                            }
                         }
                     }
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    HorizontalDivider(color = DividerGray)
+                    Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text("합계", style = MaterialTheme.typography.titleMedium)
-                        Text("%,d원".format(total), style = MaterialTheme.typography.titleMedium, color = Orange)
+                        Text("%,d원".format(total), style = MaterialTheme.typography.titleMedium, color = OrangeOnContainer)
                     }
                 }
             }
             Surface(
                 Modifier.weight(1f).fillMaxHeight(), shape = RoundedCornerShape(Dimens.paneRadius),
-                color = MaterialTheme.colorScheme.surface
+                color = MaterialTheme.colorScheme.surface, shadowElevation = Dimens.paneElevation
             ) {
                 Column {
                     Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(12.dp)) {
@@ -160,9 +173,10 @@ fun PaymentScreen(
                     HorizontalDivider(color = DividerGray)
                     Button(
                         onClick = { onConfirm(PaymentSelection(cup, first, orderer, split, second, secondAmt)) },
-                        modifier = Modifier.fillMaxWidth().padding(12.dp),
+                        modifier = Modifier.fillMaxWidth().height(Dimens.primaryTouchTarget).padding(12.dp),
+                        shape = RoundedCornerShape(Dimens.radiusButton),
                         colors = ButtonDefaults.buttonColors(containerColor = Orange),
-                    ) { Text("결제 완료") }
+                    ) { Text("결제 완료", fontWeight = FontWeight.Bold) }
                 }
             }
         }
