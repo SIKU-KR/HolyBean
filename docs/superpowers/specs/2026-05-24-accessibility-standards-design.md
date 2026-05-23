@@ -23,7 +23,7 @@ Material Design / Android Accessibility 가이드의 정량 기준(터치 타깃
 |---|---|---|
 | 터치 타깃 (주요 액션) | **≥ 56dp** | POS 빠른 연속 탭 최적화 |
 | 터치 타깃 (보조 요소) | **≥ 48dp** | Material 최소 |
-| 최소 폰트 | **≥ 12sp** (본문 14~16sp 권장) | Material |
+| 최소 폰트 | **≥ 14sp** (가이드 최소 12sp보다 상향, 태블릿 POS 가독성) | Material |
 | 본문 명도 대비 | **≥ 4.5:1** | WCAG AA |
 | 큰/볼드 텍스트(18pt+) 대비 | **≥ 3:1** | WCAG AA |
 | 비텍스트(아이콘·상태 점) 대비 | **≥ 3:1** | WCAG AA (non-text) |
@@ -50,8 +50,19 @@ WCAG 상대 휘도 공식으로 계산한 값. 변경의 출발점이다.
 
 ### 1. 테마 토큰 (중앙화)
 
-**`ui/theme/Type.kt`**
-- `labelSmall` `11.sp → 12.sp`. (나머지 13~22sp는 기준 충족, 변경 없음)
+**`ui/theme/Type.kt`** — 14sp를 하한으로 두고 캡션·본문 위계가 무너지지 않도록
+스케일을 한 단계씩 상향한다.
+
+| 토큰 | 현재 | 변경 | 용도 |
+|---|---|---|---|
+| `labelSmall` | 11sp | **14sp** | 캡션·부가 라벨 (하한) |
+| `bodyMedium` | 13sp | **15sp** | 본문 |
+| `bodyLarge` | 15sp | **16sp** | 강조 본문 |
+| `titleMedium` | 16sp | **18sp** | 소제목 |
+| `titleLarge` | 22sp | 22sp | 대제목 (변경 없음) |
+
+`labelSmall`(캡션)과 `bodyMedium`(본문)이 같은 크기로 수렴하지 않도록 14/15로
+한 단계 간격을 유지한다.
 
 **`ui/theme/Color.kt`**
 - `OnSurfaceMuted` `#888888 → #767676` (흰 배경 본문 4.5:1 통과).
@@ -118,8 +129,9 @@ WCAG 상대 휘도 공식으로 계산한 값. 변경의 출발점이다.
 
 ## 완료 기준
 
-- 6개 토큰 변경(labelSmall, OnSurfaceMuted, onPrimary, 상태 점 3색 승격,
-  minTouchTarget, primaryTouchTarget) 반영.
+- 토큰 변경 반영: 타이포 스케일 4개(labelSmall 14 / bodyMedium 15 / bodyLarge 16
+  / titleMedium 18), OnSurfaceMuted #767676, onPrimary #222222, 상태 점 3색 승격,
+  minTouchTarget 48dp / primaryTouchTarget 56dp.
 - fontScale 1.0 고정 적용.
 - 감사 체크리스트 3항목을 전 화면에 적용, 발견된 위반 수정.
 - 접근성 표준 문서 작성.
