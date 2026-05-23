@@ -1,0 +1,31 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+
+    function validOrder(d) {
+      return d.keys().hasAll(['orderDate','orderNum','totalAmount','customerName','creditStatus','items','payments'])
+        && d.orderDate is string
+        && d.orderNum is int
+        && d.totalAmount is int
+        && d.customerName is string
+        && d.creditStatus is int
+        && d.items is list
+        && d.payments is list;
+    }
+
+    match /orders/{orderId} {
+      allow read: if signedIn();
+      allow write: if signedIn() && validOrder(request.resource.data);
+      allow delete: if signedIn();
+    }
+
+    match /daySummaries/{date}   { allow read, write: if signedIn(); }
+    match /reportRollups/{date}  { allow read, write: if signedIn(); }
+    match /aggregates/{docId}    { allow read, write: if signedIn(); }
+    match /menu/{docId}          { allow read, write: if signedIn(); }
+
+    match /{document=**} { allow read, write: if false; }
+  }
+}
