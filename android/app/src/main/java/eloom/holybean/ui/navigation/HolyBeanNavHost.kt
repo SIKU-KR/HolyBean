@@ -14,6 +14,7 @@ import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import eloom.holybean.ui.home.HomeRoute
 import eloom.holybean.ui.home.HomeViewModel
+import eloom.holybean.ui.startup.SplashRoute
 
 @Composable
 fun HolyBeanNavHost(navController: NavHostController = rememberNavController()) {
@@ -27,7 +28,16 @@ fun HolyBeanNavHost(navController: NavHostController = rememberNavController()) 
             onDevTools = { showSettings = false; navController.navigate(DevToolsDest) },
         )
     }
-    NavHost(navController = navController, startDestination = OrderFlow) {
+    NavHost(navController = navController, startDestination = SplashDest) {
+        composable<SplashDest> {
+            SplashRoute(
+                onNavigateToHome = {
+                    navController.navigate(OrderFlow) {
+                        popUpTo(SplashDest) { inclusive = true }
+                    }
+                },
+            )
+        }
         navigation<OrderFlow>(startDestination = HomeDest) {
             composable<HomeDest> { entry ->
                 HomeRoute(
