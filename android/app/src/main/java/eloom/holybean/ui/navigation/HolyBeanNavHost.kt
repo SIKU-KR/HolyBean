@@ -1,7 +1,10 @@
 package eloom.holybean.ui.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavHostController
@@ -14,6 +17,16 @@ import eloom.holybean.ui.home.HomeViewModel
 
 @Composable
 fun HolyBeanNavHost(navController: NavHostController = rememberNavController()) {
+    var showSettings by remember { mutableStateOf(false) }
+    if (showSettings) {
+        eloom.holybean.ui.settings.SettingsSheet(
+            onDismiss = { showSettings = false },
+            onMenuMgmt = { showSettings = false; navController.navigate(MenuMgmtDest) },
+            onCredits = { showSettings = false; navController.navigate(CreditsDest) },
+            onReport = { showSettings = false; navController.navigate(ReportDest) },
+            onDevTools = { showSettings = false; navController.navigate(DevToolsDest) },
+        )
+    }
     NavHost(navController = navController, startDestination = OrderFlow) {
         navigation<OrderFlow>(startDestination = HomeDest) {
             composable<HomeDest> { entry ->
@@ -21,7 +34,7 @@ fun HolyBeanNavHost(navController: NavHostController = rememberNavController()) 
                     sharedViewModel = entry.sharedOrderViewModel(navController),
                     onNavigateToPayment = { navController.navigate(PaymentDest) },
                     onNavigateToOrders = { navController.navigate(OrdersDest) },
-                    onNavigateToSettings = { /* Task 15: 설정 시트 */ },
+                    onNavigateToSettings = { showSettings = true },
                 )
             }
             composable<PaymentDest> { entry ->
