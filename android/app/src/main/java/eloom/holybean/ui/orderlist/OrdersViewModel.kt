@@ -192,6 +192,8 @@ class OrdersViewModel @Inject constructor(
                 )
             }.onSuccess { summary ->
                 _uiState.update { it.copy(todaySummary = summary) }
+            }.onFailure {
+                _uiEvent.tryEmit(OrdersUiEvent.ShowToast("매출 요약을 불러오지 못했습니다: ${it.message}"))
             }
         }
     }

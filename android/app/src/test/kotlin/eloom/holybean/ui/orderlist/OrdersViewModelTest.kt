@@ -430,6 +430,27 @@ class OrdersViewModelTest {
     }
 
     @Test
+    fun `loadTodaySummary excludes 쿠폰 from drinkCount`() = runTest {
+        coEvery { firestoreRepository.getReport(any(), any()) } returns
+            SalesReport(
+                menuSales = listOf(
+                    ReportDetailItem("아메리카노", 5, 17500),
+                    ReportDetailItem("쿠폰", 3, 9000),
+                ),
+                paymentSales = mapOf("총합" to 100000),
+            )
+        coEvery { firestoreRepository.getOrdersOfDay() } returns arrayListOf(
+            OrderItem(1, 5000, "현금", "")
+        )
+
+        viewModel.loadTodaySummary()
+        advanceUntilIdle()
+
+        val s = viewModel.uiState.value.todaySummary
+        assertEquals(5, s.drinkCount)
+    }
+
+    @Test
     fun `resetDeleteStatus should set deleteStatus to Idle`() = runTest {
         // When
         viewModel.resetDeleteStatus()
