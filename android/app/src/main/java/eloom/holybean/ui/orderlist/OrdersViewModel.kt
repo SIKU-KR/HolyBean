@@ -33,8 +33,11 @@ class OrdersViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(OrdersUiState())
     val uiState: StateFlow<OrdersUiState> = _uiState.asStateFlow()
 
+    // One-shot events (ShowToast/RefreshOrders) must not replay to new subscribers
+    // (e.g. screen re-entry would re-fire a stale toast). replay = 0; tryEmit still
+    // buffers via extraBufferCapacity while the screen is actively collecting.
     private val _uiEvent = MutableSharedFlow<OrdersUiEvent>(
-        replay = 1,
+        replay = 0,
         extraBufferCapacity = 16,
         onBufferOverflow = BufferOverflow.DROP_OLDEST
     )
@@ -95,6 +98,15 @@ class OrdersViewModel @Inject constructor(
                 if (ordersList.isNotEmpty()) {
                     val firstOrder = ordersList.first()
                     selectOrder(firstOrder.orderId, firstOrder.totalAmount)
+                } else {
+                    // No orders (e.g. last order deleted): clear stale selection/detail
+                    _uiState.update {
+                        it.copy(
+                            selectedOrderNumber = 0,
+                            selectedOrderTotal = 0,
+                            orderDetails = emptyList()
+                        )
+                    }
                 }
             } catch (e: Exception) {
                 _uiState.update { it.copy(isLoading = false) }

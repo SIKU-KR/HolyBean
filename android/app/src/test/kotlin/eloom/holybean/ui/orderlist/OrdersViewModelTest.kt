@@ -176,7 +176,9 @@ class OrdersViewModelTest {
 
         // Collect events before triggering the action
         val events = mutableListOf<OrdersViewModel.OrdersUiEvent>()
-        val collectJob = launch {
+        // Subscribe eagerly so the collector is registered before the action emits
+        // (replay = 0: late subscribers do not receive buffered events).
+        val collectJob = launch(UnconfinedTestDispatcher(testScheduler)) {
             testViewModel.uiEvent.collect { events.add(it) }
         }
 
@@ -207,7 +209,9 @@ class OrdersViewModelTest {
 
         // Collect events before triggering the action
         val events = mutableListOf<OrdersViewModel.OrdersUiEvent>()
-        val collectJob = launch {
+        // Subscribe eagerly so the collector is registered before the action emits
+        // (replay = 0: late subscribers do not receive buffered events).
+        val collectJob = launch(UnconfinedTestDispatcher(testScheduler)) {
             testViewModel.uiEvent.collect { events.add(it) }
         }
 
@@ -254,7 +258,9 @@ class OrdersViewModelTest {
 
         // Collect events before triggering the action
         val events = mutableListOf<OrdersViewModel.OrdersUiEvent>()
-        val collectJob = launch {
+        // Subscribe eagerly so the collector is registered before the action emits
+        // (replay = 0: late subscribers do not receive buffered events).
+        val collectJob = launch(UnconfinedTestDispatcher(testScheduler)) {
             testViewModel.uiEvent.collect { events.add(it) }
         }
 
@@ -292,7 +298,9 @@ class OrdersViewModelTest {
 
         // Collect events before triggering the action
         val events = mutableListOf<OrdersViewModel.OrdersUiEvent>()
-        val collectJob = launch {
+        // Subscribe eagerly so the collector is registered before the action emits
+        // (replay = 0: late subscribers do not receive buffered events).
+        val collectJob = launch(UnconfinedTestDispatcher(testScheduler)) {
             testViewModel.uiEvent.collect { events.add(it) }
         }
 
@@ -320,7 +328,9 @@ class OrdersViewModelTest {
 
         // Collect events before triggering the action
         val events = mutableListOf<OrdersViewModel.OrdersUiEvent>()
-        val collectJob = launch {
+        // Subscribe eagerly so the collector is registered before the action emits
+        // (replay = 0: late subscribers do not receive buffered events).
+        val collectJob = launch(UnconfinedTestDispatcher(testScheduler)) {
             testViewModel.uiEvent.collect { events.add(it) }
         }
 
@@ -407,6 +417,34 @@ class OrdersViewModelTest {
         val finalState = viewModel.uiState.first()
         assertTrue(finalState.deleteStatus is OrdersViewModel.DeleteStatus.Error)
         assertEquals("오류가 발생했습니다. 다시 시도해주세요.", (finalState.deleteStatus as OrdersViewModel.DeleteStatus.Error).message)
+    }
+
+    @Test
+    fun `deleting last order clears selection when refreshed list is empty`() = runTest {
+        // Given - an order is selected with details
+        val orderDetails = arrayListOf(OrdersDetailItem("Coffee", 1, 1000))
+        val orderNumber = 321
+        val currentDate = viewModel.getCurrentDate()
+
+        viewModel.selectOrder(orderNumber, 1000)
+        coEvery { firestoreRepository.getOrderDetail(any(), any()) } returns orderDetails
+        viewModel.fetchOrderDetail(orderNumber)
+
+        coEvery { firestoreRepository.deleteOrder(currentDate, orderNumber) } returns true
+        // After deletion the day has no remaining orders
+        coEvery { firestoreRepository.getOrdersOfDay() } returns arrayListOf()
+
+        // When - delete succeeds, then the screen refreshes the (now empty) list
+        viewModel.deleteOrder()
+        advanceUntilIdle()
+        viewModel.loadOrdersOfDay()
+        advanceUntilIdle()
+
+        // Then - stale selection/detail is cleared
+        val finalState = viewModel.uiState.value
+        assertEquals(0, finalState.selectedOrderNumber)
+        assertEquals(0, finalState.selectedOrderTotal)
+        assertTrue(finalState.orderDetails.isEmpty())
     }
 
     @Test

@@ -102,7 +102,10 @@ fun OrdersScreen(
             Surface(Modifier.weight(1f).fillMaxHeight(), shape = RoundedCornerShape(Dimens.paneRadius),
                 color = MaterialTheme.colorScheme.surface) {
                 Column(Modifier.padding(12.dp)) {
-                    Text("${selectedOrderNumber}번 주문", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        if (selectedOrderNumber == 0) "주문을 선택하세요" else "${selectedOrderNumber}번 주문",
+                        style = MaterialTheme.typography.titleMedium
+                    )
                     LazyColumn(Modifier.weight(1f)) {
                         itemsIndexed(details, key = { index, _ -> index }) { _, d -> BasketRow(d.name, d.count, d.subtotal) {} }
                     }
