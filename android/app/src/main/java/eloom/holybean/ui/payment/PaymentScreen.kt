@@ -32,6 +32,7 @@ import eloom.holybean.ui.theme.HolyBeanTheme
 import eloom.holybean.ui.theme.OnSurfaceMuted
 import eloom.holybean.ui.theme.Orange
 import eloom.holybean.ui.theme.OrangeOnContainer
+import eloom.holybean.ui.theme.OrangeText
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -154,7 +155,7 @@ fun PaymentScreen(
                                 }
                             }
                             Spacer(Modifier.height(6.dp))
-                            Text("2번째 결제 수단", style = MaterialTheme.typography.labelSmall, color = OnSurfaceMuted)
+                            Text("2번째 결제 수단 (${first} 제외)", style = MaterialTheme.typography.labelSmall, color = OnSurfaceMuted)
                             MethodRow(candidates, second) { second = it }
                             OutlinedTextField(
                                 value = secondAmt, onValueChange = { secondAmt = it.filter(Char::isDigit) },
@@ -162,6 +163,14 @@ fun PaymentScreen(
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                 modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
                             )
+                            val breakdown = PaymentForm.splitBreakdown(first, second, total, secondAmt)
+                            breakdown.forEach { line ->
+                                Row(Modifier.fillMaxWidth().padding(vertical = 1.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween) {
+                                    Text(line.label, style = MaterialTheme.typography.labelSmall, color = OrangeText)
+                                    Text("%,d원".format(line.amount), style = MaterialTheme.typography.labelSmall, color = OrangeText)
+                                }
+                            }
                         }
                         Spacer(Modifier.height(10.dp))
                         Text("주문자명", style = MaterialTheme.typography.labelSmall, color = OnSurfaceMuted)
