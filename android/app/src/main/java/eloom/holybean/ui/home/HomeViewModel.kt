@@ -66,6 +66,9 @@ class HomeViewModel @Inject constructor(
     )
     val uiEvent: SharedFlow<UiEvent> = _uiEvent.asSharedFlow()
 
+    // 결제 완료 재진입 가드 (메인 스레드 단독 접근이므로 plain var 로 충분)
+    private var orderInFlight = false
+
     init {
         // Load initial data
         viewModelScope.launch(ioDispatcher) {
@@ -182,6 +185,12 @@ class HomeViewModel @Inject constructor(
             return
         }
 
+        // 결제 완료 버튼 더블탭 시 중복 주문/출력을 막는 재진입 가드.
+        // onOrderConfirmed 는 버튼 클릭으로 메인 스레드에서 호출되고, 체크+설정이 코루틴
+        // 런치 전 동기적으로 일어나므로 동시 메인 스레드 탭이 직렬화되어 plain var 로 안전하다.
+        if (orderInFlight) return
+        orderInFlight = true
+
         // Network I/O - 완료 대기 후 UI 업데이트
         viewModelScope.launch(ioDispatcher) {
             try {
@@ -193,6 +202,8 @@ class HomeViewModel @Inject constructor(
             } catch (e: Exception) {
                 e.printStackTrace()
                 _uiEvent.emit(UiEvent.ShowToast("주문 처리 중 오류가 발생했습니다."))
+            } finally {
+                orderInFlight = false
             }
         }
 

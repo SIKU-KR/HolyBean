@@ -134,7 +134,12 @@ fun PaymentScreen(
                         }
                         if (split) {
                             val candidates = PaymentForm.secondCandidates(first).toImmutableList()
-                            LaunchedEffect(first) { if (second !in candidates) second = candidates.firstOrNull() }
+                            LaunchedEffect(first) {
+                                if (second !in candidates) {
+                                    second = candidates.firstOrNull()
+                                    secondAmt = ""
+                                }
+                            }
                             Spacer(Modifier.height(6.dp))
                             Text("2번째 결제 수단", style = MaterialTheme.typography.labelSmall, color = OnSurfaceMuted)
                             MethodRow(candidates, second) { second = it }
