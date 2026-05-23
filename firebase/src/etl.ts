@@ -26,7 +26,8 @@ async function main() {
   console.log(`orders 적재: ${ordersRaw.length}`);
 
   // 2) menu/current (holybean-menu 최신 항목 사용 — 가장 최근 timestamp)
-  const latestMenu = menuRaw.sort((a, b) => String(b.timestamp).localeCompare(String(a.timestamp)))[0];
+  if (menuRaw.length === 0) throw new Error("holybean-menu.json is empty — cannot determine latest menu");
+  const latestMenu = [...menuRaw].sort((a, b) => String(b.timestamp).localeCompare(String(a.timestamp)))[0];
   await db.collection(COLLECTIONS.menu).doc(MENU_CURRENT_DOC).set({
     items: mapDynamoMenu(latestMenu.menulist ?? latestMenu.items ?? []),
     updatedAt: new Date(),

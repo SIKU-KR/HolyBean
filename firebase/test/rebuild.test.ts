@@ -36,4 +36,15 @@ describe("rebuildDerived", () => {
     });
     expect(out.openCredits.items["2026-05-23_1"]).toBeUndefined();
   });
+
+  it("같은 날 같은 메뉴는 수량/매출 누적", () => {
+    const settled2 = {
+      orderDate: "2026-05-23", orderNum: 3, totalAmount: 4500, customerName: "C", creditStatus: 0,
+      items: [{ name: "아메리카노", quantity: 1, subtotal: 4500, unitPrice: 4500 }],
+      payments: [{ method: "현금", amount: 4500 }],
+    };
+    const r = rebuildDerived([settled, settled2]).reportRollups["2026-05-23"];
+    expect(r.menuSales["아메리카노"]).toEqual({ quantity: 3, sales: 13500 });
+    expect(r.total).toBe(13500);
+  });
 });

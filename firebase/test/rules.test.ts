@@ -1,5 +1,5 @@
 import { assertFails, assertSucceeds, initializeTestEnvironment, RulesTestEnvironment } from "@firebase/rules-unit-testing";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { deleteDoc, doc, getDoc, setDoc } from "firebase/firestore";
 import { readFileSync } from "node:fs";
 import { afterAll, beforeAll, beforeEach, describe, it } from "vitest";
 
@@ -55,5 +55,16 @@ describe("firestore rules", () => {
   it("알 수 없는 컬렉션 거부", async () => {
     const db = env.authenticatedContext("store").firestore();
     await assertFails(setDoc(doc(db, "secrets/x"), { a: 1 }));
+  });
+
+  it("미인증 요청은 파생 컬렉션 읽기 거부", async () => {
+    const db = env.unauthenticatedContext().firestore();
+    await assertFails(getDoc(doc(db, "daySummaries/2026-05-23")));
+  });
+
+  it("인증 요청은 orders 삭제 허용", async () => {
+    const db = env.authenticatedContext("store").firestore();
+    await setDoc(doc(db, "orders/2026-05-23_9"), validOrder);
+    await assertSucceeds(deleteDoc(doc(db, "orders/2026-05-23_9")));
   });
 });

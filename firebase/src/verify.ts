@@ -9,13 +9,11 @@ async function main() {
   // orders 직접 집계 (creditStatus==0) vs reportRollups 합계 대조
   const snap = await db.collection(COLLECTIONS.orders).get();
   let directTotal = 0;
-  const directByDate: Record<string, number> = {};
   snap.forEach((d) => {
     const o = d.data() as any;
     if (o.creditStatus === 0) {
       const sum = (o.payments ?? []).reduce((s: number, p: any) => s + p.amount, 0);
       directTotal += sum;
-      directByDate[o.orderDate] = (directByDate[o.orderDate] ?? 0) + sum;
     }
   });
 
