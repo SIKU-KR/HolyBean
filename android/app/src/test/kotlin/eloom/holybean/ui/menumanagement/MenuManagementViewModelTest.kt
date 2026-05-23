@@ -171,22 +171,64 @@ class MenuManagementViewModelTest {
         val menuItem = MenuItem(1001, "Americano", 4500, 1001, true)
         coEvery { menuRepository.updateSpecificMenu(any()) } just runs
         every { menuRepository.getMenuList() } returns flowOf(listOf(menuItem))
+        val testViewModel = MenuManagementViewModel(menuRepository, testDispatcher)
 
         val events = mutableListOf<MenuManagementViewModel.UiEvent>()
-        val collectJob = launch { viewModel.uiEvent.collect { events.add(it) } }
+        val collectJob = launch { testViewModel.uiEvent.collect { events.add(it) } }
 
         // When
-        viewModel.toggleMenuInUse(menuItem)
+        testViewModel.toggleMenuInUse(menuItem)
         advanceUntilIdle()
 
-        // Then
-        assertFalse(menuItem.inuse) // Should be toggled to false
+        // Then - state holds a NEW item instance toggled to false (original arg is left untouched by design)
+        assertFalse(testViewModel.uiState.first().allMenuItems.first { it.id == 1001 }.inuse)
         coVerify { menuRepository.updateSpecificMenu(any()) }
         assertEquals(1, events.size)
         assertTrue(events.first() is MenuManagementViewModel.UiEvent.ShowToast)
         assertEquals("메뉴가 비활성화 되었습니다.", (events.first() as MenuManagementViewModel.UiEvent.ShowToast).message)
 
         collectJob.cancel()
+    }
+
+    @Test
+    fun `toggleMenuInUse should emit new uiState reflecting the change`() = runTest(testDispatcher) {
+        // Given - one in-use item in category 1, getMenuList is a one-shot flow that never re-emits
+        val menuItem = MenuItem(1001, "Americano", 4500, 1001, true)
+        coEvery { menuRepository.updateSpecificMenu(any()) } just runs
+        every { menuRepository.getMenuList() } returns flowOf(listOf(menuItem))
+        val testViewModel = MenuManagementViewModel(menuRepository, testDispatcher)
+
+        // sanity: item visible in the filtered (category 1) list and currently in use
+        assertTrue(testViewModel.uiState.first().filteredMenuItems.first().inuse)
+
+        // When
+        testViewModel.toggleMenuInUse(menuItem)
+        advanceUntilIdle()
+
+        // Then - uiState reflects the toggle WITHOUT relying on a Firestore re-emission
+        val state = testViewModel.uiState.first()
+        assertFalse(state.allMenuItems.first { it.id == 1001 }.inuse)
+        assertFalse(state.filteredMenuItems.first { it.id == 1001 }.inuse)
+        coVerify { menuRepository.updateSpecificMenu(any()) }
+    }
+
+    @Test
+    fun `updateMenu should emit new uiState reflecting name and price`() = runTest(testDispatcher) {
+        // Given
+        val menuItem = MenuItem(1001, "Americano", 4000, 1001, true)
+        coEvery { menuRepository.updateSpecificMenu(any()) } just runs
+        every { menuRepository.getMenuList() } returns flowOf(listOf(menuItem))
+        val testViewModel = MenuManagementViewModel(menuRepository, testDispatcher)
+
+        // When
+        testViewModel.updateMenu(menuItem, "Cafe Latte", 5000)
+        advanceUntilIdle()
+
+        // Then
+        val state = testViewModel.uiState.first()
+        val updated = state.filteredMenuItems.first { it.id == 1001 }
+        assertEquals("Cafe Latte", updated.name)
+        assertEquals(5000, updated.price)
     }
 
     @Test

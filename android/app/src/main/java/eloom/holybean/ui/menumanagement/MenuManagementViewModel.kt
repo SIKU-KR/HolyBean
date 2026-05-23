@@ -147,20 +147,30 @@ class MenuManagementViewModel @Inject constructor(
 
     fun updateMenu(item: MenuItem, newName: String, newPrice: Int) {
         viewModelScope.launch(dispatcher) {
-            item.name = newName
-            item.price = newPrice
-            menuRepository.updateSpecificMenu(item)
+            val updated = item.copy(name = newName, price = newPrice)
+            // 낙관적 갱신: Firestore 스냅샷 재방출을 기다리지 않고 즉시 새 상태를 방출해 Compose 가 재구성되도록 한다.
+            replaceItemInState(updated)
+            menuRepository.updateSpecificMenu(updated)
             _uiEvent.tryEmit(UiEvent.ShowToast("메뉴가 수정되었습니다."))
         }
     }
 
     fun toggleMenuInUse(item: MenuItem) {
         viewModelScope.launch(dispatcher) {
-            item.inuse = !item.inuse
-            menuRepository.updateSpecificMenu(item)
-            val status = if (item.inuse) "활성화" else "비활성화"
+            val updated = item.copy(inuse = !item.inuse)
+            // 낙관적 갱신: Firestore 스냅샷 재방출을 기다리지 않고 즉시 새 상태를 방출해 Compose 가 재구성되도록 한다.
+            replaceItemInState(updated)
+            menuRepository.updateSpecificMenu(updated)
+            val status = if (updated.inuse) "활성화" else "비활성화"
             _uiEvent.tryEmit(UiEvent.ShowToast("메뉴가 $status 되었습니다."))
         }
+    }
+
+    /** allMenuItems 내 동일 id 항목을 새 인스턴스로 교체하고 현재 카테고리 필터를 재적용해 새 상태를 방출한다. */
+    private fun replaceItemInState(updated: MenuItem) {
+        val newAll = _uiState.value.allMenuItems.map { if (it.id == updated.id) updated else it }
+        _uiState.update { it.copy(allMenuItems = newAll) }
+        filterMenuByCategory(_uiState.value.selectedCategoryIndex)
     }
 
 }
