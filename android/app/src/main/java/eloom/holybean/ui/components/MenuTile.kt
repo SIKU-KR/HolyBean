@@ -1,5 +1,6 @@
 package eloom.holybean.ui.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -7,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import eloom.holybean.ui.theme.*
@@ -24,22 +26,44 @@ fun MenuTile(
     val container = when (style) {
         TileStyle.Menu -> Surface
         TileStyle.Coupon -> OrangeContainer
-        TileStyle.Settings -> Color(0xFFEEEEEE)
+        TileStyle.Settings -> SettingsTileBg
+    }
+    val border: BorderStroke? = when (style) {
+        TileStyle.Menu -> null
+        TileStyle.Coupon -> BorderStroke(1.dp, OrangeLight)
+        TileStyle.Settings -> BorderStroke(1.dp, OnSurfaceMuted)
+    }
+    val labelColor = when (style) {
+        TileStyle.Coupon -> OrangeText
+        TileStyle.Settings -> OnSurfaceMuted
+        TileStyle.Menu -> OnSurface
     }
     Card(
         onClick = onClick,
         modifier = modifier.height(60.dp),
-        shape = RoundedCornerShape(Dimens.tileRadius),
+        shape = RoundedCornerShape(Dimens.radiusTile),
         colors = CardDefaults.cardColors(containerColor = container),
+        elevation = CardDefaults.cardElevation(defaultElevation = Dimens.tileElevation),
+        border = border,
     ) {
         Column(
-            Modifier.fillMaxSize().padding(4.dp),
+            Modifier.fillMaxSize().padding(Dimens.spaceXs),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text(name, style = MaterialTheme.typography.bodyMedium)
+            Text(
+                name,
+                style = MaterialTheme.typography.bodyMedium,
+                color = labelColor,
+                fontWeight = if (style == TileStyle.Menu) FontWeight.Medium else FontWeight.Bold,
+            )
             if (price != null) {
-                Text("%,d".format(price), style = MaterialTheme.typography.labelSmall, color = Orange)
+                Text(
+                    "%,d".format(price),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = OrangeText,
+                    fontWeight = FontWeight.Bold,
+                )
             }
         }
     }
