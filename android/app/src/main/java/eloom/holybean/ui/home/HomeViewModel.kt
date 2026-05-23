@@ -166,6 +166,14 @@ class HomeViewModel @Inject constructor(
     }
 
     override fun onOrderConfirmed(data: Order, takeOption: String) {
+        // 주문번호 조회 실패(-1) 등 유효하지 않은 주문번호는 절대 저장하지 않는다
+        if (data.orderNum <= 0) {
+            viewModelScope.launch(ioDispatcher) {
+                _uiEvent.emit(UiEvent.ShowToast("주문번호를 불러오지 못했습니다. 다시 시도해 주세요."))
+            }
+            return
+        }
+
         // Network I/O - 완료 대기 후 UI 업데이트
         viewModelScope.launch(ioDispatcher) {
             try {

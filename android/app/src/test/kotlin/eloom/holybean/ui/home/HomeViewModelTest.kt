@@ -189,6 +189,25 @@ class HomeViewModelTest {
     }
 
     @Test
+    fun `onOrderConfirmed should block placement and emit toast when order number is invalid`() = runTest(testDispatcher) {
+        // Given - 주문번호 조회 실패 시 -1 sentinel이 흘러들어온 주문
+        val invalidOrder = createTestOrder(orderNum = -1)
+
+        val events = mutableListOf<HomeViewModel.UiEvent>()
+        val job: Job = launch { homeViewModel.uiEvent.collect { events.add(it) } }
+
+        // When
+        homeViewModel.onOrderConfirmed(invalidOrder, "포장")
+        advanceUntilIdle()
+
+        // Then - postOrder는 절대 호출되지 않고, 에러 토스트가 발생한다
+        verify(exactly = 0) { firestoreRepository.postOrder(any()) }
+        assertTrue(events.any { it is HomeViewModel.UiEvent.ShowToast })
+        assertTrue(events.none { it is HomeViewModel.UiEvent.NavigateHome })
+        job.cancel()
+    }
+
+    @Test
     fun `onOrderConfirmed should call piPrintClient with receipt commands`() = runTest(testDispatcher) {
         // Given
         val testOrder = createTestOrder()
