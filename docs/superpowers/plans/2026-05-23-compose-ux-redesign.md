@@ -32,8 +32,8 @@
 
 ## 선행 조건 (Prerequisites)
 
-- **백엔드 마이그레이션이 먼저 빌드 가능해야 한다.** 현재 `HomeViewModel` 은 생성자에 `firestoreRepository` 를 주입받지만 본문(`onOrderConfirmed`, `refreshOrderNumber`)이 아직 `lambdaRepository` 를 참조하는 **반쯤 깨진 상태**다. Phase 1 시작 전 이 참조를 `firestoreRepository.postOrder(...)` / `firestoreRepository.getOrderNumber()` 로 정리해 `:app:assembleDebug` 가 통과하는지 확인한다.
-- `FirestoreRepository` 의 시그니처(`getOrderNumber`, `postOrder`, `getOrdersOfDay`, `getOrderDetail`, `getReport`, `getCreditsList`, `setCreditOrderPaid`, `deleteOrder`)를 변경하지 않는다 — UI 계획은 이 인터페이스 위에 올린다.
+- **백엔드 마이그레이션은 코드상 완료(2026-05-23 기준).** AWS→Firestore 전환이 끝났고 데이터 백필을 제외하면 e2e 테스트까지 완료. `HomeViewModel` 등은 이미 `firestoreRepository` 를 사용하며 `lambdaRepository` 참조는 0건이다(`grep` 확인). 별도 정리 작업 없이 Phase 1 을 시작할 수 있다 — 시작 시 `:app:assembleDebug` 통과만 베이스라인으로 확인.
+- `FirestoreRepository` 의 시그니처(`getOrderNumber`, `postOrder`, `getOrdersOfDay`, `getOrderDetail`, `getReport`, `getCreditsList`, `setCreditOrderPaid`, `deleteOrder`)를 변경하지 않는다 — UI 계획은 이 인터페이스 위에 올린다. (참고: `postOrder` 는 현재 `suspend` 가 아닌 일반 `fun` 이다.)
 
 ## 파일 구조 (생성/수정 맵)
 
@@ -2399,4 +2399,4 @@ git commit -m "refactor: remove Fragments/XML/ViewBinding after Compose migratio
 - **#4 플레이스홀더 제거:** 비밀번호 `1031`(확정), `CreditsUiState`/`MenuManagement UiState` 실제 필드명 반영, 외상 `selectOrder→fetchOrderDetail` 배선, `PiPrintClient.checkHealth()/printTestReceipt()` 구체 구현(Task 16 Step 1) + DevToolsViewModel 디스패처 주입으로 테스트 가능화.
 - **#5 네이밍 충돌:** 라우트 object를 `*Dest`, Composable 진입점을 `*Route` 로 분리(alias 해킹 제거).
 - **#6 테스트 게이트:** 차단 게이트 = 로직 단위 테스트(JVM) + `assembleDebug`. Compose UI 테스트는 비차단.
-- **#7 선행 조건:** Firestore 마이그레이션의 `lambdaRepository` 잔여 참조 정리를 Phase 1 선행 조건으로 명시.
+- **#7 선행 조건:** 백엔드 마이그레이션은 코드상 완료(데이터 백필 제외 e2e까지) — `lambdaRepository` 참조 0건 확인. 선행 정리 작업 불필요, `assembleDebug` 베이스라인만 확인.
