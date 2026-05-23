@@ -1,5 +1,6 @@
 package eloom.holybean.data.repository
 
+import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.google.firebase.firestore.FieldPath
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
@@ -30,6 +31,7 @@ class FirestoreRepository @Inject constructor(
             last + 1
         } catch (e: Exception) {
             e.printStackTrace()
+            FirebaseCrashlytics.getInstance().recordException(e)
             -1
         }
     }
@@ -43,7 +45,7 @@ class FirestoreRepository @Inject constructor(
                 .sortedBy { it.key.toIntOrNull() ?: 0 }
                 .map { (num, m) ->
                     OrderItem(
-                        orderId = num.toInt(),
+                        orderId = num.toIntOrNull() ?: 0,
                         totalAmount = (m["totalAmount"] as? Number)?.toInt() ?: 0,
                         method = m["orderMethod"] as? String ?: "Unknown",
                         orderer = m["customerName"] as? String ?: ""
@@ -52,6 +54,7 @@ class FirestoreRepository @Inject constructor(
             ArrayList(list)
         } catch (e: Exception) {
             e.printStackTrace()
+            FirebaseCrashlytics.getInstance().recordException(e)
             arrayListOf()
         }
     }
@@ -71,6 +74,7 @@ class FirestoreRepository @Inject constructor(
             })
         } catch (e: Exception) {
             e.printStackTrace()
+            FirebaseCrashlytics.getInstance().recordException(e)
             arrayListOf()
         }
     }
@@ -91,6 +95,7 @@ class FirestoreRepository @Inject constructor(
             }.sortedWith(compareBy({ it.date }, { it.orderId })))
         } catch (e: Exception) {
             e.printStackTrace()
+            FirebaseCrashlytics.getInstance().recordException(e)
             arrayListOf()
         }
     }
@@ -126,6 +131,7 @@ class FirestoreRepository @Inject constructor(
             ReportAggregation.combine(rollups)
         } catch (e: Exception) {
             e.printStackTrace()
+            FirebaseCrashlytics.getInstance().recordException(e)
             SalesReport(emptyList(), mapOf("총합" to 0))
         }
     }
@@ -165,7 +171,7 @@ class FirestoreRepository @Inject constructor(
                 SetOptions.merge()
             )
         }
-        batch.commit()  // await 하지 않음 — 로컬 즉시 반영, 동기화는 SDK가 큐잉
+        batch.commit().addOnFailureListener { FirebaseCrashlytics.getInstance().recordException(it) }  // await 하지 않음 — 로컬 즉시 반영, 동기화는 SDK가 큐잉
     }
 
     private fun applyRollupDelta(
@@ -234,6 +240,7 @@ class FirestoreRepository @Inject constructor(
             batch.commit().await()
         } catch (e: Exception) {
             e.printStackTrace()
+            FirebaseCrashlytics.getInstance().recordException(e)
         }
     }
 
@@ -279,6 +286,7 @@ class FirestoreRepository @Inject constructor(
             true
         } catch (e: Exception) {
             e.printStackTrace()
+            FirebaseCrashlytics.getInstance().recordException(e)
             false
         }
     }
