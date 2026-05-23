@@ -1,7 +1,24 @@
-# POS 접근성 표준 + 시각 개선
+# POS 접근성 표준 + 시각 개선 + 목업 정합성
 
 날짜: 2026-05-24
 브랜치: v3
+
+## 디자인 원칙 (정합 규칙)
+
+브레인스토밍 단계의 **최종 목업이 시각 디자인의 source of truth**다. 위치:
+`.superpowers/brainstorm/69341-1779542427/content/` — 화면별 최종본은
+`home-final-v4.html`, `payment-v5.html`, `orders-v3.html`, `settings-v2.html`.
+실제 Compose 구현이 목업에서 벗어난 부분이 많아, 이를 목업 기준으로 맞춘다.
+
+단, **접근성 제약이 목업보다 우선**한다. 목업은 작은 폰트(9~16px)와 일부
+흰 글자 on 오렌지를 쓰지만, 정합 시 다음을 덮어쓴다:
+
+1. **폰트 크기** — 목업의 px값이 아니라 본 스펙의 sp 스케일(하한 14sp)을 따른다.
+   목업은 레이아웃·위계·구성요소의 기준이고, 크기는 접근성 스케일로 키운다.
+2. **오렌지 위 텍스트** — 목업이 흰 글자를 쓴 솔리드 오렌지(칩·세그먼트·CTA)는
+   흰색 대신 진한 글자(#222222)를 쓴다(대비 6.3:1). 솔리드 오렌지 **채움 자체는
+   목업대로 유지**한다.
+3. 그 외 색·테두리·그림자·모양·구성은 목업을 따른다.
 
 ## 배경 / 목적
 
@@ -94,9 +111,10 @@ WCAG 상대 휘도 공식으로 계산한 값. 변경의 출발점이다.
 - 간격 스케일(흩어진 5/6/7/8/10/12dp를 대체): `spaceXs = 4.dp`, `spaceSm = 8.dp`,
   `spaceMd = 12.dp`, `spaceLg = 16.dp`. 기존 `gap = 10.dp`·`screenPadding = 12.dp`는
   스케일 값으로 정렬(`gap → spaceSm`, `screenPadding → spaceMd`).
-- 라운드 스케일(기존 8/9/10dp 통일): `radiusButton = 6.dp`(사각형에 가깝게),
-  `radiusTile = 10.dp`, `radiusPane = 14.dp`. 기존 `tileRadius`/`paneRadius` 및
-  `PaymentMethodTile`의 하드코딩 `9.dp`를 이 토큰으로 교체.
+- 라운드 스케일(기존 8/9/10dp 통일): `radiusButton = 6.dp`(목업 8~9dp보다 더
+  사각 — **사용자 선호로 목업 모양을 의도적으로 override**), `radiusTile = 10.dp`,
+  `radiusPane = 14.dp`. 기존 `tileRadius`/`paneRadius` 및 `PaymentMethodTile`의
+  하드코딩 `9.dp`를 이 토큰으로 교체.
 - elevation(A): `paneElevation = 2.dp`, `tileElevation = 1.dp`.
 
 **`ui/theme/Theme.kt`** — `MaterialTheme(shapes = …)`에 사각형에 가까운 `Shapes`를
@@ -120,8 +138,11 @@ WCAG 상대 휘도 공식으로 계산한 값. 변경의 출발점이다.
    `Switch`/`RadioButton`을 쓰는 화면 우선 점검: `home/OrderDialog.kt`,
    `payment/PaymentScreen.kt`, `menumanagement/MenuManagementScreen.kt`.
    미달 시 `Modifier.sizeIn(minWidth/minHeight = Dimens.minTouchTarget)` 등으로 보정.
-2. **오렌지를 텍스트 색으로 쓴 곳**: 흰/밝은 배경 위 오렌지 텍스트(2.53:1)는
-   위반. 발견 시 진한 색 또는 `OrangeOnContainer`로 교체.
+2. **오렌지를 텍스트 색으로 쓴 곳**: 흰/밝은 배경 위 `Orange`(#FF7F00) 텍스트는
+   2.53:1로 위반(메뉴 가격, 합계 등). 오렌지 강조감은 유지하되 크기별로 darken:
+   - 작은 텍스트(메뉴 가격 등, <18sp): **#9A5412**(흰 배경 5.76:1, 4.5:1 통과).
+   - 큰/볼드(합계 18sp Bold 등): **#C2691A**(흰 배경 3.94:1, 3:1 통과) 허용.
+   `Color.kt`에 오렌지 강조 텍스트 토큰(예: `OrangeText = #9A5412`)을 두어 통일.
 3. **하드코딩 색 위 텍스트**: `components/MenuTile.kt`의 `#EEEEEE`(설정 타일 배경)
    위 텍스트 대비를 점검하고, 색을 `DividerGray` 등 토큰으로 통일.
 
@@ -148,15 +169,20 @@ WCAG 상대 휘도 공식으로 계산한 값. 변경의 출발점이다.
 - `MenuTile`의 `Card` → `CardDefaults.cardElevation(defaultElevation = tileElevation(1dp))`.
 - 과하지 않게: 그림자는 은은한 수준, 색은 기본 그림자색 유지.
 
-### C. 브랜드 일관 선택색
+### C. 브랜드 일관 선택색 (목업 기준)
 
-- `CategoryChips`(`FilterChip`): 선택 시 `selectedContainerColor = OrangeContainer`,
-  `selectedLabelColor = #9A5412`(대비 4.5:1), 선택 테두리 `Orange`. 비선택은 현행 유지.
-- `SegmentedToggle`(`SegmentedButton`): `SegmentedButtonDefaults.colors(activeContainerColor
-  = OrangeContainer, activeContentColor = #9A5412)`. 모양은 테마 `Shapes`의 사각형에
-  가까운 라운드를 따름(버튼 디자인과 통일).
-- `PaymentMethodTile`은 이미 오렌지 선택 상태라 기준 컴포넌트로 두되, 텍스트 색만
-  `OrangeOnContainer`→#9A5412로 맞춰 대비 통과.
+목업은 **두 가지** 선택 스타일을 쓴다. 정합해서 다음으로 통일한다.
+
+- **솔리드 오렌지 + 진한 글자** — 칩, 세그먼트, CTA. 목업의 흰 글자만 진한
+  글자(#222222)로 대체(대비 6.3:1).
+  - `CategoryChips`(`FilterChip`): 비선택 = 흰 배경 + #555 글자 + #ddd 테두리 +
+    라운드 14dp(목업). 선택 = `selectedContainerColor = Orange` + 진한 글자 + bold.
+    Material 기본 회색 선택을 버리고 목업 칩 스타일로 커스텀.
+  - `SegmentedToggle`(`SegmentedButton`): 회색(#f0f0f0) 컨테이너 + 선택 시
+    `activeContainerColor = Orange`, `activeContentColor = #222222`, bold.
+- **옅은 컨테이너(#FFF3E4) + 갈색 글자** — 결제수단 타일, 쿠폰 타일, 주문 목록
+  선택 항목. 작은 텍스트라 `OrangeOnContainer`를 #9A5412로 darken해 4.5:1 통과.
+  `PaymentMethodTile`은 이미 이 스타일이라 텍스트 색만 #9A5412로 맞춤(기준 컴포넌트).
 
 ### 버튼 모양 (사각형化)
 
@@ -172,11 +198,14 @@ WCAG 상대 휘도 공식으로 계산한 값. 변경의 출발점이다.
 - 타일 높이는 터치 기준(≥56dp) 충족하도록 조정(현 60dp는 유지 가능).
 - `Card(onClick)`의 기본 ripple로 press 피드백은 이미 있음 — 유지.
 
-### F. 합계 강조
+### F. 합계 강조 (목업 기준)
 
-- `HomeScreen` `BasketPane`와 `PaymentScreen` 요약의 "합계" 행을 옅은 `OrangeContainer`
-  배경의 둥근 박스로 감싸고, 금액을 `titleMedium`(Bold)로 강조. 텍스트 대비는 위
-  명도 규칙(#9A5412 또는 큰/볼드 #C2691A) 준수.
+- 목업은 합계를 컨테이너 박스로 감싸지 않는다. "합계" + 금액을 우측에 두고 금액만
+  **18sp Bold**로 강조한다(`titleMedium` Bold). `PaymentScreen`·`OrdersScreen`
+  상세는 합계 위에 옅은 구분선(top border)을 둔다(목업 `.stotal`/`.dtotal`).
+- 합계 금액 색: 순수 `Orange`(#FF7F00)는 흰 배경 2.53:1로 큰 텍스트 3:1도 미달.
+  큰/볼드 텍스트 3:1을 만족하도록 **`OrangeOnContainer`(#C2691A, 3.94:1)** 를 합계
+  금액 색으로 쓴다(오렌지 강조감은 유지). `Color.kt`에 합계용 토큰을 두는 것도 가능.
 
 ### G. 빈 상태
 
@@ -189,8 +218,59 @@ WCAG 상대 휘도 공식으로 계산한 값. 변경의 출발점이다.
   `verticalArrangement = Arrangement.spacedBy(spaceXs)` 여백으로 대체하거나, 꼭
   필요한 곳만 인셋된 옅은 구분선을 남긴다. 시각적 잡음을 줄인다.
 
+## 목업 정합성 (Mockup Parity)
+
+최종 목업과 현재 구현의 차이를 화면별로 맞춘다. 폰트 크기는 sp 스케일,
+오렌지 위 텍스트는 진한 글자 규칙(위 "디자인 원칙")을 적용한 상태로 정합한다.
+
+### 홈 (`home-final-v4.html`)
+
+- [ ] `CategoryChips`: Material 기본 → 목업 칩 스타일(흰/회색 글자, 라운드 14, 선택=솔리드 오렌지+진한 글자 bold).
+- [ ] 주문기록 버튼: 기본 `OutlinedButton` → 오렌지 외곽선(2dp)+오렌지 글자 bold.
+- [ ] `MenuTile` 쿠폰: `OrangeContainer` 배경 + **점선(dashed) `OrangeLight` 테두리** + #9A5412 글자.
+- [ ] `MenuTile` 설정: `#EEEEEE`(→토큰화) 배경 + 점선 회색 테두리 + 음소거 bold 글자.
+- [ ] 메뉴 가격: bold 적용.
+- [ ] 합계: 금액 오렌지 18sp Bold(F 참조).
+
+### 결제 (`payment-v5.html`)
+
+- [ ] `SegmentedToggle`(컵): 회색 컨테이너 + 선택 솔리드 오렌지+진한 글자(C 참조).
+- [ ] 결제수단 타일: 현행 유지(목업과 일치), 텍스트 #9A5412로 대비 보정만.
+- [ ] 요약 합계: top border + 오렌지 18sp Bold.
+- [ ] **분할결제 분배 표시(포함)**: 분할 ON 시 1번째 수단(잔액)·2번째 수단 금액을
+      계산해 "현금(잔액) 10,000원 / 계좌이체 5,000원"처럼 라인 표시(목업 `.splitline`,
+      색 #9A5412). 2번째 금액 입력값으로 1번째 잔액을 역산. 라벨도 "결제 수단(1번째)"/
+      "2번째 결제 수단(○○ 제외)"로 정합.
+
+### 주문기록 (`orders-v3.html`)
+
+- [ ] 보고서 출력 버튼: 오렌지 외곽선 스타일로.
+- [ ] `OrderListItem`: 번호·금액 bold(`titleMedium`/Bold), 선택 배경은 목업의 옅은
+      `#FFF8F0` 톤. 2행(주문자·수단)은 음소거 유지.
+- [ ] 매출 스트립: stat 사이 세로 구분선(목업 `border-right`).
+- [ ] 상세 합계: top border + 오렌지 Bold.
+
+### 개발자 도구 (`settings-v2.html`) — **확장 포함**
+
+현재 Pi health + URL + 버튼만 있음. 목업 수준으로 확장:
+
+- [ ] 헤더 영역(목업의 파란 헤더 톤) 적용.
+- [ ] 상태 행 3종 + 상태 점(`StatusOk/Error/Unknown`)과 값 표시:
+      - Pi 프린터(/health): 정상/실패 + 응답시간(latency, 이미 측정 가능).
+      - 네트워크 연결: 연결 상태 + 연결 정보(가능 범위 — Wi-Fi 여부/IP). **상태 점검 로직 추가 필요.**
+      - Firestore: 연결/응답 상태. **간단한 ping/read 점검 로직 추가 필요.**
+- [ ] 테스트 영수증 출력 버튼: 강조 스타일.
+- 점검 로직은 best-effort(실패 시 Unknown 점)로 구현하고, 무거운 의존은 피한다.
+
+### 설정 시트 (`settings-v2.html`) — **이번 범위 밖(후속 과제)**
+
+목업의 헤더바·행 아이콘칩·›화살표·비밀번호 배지 재디자인은 이번 스펙에 넣지
+않는다. 현행 텍스트 행 유지(접근성 토큰만 적용). 아래 "범위 밖" 참조.
+
 ## 범위 밖 (YAGNI)
 
+- **설정 시트 재디자인**(헤더바·행 아이콘칩·›화살표·비밀번호 배지) — 후속 과제.
+  이번엔 접근성 토큰만 적용하고 구조는 현행 유지.
 - 시스템 글꼴 200% 가변 레이아웃 / ScrollView 재작업 (배율 고정으로 대체).
 - 자동화 검증(Compose UI 테스트, lint 규칙, 대비 자동계산 테스트).
 - 다크 테마, 색맹(color-blind) 팔레트, TalkBack/콘텐츠 설명 등 그 외 접근성 항목.
@@ -206,6 +286,10 @@ WCAG 상대 휘도 공식으로 계산한 값. 변경의 출발점이다.
 - 시스템 글꼴 크기를 키운 상태로 앱 진입 시 레이아웃이 변하지 않는지 확인(배율 고정).
 - Compose `@Preview`로 주요 컴포넌트(`MenuTile`, `PaymentMethodTile`, `BasketRow`,
   `HomeScreen`, `PaymentScreen`) 렌더 확인.
+- 목업 정합: 각 화면을 해당 최종 목업과 나란히 비교해 구성요소·색·테두리·선택
+  상태가 일치하는지 확인(폰트 크기·오렌지 위 텍스트는 접근성 규칙 적용분 제외).
+- 개발자도구: Pi/네트워크/Firestore 상태 점이 실제 상태를 반영하는지(정상/실패/미상).
+- 분할결제: 분할 ON에서 입력한 2번째 금액에 따라 1번째 잔액이 맞게 계산·표시되는지.
 
 ## 완료 기준
 
@@ -221,9 +305,15 @@ WCAG 상대 휘도 공식으로 계산한 값. 변경의 출발점이다.
 - 폰트 웨이트(titleMedium Bold / titleLarge ExtraBold) 적용.
 - 간격·라운드·elevation 스케일 토큰 추가 및 화면 적용(흩어진 dp/라운드 교체).
 - 패널·카드 elevation 적용.
-- CategoryChips·SegmentedToggle 오렌지 선택색 + 선택 텍스트 대비(#9A5412) 통과.
+- 칩·세그먼트 선택 = 솔리드 오렌지 + 진한 글자; 컨테이너형(결제수단·쿠폰·주문선택) = #FFF3E4 + #9A5412.
 - 버튼·세그먼트 사각형(작은 라운드) 적용.
 - 메뉴 타일 다듬기, 합계 강조, 빈 상태 문구, 구분선 정리 반영.
+
+**목업 정합성**
+- 홈·결제·주문기록의 정합 체크리스트 항목 반영(칩/버튼/타일 테두리/선택 톤/bold 등).
+- 개발자도구 확장: Pi/네트워크/Firestore 상태 행 + 값 + 헤더/버튼 스타일.
+- 분할결제 분배 라인 표시 + 잔액 역산.
+- 설정 시트 재디자인은 제외(후속).
 
 **공통**
 - 빌드 성공 + 육안/Preview 점검 통과.
