@@ -17,3 +17,8 @@ AGENTS.md
 /android/captures
 /android/local.properties
 /android/app/release
+
+# Firebase ETL secrets/data
+firebase/serviceAccount.json
+firebase/data/
+firebase/node_modules/
