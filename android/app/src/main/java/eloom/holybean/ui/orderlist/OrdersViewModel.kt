@@ -5,7 +5,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import eloom.holybean.data.model.OrderItem
 import eloom.holybean.data.model.OrdersDetailItem
-import eloom.holybean.data.repository.LambdaRepository
+import eloom.holybean.data.repository.FirestoreRepository
 import eloom.holybean.printer.PiPrintClient
 import eloom.holybean.printer.polymorphism.OrdersPrinter
 import kotlinx.coroutines.CoroutineDispatcher
@@ -20,7 +20,7 @@ import javax.inject.Named
 
 @HiltViewModel
 class OrdersViewModel @Inject constructor(
-    private val lambdaRepository: LambdaRepository,
+    private val firestoreRepository: FirestoreRepository,
     @Named("IO") private val ioDispatcher: CoroutineDispatcher,
     @Named("ApplicationScope") private val applicationScope: CoroutineScope,
     private val piPrintClient: PiPrintClient,
@@ -72,7 +72,7 @@ class OrdersViewModel @Inject constructor(
         viewModelScope.launch(ioDispatcher) {
             try {
                 _uiState.update { it.copy(isLoading = true) }
-                val ordersList = lambdaRepository.getOrdersOfDay()
+                val ordersList = firestoreRepository.getOrdersOfDay()
                 _uiState.update {
                     it.copy(
                         ordersList = ordersList,
@@ -128,7 +128,7 @@ class OrdersViewModel @Inject constructor(
     fun fetchOrderDetail(orderNumber: Int) {
         viewModelScope.launch(ioDispatcher) {
             try {
-                val fetchedBasketList = lambdaRepository.getOrderDetail(getCurrentDate(), orderNumber)
+                val fetchedBasketList = firestoreRepository.getOrderDetail(getCurrentDate(), orderNumber)
                 if (fetchedBasketList.isEmpty()) {
                     _uiEvent.tryEmit(OrdersUiEvent.ShowToast("주문 내역이 없습니다."))
                 } else {
@@ -152,7 +152,7 @@ class OrdersViewModel @Inject constructor(
         viewModelScope.launch(ioDispatcher) {
             try {
                 _uiState.update { it.copy(deleteStatus = DeleteStatus.Loading) }
-                val result = lambdaRepository.deleteOrder(getCurrentDate(), currentState.selectedOrderNumber)
+                val result = firestoreRepository.deleteOrder(getCurrentDate(), currentState.selectedOrderNumber)
 
                 if (result) {
                     _uiState.update { it.copy(deleteStatus = DeleteStatus.Success) }

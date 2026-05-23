@@ -1,4 +1,3 @@
-import com.android.build.gradle.internal.cxx.configure.gradleLocalProperties
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -27,8 +26,6 @@ android {
             useSupportLibrary = true
         }
 
-        buildConfigField("String", "API_KEY", getApiKey("apikey"))
-        buildConfigField("String", "BASE_URL", "\"https://vk0i6j4tfi.execute-api.ap-northeast-2.amazonaws.com\"")
         buildConfigField("String", "PRINT_SERVER_URL", "\"http://192.168.4.1:9100/\"")
     }
 
@@ -61,10 +58,6 @@ android {
     viewBinding {
         enable = true
     }
-}
-
-fun getApiKey(propertyKey: String): String {
-    return gradleLocalProperties(rootDir, providers).getProperty(propertyKey)
 }
 
 kotlin {
@@ -117,11 +110,6 @@ dependencies {
     implementation("com.google.firebase:firebase-crashlytics")
     implementation("com.google.firebase:firebase-analytics")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.10.2")
-
-    val room_version = "2.8.0"
-    implementation("androidx.room:room-runtime:$room_version")
-    ksp("androidx.room:room-compiler:$room_version")
-    implementation("androidx.room:room-ktx:$room_version")
 }
 
 kapt {

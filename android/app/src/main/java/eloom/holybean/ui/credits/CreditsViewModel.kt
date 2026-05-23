@@ -5,7 +5,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import eloom.holybean.data.model.CreditItem
 import eloom.holybean.data.model.OrdersDetailItem
-import eloom.holybean.data.repository.LambdaRepository
+import eloom.holybean.data.repository.FirestoreRepository
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.*
@@ -15,7 +15,7 @@ import javax.inject.Named
 
 @HiltViewModel
 class CreditsViewModel @Inject constructor(
-    private val lambdaRepository: LambdaRepository,
+    private val firestoreRepository: FirestoreRepository,
     @Named("IO") private val dispatcher: CoroutineDispatcher
 ) : ViewModel() {
 
@@ -51,7 +51,7 @@ class CreditsViewModel @Inject constructor(
         viewModelScope.launch(dispatcher) {
             try {
                 _uiState.update { it.copy(isLoading = true) }
-                val creditsList = lambdaRepository.getCreditsList()
+                val creditsList = firestoreRepository.getCreditsList()
                 _uiState.update {
                     it.copy(
                         creditsList = creditsList,
@@ -87,7 +87,7 @@ class CreditsViewModel @Inject constructor(
 
         viewModelScope.launch(dispatcher) {
             try {
-                val fetchedBasketList = lambdaRepository.getOrderDetail(
+                val fetchedBasketList = firestoreRepository.getOrderDetail(
                     currentState.selectedOrderDate,
                     currentState.selectedOrderNumber
                 )
@@ -113,7 +113,7 @@ class CreditsViewModel @Inject constructor(
 
         viewModelScope.launch(dispatcher) {
             try {
-                lambdaRepository.setCreditOrderPaid(currentState.selectedOrderDate, currentState.selectedOrderNumber)
+                firestoreRepository.setCreditOrderPaid(currentState.selectedOrderDate, currentState.selectedOrderNumber)
                 _uiEvent.tryEmit(CreditsUiEvent.ShowToast("외상이 성공적으로 처리되었습니다."))
                 _uiEvent.tryEmit(CreditsUiEvent.RefreshCredits)
             } catch (e: Exception) {

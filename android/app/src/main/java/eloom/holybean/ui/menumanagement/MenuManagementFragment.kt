@@ -85,12 +85,6 @@ class MenuManagementFragment : Fragment() {
         binding.addButton.setOnClickListener {
             MenuAddDialog().show(childFragmentManager, "MenuAddDialog")
         }
-        binding.deviceToServer.setOnClickListener {
-            executeProtectedAction { viewModel.saveMenuListToServer() }
-        }
-        binding.serverToDevice.setOnClickListener {
-            executeProtectedAction { viewModel.getMenuListFromServer() }
-        }
     }
 
     private fun observeViewModel() {

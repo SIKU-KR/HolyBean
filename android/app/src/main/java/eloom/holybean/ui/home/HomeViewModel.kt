@@ -6,7 +6,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import eloom.holybean.data.model.CartItem
 import eloom.holybean.data.model.MenuItem
 import eloom.holybean.data.model.Order
-import eloom.holybean.data.repository.LambdaRepository
+import eloom.holybean.data.repository.FirestoreRepository
 import eloom.holybean.data.repository.MenuRepository
 import eloom.holybean.interfaces.OrderDialogListener
 import eloom.holybean.printer.PiPrintClient
@@ -23,7 +23,7 @@ import javax.inject.Named
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val lambdaRepository: LambdaRepository,
+    private val firestoreRepository: FirestoreRepository,
     private val menuRepository: MenuRepository,
     @Named("IO") private val ioDispatcher: CoroutineDispatcher,
     @Named("ApplicationScope") private val applicationScope: CoroutineScope,
@@ -87,7 +87,7 @@ class HomeViewModel @Inject constructor(
 
     fun refreshOrderNumber() {
         viewModelScope.launch(ioDispatcher) {
-            val id = lambdaRepository.getOrderNumber()
+            val id = firestoreRepository.getOrderNumber()
             _uiState.value = _uiState.value.copy(orderId = id)
         }
     }
@@ -169,7 +169,7 @@ class HomeViewModel @Inject constructor(
         // Network I/O - 완료 대기 후 UI 업데이트
         viewModelScope.launch(ioDispatcher) {
             try {
-                lambdaRepository.postOrder(data)
+                firestoreRepository.postOrder(data)
                 _uiEvent.emit(UiEvent.NavigateHome)
             } catch (e: Exception) {
                 e.printStackTrace()

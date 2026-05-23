@@ -5,7 +5,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import eloom.holybean.data.model.PrinterDTO
 import eloom.holybean.data.model.ReportDetailItem
-import eloom.holybean.network.ApiService
+import eloom.holybean.data.repository.FirestoreRepository
 import eloom.holybean.printer.PiPrintClient
 import eloom.holybean.printer.polymorphism.ReportPrinter
 import kotlinx.coroutines.CoroutineDispatcher
@@ -21,7 +21,7 @@ import javax.inject.Named
 
 @HiltViewModel
 class ReportViewModel @Inject constructor(
-    private val apiService: ApiService,
+    private val firestoreRepository: FirestoreRepository,
     @Named("IO") private val ioDispatcher: CoroutineDispatcher,
     @Named("ApplicationScope") private val applicationScope: CoroutineScope,
     private val piPrintClient: PiPrintClient,
@@ -61,23 +61,13 @@ class ReportViewModel @Inject constructor(
 
             try {
                 _uiState.update { it.copy(isLoading = true, reportTitle = "$startDate ~ $endDate") }
-                val response = apiService.getReport(startDate, endDate)
-                if (response.isSuccessful) {
-                    val body = response.body()
-                    val details = body?.menuSales?.map { info ->
-                        ReportDetailItem(info.key, info.value.quantitySold, info.value.totalSales)
-                    } ?: emptyList()
-
-                    _uiState.update {
-                        it.copy(
-                            reportDetailData = details,
-                            reportData = body?.paymentMethodSales ?: emptyMap(),
-                            isLoading = false
-                        )
-                    }
-                } else {
-                    _uiState.update { it.copy(isLoading = false) }
-                    _uiEvent.tryEmit(ReportUiEvent.ShowError("리포트를 불러오는데 실패했습니다: ${response.message()}"))
+                val report = firestoreRepository.getReport(startDate, endDate)
+                _uiState.update {
+                    it.copy(
+                        reportDetailData = report.menuSales,
+                        reportData = report.paymentSales,
+                        isLoading = false
+                    )
                 }
             } catch (e: Exception) {
                 _uiState.update { it.copy(isLoading = false) }

@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import eloom.holybean.data.model.MenuItem
-import eloom.holybean.data.repository.LambdaRepository
 import eloom.holybean.data.repository.MenuRepository
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.channels.BufferOverflow
@@ -16,7 +15,6 @@ import javax.inject.Named
 @HiltViewModel
 class MenuManagementViewModel @Inject constructor(
     private val menuRepository: MenuRepository,
-    private val lambdaRepository: LambdaRepository,
     @Named("IO") private val dispatcher: CoroutineDispatcher
 ) : ViewModel() {
 
@@ -165,36 +163,4 @@ class MenuManagementViewModel @Inject constructor(
         }
     }
 
-    fun saveMenuListToServer() {
-        viewModelScope.launch(dispatcher) {
-            try {
-                _uiState.update { it.copy(isLoading = true) }
-                lambdaRepository.saveMenuListToServer(menuRepository.getMenuListSync())
-                _uiState.update { it.copy(isLoading = false) }
-                _uiEvent.tryEmit(UiEvent.ShowToast("서버에 저장 완료"))
-            } catch (e: Exception) {
-                _uiState.update { it.copy(isLoading = false) }
-                _uiEvent.tryEmit(UiEvent.ShowToast("서버 저장 실패: ${e.message}"))
-            }
-        }
-    }
-
-    fun getMenuListFromServer() {
-        viewModelScope.launch(dispatcher) {
-            try {
-                _uiState.update { it.copy(isLoading = true) }
-                val response = lambdaRepository.getLastedSavedMenuList()
-                if (response.isEmpty()) {
-                    throw Exception("데이터가 올바르지 않습니다.")
-                }
-                menuRepository.overwriteMenuList(response)
-                _uiState.update { it.copy(isLoading = false) }
-                _uiEvent.tryEmit(UiEvent.ShowToast("태블릿에 저장 완료"))
-                _uiEvent.tryEmit(UiEvent.RefreshMenu)
-            } catch (e: Exception) {
-                _uiState.update { it.copy(isLoading = false) }
-                _uiEvent.tryEmit(UiEvent.ShowToast("데이터 가져오기 실패: ${e.message}"))
-            }
-        }
-    }
 }
