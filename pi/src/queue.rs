@@ -32,9 +32,6 @@ impl Default for RetryPolicy {
 
 impl RetryPolicy {
     fn delay_for(&self, attempt: u32) -> Duration {
-        if attempt <= 1 {
-            return self.initial_delay;
-        }
         let raw = self.initial_delay.as_millis() as f64 * self.multiplier.powi((attempt - 1) as i32);
         Duration::from_millis(raw.min(self.max_delay.as_millis() as f64) as u64)
     }
@@ -65,7 +62,7 @@ pub fn spawn_worker(sink: Arc<dyn PrinterSink>, policy: RetryPolicy) -> JobSubmi
     let (tx, mut rx) = mpsc::channel::<Job>(64);
     tokio::spawn(async move {
         while let Some(job) = rx.recv().await {
-            let result = write_with_retry(sink.as_ref(), &job.bytes, policy).await;
+            let result = write_with_retry(Arc::clone(&sink), job.bytes, policy).await;
             let _ = job.reply.send(result);
         }
     });
@@ -73,13 +70,18 @@ pub fn spawn_worker(sink: Arc<dyn PrinterSink>, policy: RetryPolicy) -> JobSubmi
 }
 
 async fn write_with_retry(
-    sink: &dyn PrinterSink,
-    bytes: &[u8],
+    sink: Arc<dyn PrinterSink>,
+    bytes: Vec<u8>,
     policy: RetryPolicy,
 ) -> Result<(), PrintError> {
     let mut attempt = 1;
     loop {
-        match sink.write_all(bytes) {
+        let sink_clone = Arc::clone(&sink);
+        let bytes_owned = bytes.clone();
+        let result = tokio::task::spawn_blocking(move || sink_clone.write_all(&bytes_owned))
+            .await
+            .map_err(|_| PrintError::Unavailable("print task panicked".to_string()))?;
+        match result {
             Ok(()) => return Ok(()),
             Err(e) => {
                 if attempt >= policy.max_attempts {

@@ -25,8 +25,6 @@ impl PrinterSink for FilePrinterSink {
     fn write_all(&self, bytes: &[u8]) -> Result<(), PrintError> {
         let mut file = OpenOptions::new()
             .write(true)
-            .create(true)
-            .truncate(true)
             .open(&self.path)
             .map_err(|e| PrintError::Unavailable(format!("{}: {e}", self.path.display())))?;
         file.write_all(bytes)
@@ -107,6 +105,7 @@ mod tests {
     fn file_sink_writes_bytes_to_path() {
         let dir = std::env::temp_dir();
         let path = dir.join(format!("holybean-sink-test-{}.bin", std::process::id()));
+        std::fs::File::create(&path).unwrap();
         let sink = FilePrinterSink::new(&path);
         sink.write_all(b"hello").unwrap();
         assert_eq!(std::fs::read(&path).unwrap(), b"hello");

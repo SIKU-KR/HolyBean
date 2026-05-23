@@ -1,3 +1,4 @@
+use crate::command::{PrintCommand, Size};
 use crate::layout::{layout_row, Run, LINE_WIDTH};
 
 // 레거시 EscPosPrinterCommands 바이트와 동치
@@ -15,8 +16,6 @@ pub const CUT: &[u8] = &[0x1D, 0x56, 0x01]; // GS V 1
 
 /// 절단 전 용지 피드(dots). ESC J n (n ≤ 255). 절단 위치 확보용.
 pub const FEED_BEFORE_CUT_DOTS: u8 = 100;
-
-use crate::command::Size;
 
 /// 스타일이 적용된 하나의 Run을 ESC/POS 바이트로 인코딩해 out에 덧붙인다.
 pub fn render_run(run: &Run, out: &mut Vec<u8>) {
@@ -44,8 +43,6 @@ pub fn render_run(run: &Run, out: &mut Vec<u8>) {
         out.extend_from_slice(BOLD_OFF);
     }
 }
-
-use crate::command::PrintCommand;
 
 /// 한 인쇄 요청의 명령 배열을 완전한 ESC/POS 바이트 스트림으로 렌더링한다.
 /// 매 요청마다 RESET + 문자셋 선택 + 좌측정렬 기준으로 시작한다(stateless).

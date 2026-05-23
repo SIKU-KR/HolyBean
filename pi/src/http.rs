@@ -21,11 +21,6 @@ struct HealthBody {
     status: &'static str,
 }
 
-#[derive(Serialize)]
-struct ErrorBody {
-    error: String,
-}
-
 pub fn router(state: AppState) -> Router {
     Router::new()
         .route("/health", get(health))
@@ -55,11 +50,11 @@ async fn print(
         Ok(()) => (StatusCode::OK, Json(serde_json::json!({ "status": "printed" }))),
         Err(PrintError::Unavailable(msg)) => (
             StatusCode::SERVICE_UNAVAILABLE,
-            Json(serde_json::to_value(ErrorBody { error: msg }).unwrap()),
+            Json(serde_json::json!({ "error": msg })),
         ),
         Err(PrintError::Write(msg)) => (
             StatusCode::INTERNAL_SERVER_ERROR,
-            Json(serde_json::to_value(ErrorBody { error: msg }).unwrap()),
+            Json(serde_json::json!({ "error": msg })),
         ),
     }
 }
