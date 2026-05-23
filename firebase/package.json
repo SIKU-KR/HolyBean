@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "test": "vitest run",
-    "test:rules": "firebase emulators:exec --only firestore \"vitest run test/rules.test.ts\"",
+    "test:rules": "firebase emulators:exec --only firestore \"vitest run --config vitest.rules.config.ts\"",
     "etl": "tsx src/etl.ts",
     "verify": "tsx src/verify.ts"
   },
