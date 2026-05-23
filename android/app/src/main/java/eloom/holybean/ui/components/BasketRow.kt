@@ -10,19 +10,21 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import eloom.holybean.ui.theme.HolyBeanTheme
 import eloom.holybean.ui.theme.OnSurfaceMuted
+import eloom.holybean.ui.theme.OrangeText
 
 @Composable
-fun BasketRow(name: String, count: Int, amount: Int, onClick: () -> Unit) {
+fun BasketRow(name: String, count: Int, amount: Int, isCoupon: Boolean = false, onClick: () -> Unit) {
+    val nameColor = if (isCoupon) OrangeText else MaterialTheme.colorScheme.onSurface
     Row(
         Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 7.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            "$name ", style = MaterialTheme.typography.bodyMedium,
+            "$name ", style = MaterialTheme.typography.bodyMedium, color = nameColor,
             modifier = Modifier.weight(1f),
         )
         Text("${count}개 ", style = MaterialTheme.typography.labelSmall, color = OnSurfaceMuted)
-        Text("%,d".format(amount), style = MaterialTheme.typography.bodyMedium)
+        Text("%,d".format(amount), style = MaterialTheme.typography.bodyMedium, color = nameColor)
     }
 }
 
