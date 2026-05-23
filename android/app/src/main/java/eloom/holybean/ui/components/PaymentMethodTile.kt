@@ -14,14 +14,14 @@ import eloom.holybean.ui.theme.*
 @Composable
 fun PaymentMethodTile(label: String, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Surface(
-        onClick = onClick, modifier = modifier.height(46.dp),
-        shape = RoundedCornerShape(9.dp),
+        onClick = onClick, modifier = modifier.height(Dimens.minTouchTarget),
+        shape = RoundedCornerShape(Dimens.radiusButton),
         color = if (selected) OrangeContainer else MaterialTheme.colorScheme.surface,
         border = BorderStroke(2.dp, if (selected) Orange else DividerGray),
     ) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text(label, style = MaterialTheme.typography.bodyMedium,
-                color = if (selected) OrangeOnContainer else MaterialTheme.colorScheme.onSurface)
+                color = if (selected) OrangeText else MaterialTheme.colorScheme.onSurface)
         }
     }
 }
