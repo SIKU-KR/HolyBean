@@ -1,5 +1,6 @@
 package eloom.holybean.ui.home
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -10,12 +11,19 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import eloom.holybean.data.model.CartItem
 import eloom.holybean.data.model.MenuItem
 import eloom.holybean.ui.components.BasketRow
@@ -40,15 +48,21 @@ fun HomeRoute(
     onNavigateToSettings: () -> Unit,
 ) {
     val state by sharedViewModel.uiState.collectAsStateWithLifecycle()
-    val context = androidx.compose.ui.platform.LocalContext.current
+    val context = LocalContext.current
 
-    LaunchedEffect(Unit) {
-        sharedViewModel.uiEvent.collect { event ->
-            when (event) {
-                is HomeViewModel.UiEvent.ShowToast ->
-                    android.widget.Toast.makeText(context, event.message, android.widget.Toast.LENGTH_SHORT).show()
-                HomeViewModel.UiEvent.NavigateToPayment -> onNavigateToPayment()
-                HomeViewModel.UiEvent.NavigateHome -> Unit
+    // HomeViewModel 은 OrderFlow 그래프 스코프라 Home/Payment 가 동일 인스턴스의 uiEvent
+    // (replay=0 fan-out SharedFlow)를 공유한다. 백그라운드 화면이 상대 화면의 일회성 이벤트를
+    // 가로채/중복 처리하지 않도록 RESUMED 상태에서만 수집한다(Payment 등 다른 라우트도 동일 규칙).
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(lifecycleOwner) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            sharedViewModel.uiEvent.collect { event ->
+                when (event) {
+                    is HomeViewModel.UiEvent.ShowToast ->
+                        Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
+                    HomeViewModel.UiEvent.NavigateToPayment -> onNavigateToPayment()
+                    HomeViewModel.UiEvent.NavigateHome -> Unit
+                }
             }
         }
     }
@@ -174,8 +188,7 @@ private fun CouponAmountDialog(onConfirm: (Int) -> Unit, onDismiss: () -> Unit) 
         text = {
             OutlinedTextField(
                 value = text, onValueChange = { text = it.filter(Char::isDigit) },
-                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
-                    keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 singleLine = true,
             )
         },
@@ -186,7 +199,7 @@ private fun CouponAmountDialog(onConfirm: (Int) -> Unit, onDismiss: () -> Unit) 
     )
 }
 
-@androidx.compose.ui.tooling.preview.Preview(widthDp = 900, heightDp = 500)
+@Preview(widthDp = 900, heightDp = 500)
 @Composable
 private fun HomeScreenPreview() = HolyBeanTheme {
     HomeScreen(
