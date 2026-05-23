@@ -27,6 +27,7 @@ android {
 
         buildConfigField("String", "API_KEY", getApiKey("apikey"))
         buildConfigField("String", "BASE_URL", "\"https://vk0i6j4tfi.execute-api.ap-northeast-2.amazonaws.com\"")
+        buildConfigField("String", "PRINT_SERVER_URL", "\"http://192.168.4.1:9100/\"")
     }
 
     buildTypes {
