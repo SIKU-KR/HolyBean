@@ -7,7 +7,7 @@ import androidx.compose.ui.graphics.Color
 
 private val HolyBeanColors = lightColorScheme(
     primary = Orange,
-    onPrimary = Color(0xFFFFFFFF),
+    onPrimary = OnSurface,   // 오렌지(primary) 위 텍스트는 진한 색 (대비 6.3:1)
     primaryContainer = OrangeContainer,
     onPrimaryContainer = OrangeOnContainer,
     background = ScreenBg,
