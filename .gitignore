@@ -17,6 +17,10 @@ AGENTS.md
 /android/captures
 /android/local.properties
 /android/app/release
+/android/google-services.json
+
+# Firebase
+android/app/google-services.json
 
 # Firebase ETL secrets/data
 firebase/serviceAccount.json
