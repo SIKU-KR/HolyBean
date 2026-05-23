@@ -48,7 +48,9 @@ fun HolyBeanNavHost(navController: NavHostController = rememberNavController()) 
         composable<OrdersDest> {
             eloom.holybean.ui.orders.OrdersRoute(onClose = { navController.popBackStack() })
         }
-        composable<MenuMgmtDest> { /* Task 19 */ }
+        composable<MenuMgmtDest> {
+            eloom.holybean.ui.menumanagement.MenuManagementRoute(onClose = { navController.popBackStack() })
+        }
         composable<CreditsDest> {
             eloom.holybean.ui.credits.CreditsRoute(onClose = { navController.popBackStack() })
         }
