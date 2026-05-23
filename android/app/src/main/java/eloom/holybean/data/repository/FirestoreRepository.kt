@@ -192,4 +192,48 @@ class FirestoreRepository @Inject constructor(
             SetOptions.merge()
         )
     }
+
+    /** 외상 정산(1→0): 원 주문일 reportRollups에 가산. 주문 본문을 읽어 델타 계산. */
+    suspend fun setCreditOrderPaid(date: String, num: Int) {
+        try {
+            val orderRef = db.collection(FirestoreSchema.ORDERS)
+                .document(FirestoreSchema.orderId(date, num))
+            val snap = orderRef.get().await()
+            if (!snap.exists()) return
+            if ((snap.getLong("creditStatus") ?: 0L).toInt() == FirestoreSchema.CREDIT_SETTLED) return
+
+            @Suppress("UNCHECKED_CAST")
+            val items = (snap.get("items") as? List<Map<String, Any>>) ?: emptyList()
+            @Suppress("UNCHECKED_CAST")
+            val payments = (snap.get("payments") as? List<Map<String, Any>>) ?: emptyList()
+
+            val cartItems = items.map {
+                eloom.holybean.data.model.CartItem(
+                    0, it["name"] as? String ?: "", (it["unitPrice"] as? Number)?.toInt() ?: 0,
+                    (it["quantity"] as? Number)?.toInt() ?: 0, (it["subtotal"] as? Number)?.toInt() ?: 0
+                )
+            }
+            val paymentMethods = payments.map {
+                eloom.holybean.data.model.PaymentMethod(
+                    it["method"] as? String ?: "", (it["amount"] as? Number)?.toInt() ?: 0
+                )
+            }
+            val delta = OrderAggregation.rollupDelta(cartItems, paymentMethods)
+
+            val batch = db.batch()
+            batch.update(orderRef, "creditStatus", FirestoreSchema.CREDIT_SETTLED)
+            batch.update(
+                db.collection(FirestoreSchema.DAY_SUMMARIES).document(date),
+                "orders.$num.creditStatus", FirestoreSchema.CREDIT_SETTLED
+            )
+            batch.update(
+                db.collection(FirestoreSchema.AGGREGATES).document(FirestoreSchema.OPEN_CREDITS_DOC),
+                FieldPath.of("items", FirestoreSchema.creditKey(date, num)), FieldValue.delete()
+            )
+            applyRollupDelta(batch, date, delta, sign = 1)
+            batch.commit().await()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
 }
