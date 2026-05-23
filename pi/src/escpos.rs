@@ -1,4 +1,4 @@
-use crate::layout::Run;
+use crate::layout::{layout_row, Run, LINE_WIDTH};
 
 // 레거시 EscPosPrinterCommands 바이트와 동치
 pub const RESET: &[u8] = &[0x1B, 0x40]; // ESC @
@@ -43,6 +43,67 @@ pub fn render_run(run: &Run, out: &mut Vec<u8>) {
     if run.style.bold {
         out.extend_from_slice(BOLD_OFF);
     }
+}
+
+use crate::command::PrintCommand;
+
+/// 한 인쇄 요청의 명령 배열을 완전한 ESC/POS 바이트 스트림으로 렌더링한다.
+/// 매 요청마다 RESET + 문자셋 선택 + 좌측정렬 기준으로 시작한다(stateless).
+pub fn render_document(commands: &[PrintCommand]) -> Vec<u8> {
+    let mut out = Vec::new();
+    out.extend_from_slice(RESET);
+    out.extend_from_slice(CHARSET_EUC_KR);
+    out.extend_from_slice(ALIGN_LEFT);
+
+    for cmd in commands {
+        match cmd {
+            PrintCommand::Text {
+                content,
+                align,
+                bold,
+                underline,
+                size,
+            } => {
+                let seg = crate::command::Segment {
+                    content: content.clone(),
+                    align: *align,
+                    bold: *bold,
+                    underline: *underline,
+                    size: *size,
+                };
+                for run in layout_row(std::slice::from_ref(&seg)) {
+                    render_run(&run, &mut out);
+                }
+                out.push(LF);
+            }
+            PrintCommand::Row { columns } => {
+                for run in layout_row(columns) {
+                    render_run(&run, &mut out);
+                }
+                out.push(LF);
+            }
+            PrintCommand::Divider { ch } => {
+                let line: String = (0..LINE_WIDTH).map(|_| *ch).collect();
+                render_run(
+                    &Run {
+                        text: line,
+                        style: crate::layout::Style::default(),
+                    },
+                    &mut out,
+                );
+                out.push(LF);
+            }
+            PrintCommand::Blank => {
+                out.push(LF);
+            }
+            PrintCommand::Cut => {
+                out.extend_from_slice(&[0x1B, 0x4A, FEED_BEFORE_CUT_DOTS]); // ESC J n
+                out.extend_from_slice(CUT);
+            }
+        }
+    }
+
+    out
 }
 
 #[cfg(test)]
@@ -102,5 +163,42 @@ mod tests {
         );
         // EUC-KR "가" = 0xB0 0xA1
         assert_eq!(out, vec![0xB0, 0xA1]);
+    }
+
+    use crate::command::{Align, PrintCommand, Size};
+
+    #[test]
+    fn document_starts_with_reset_charset_align() {
+        let bytes = render_document(&[PrintCommand::Blank]);
+        let prefix = [RESET, CHARSET_EUC_KR, ALIGN_LEFT].concat();
+        assert!(bytes.starts_with(&prefix));
+        assert_eq!(*bytes.last().unwrap(), LF); // Blank → LF
+    }
+
+    #[test]
+    fn divider_fills_line_width() {
+        let bytes = render_document(&[PrintCommand::Divider { ch: '=' }]);
+        let dashes = "=".repeat(LINE_WIDTH as usize);
+        let needle = dashes.as_bytes();
+        assert!(bytes.windows(needle.len()).any(|w| w == needle));
+    }
+
+    #[test]
+    fn cut_emits_feed_then_cut_at_end() {
+        let bytes = render_document(&[PrintCommand::Cut]);
+        let tail = [&[0x1B, 0x4A, FEED_BEFORE_CUT_DOTS][..], CUT].concat();
+        assert!(bytes.ends_with(&tail));
+    }
+
+    #[test]
+    fn text_line_ends_with_lf() {
+        let bytes = render_document(&[PrintCommand::Text {
+            content: "hi".to_string(),
+            align: Align::Left,
+            bold: false,
+            underline: false,
+            size: Size::Normal,
+        }]);
+        assert_eq!(*bytes.last().unwrap(), LF);
     }
 }
