@@ -24,7 +24,13 @@ fun HolyBeanNavHost(navController: NavHostController = rememberNavController()) 
                     onNavigateToSettings = { /* Task 15: 설정 시트 */ },
                 )
             }
-            composable<PaymentDest> { /* Task 11 에서 연결 */ }
+            composable<PaymentDest> { entry ->
+                eloom.holybean.ui.payment.PaymentRoute(
+                    sharedViewModel = entry.sharedOrderViewModel(navController),
+                    onClose = { navController.popBackStack() },
+                    onPaid = { navController.popBackStack(HomeDest, inclusive = false) },
+                )
+            }
         }
         composable<OrdersDest> { /* Task 14 */ }
         composable<MenuMgmtDest> { /* Task 19 */ }
