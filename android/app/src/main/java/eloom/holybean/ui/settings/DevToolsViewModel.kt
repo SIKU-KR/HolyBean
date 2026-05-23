@@ -6,8 +6,12 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import eloom.holybean.BuildConfig
 import eloom.holybean.printer.PiPrintClient
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -27,14 +31,32 @@ class DevToolsViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(State())
     val uiState: StateFlow<State> = _uiState.asStateFlow()
 
+    // One-shot events (ShowToast) must not replay to new subscribers
+    // (e.g. screen re-entry would re-fire a stale toast). replay = 0; tryEmit still
+    // buffers via extraBufferCapacity while the screen is actively collecting.
+    private val _uiEvent = MutableSharedFlow<DevToolsUiEvent>(
+        replay = 0,
+        extraBufferCapacity = 16,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST,
+    )
+    val uiEvent: SharedFlow<DevToolsUiEvent> = _uiEvent.asSharedFlow()
+
+    sealed class DevToolsUiEvent {
+        data class ShowToast(val message: String) : DevToolsUiEvent()
+    }
+
     fun refresh() {
         viewModelScope.launch(ioDispatcher) {
-            val ok = runCatching { piPrintClient.checkHealth() }.getOrDefault(false)
+            val ok = piPrintClient.checkHealth()
             _uiState.update { it.copy(printerOk = ok) }
         }
     }
 
     fun testPrint() {
-        viewModelScope.launch(ioDispatcher) { runCatching { piPrintClient.printTestReceipt() } }
+        viewModelScope.launch(ioDispatcher) {
+            runCatching { piPrintClient.printTestReceipt() }
+                .onSuccess { _uiEvent.tryEmit(DevToolsUiEvent.ShowToast("테스트 영수증을 출력했습니다")) }
+                .onFailure { _uiEvent.tryEmit(DevToolsUiEvent.ShowToast("테스트 출력 실패: ${it.message}")) }
+        }
     }
 }

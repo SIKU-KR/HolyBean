@@ -17,6 +17,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -24,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -31,7 +33,16 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 @Composable
 fun DevToolsRoute(onClose: () -> Unit, vm: DevToolsViewModel = hiltViewModel()) {
     val state by vm.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
     LaunchedEffect(Unit) { vm.refresh() }
+    LaunchedEffect(Unit) {
+        vm.uiEvent.collect {
+            when (it) {
+                is DevToolsViewModel.DevToolsUiEvent.ShowToast ->
+                    Toast.makeText(context, it.message, Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
     DevToolsScreen(state, onClose, vm::refresh, vm::testPrint)
 }
 

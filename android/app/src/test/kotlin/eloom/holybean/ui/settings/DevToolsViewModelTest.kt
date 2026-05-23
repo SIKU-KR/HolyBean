@@ -4,10 +4,12 @@ import eloom.holybean.printer.PiPrintClient
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class DevToolsViewModelTest {
@@ -34,5 +36,18 @@ class DevToolsViewModelTest {
         vm.testPrint()
         advanceUntilIdle()
         coVerify { pi.printTestReceipt() }
+    }
+
+    @Test fun `test print failure emits show toast`() = runTest {
+        coEvery { pi.printTestReceipt() } throws RuntimeException("boom")
+        val vm = DevToolsViewModel(pi, UnconfinedTestDispatcher())
+        val events = mutableListOf<DevToolsViewModel.DevToolsUiEvent>()
+        val collector = launch(UnconfinedTestDispatcher(testScheduler)) {
+            vm.uiEvent.collect { events.add(it) }
+        }
+        vm.testPrint()
+        advanceUntilIdle()
+        assertTrue(events.any { it is DevToolsViewModel.DevToolsUiEvent.ShowToast })
+        collector.cancel()
     }
 }
