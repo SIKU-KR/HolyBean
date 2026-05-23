@@ -7,7 +7,8 @@
     "test": "vitest run",
     "test:rules": "firebase emulators:exec --only firestore \"vitest run --config vitest.rules.config.ts\"",
     "etl": "tsx src/etl.ts",
-    "verify": "tsx src/verify.ts"
+    "verify": "tsx src/verify.ts",
+    "menu:import": "tsx src/importMenu.ts"
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^3.0.4",
