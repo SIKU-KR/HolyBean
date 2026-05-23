@@ -204,6 +204,28 @@ class HomeViewModelTest {
         assertEquals(11, state.orderId) // 다음 주문번호로 갱신
     }
 
+    @Test
+    fun `init uses cached menu and skips network fetch when cache present`() = runTest(testDispatcher) {
+        // Given - 캐시에 메뉴가 있다
+        val cached = listOf(eloom.holybean.data.model.MenuItem(1001, "아메리카노", 4000, 1, true))
+        io.mockk.every { menuRepository.getCachedMenu() } returns cached
+
+        // When - ViewModel 재구성(init 재실행)
+        homeViewModel = HomeViewModel(
+            firestoreRepository,
+            menuRepository,
+            testDispatcher,
+            CoroutineScope(SupervisorJob() + testDispatcher),
+            piPrintClient,
+            homePrinter,
+        )
+        advanceUntilIdle()
+
+        // Then - 캐시 사용, 네트워크 페치 미호출
+        assertEquals(cached, homeViewModel.uiState.value.allMenuItems)
+        coVerify(exactly = 0) { menuRepository.getMenuListSync() }
+    }
+
     // 헬퍼 메서드: 테스트용 Order 객체 생성
     private fun createTestOrder(orderNum: Int = 1): Order {
         val cartItems = listOf(

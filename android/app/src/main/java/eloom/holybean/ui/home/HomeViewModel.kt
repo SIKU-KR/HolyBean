@@ -69,9 +69,9 @@ class HomeViewModel @Inject constructor(
     private var orderInFlight = false
 
     init {
-        // Load initial data
+        // Load initial data — 스플래시가 채운 캐시를 우선 사용하고, 없으면 네트워크 페치로 폴백
         viewModelScope.launch(ioDispatcher) {
-            val menus = menuRepository.getMenuListSync()
+            val menus = menuRepository.getCachedMenu() ?: menuRepository.getMenuListSync()
             _uiState.value = _uiState.value.copy(
                 allMenuItems = menus,
                 filteredMenuItems = menus
