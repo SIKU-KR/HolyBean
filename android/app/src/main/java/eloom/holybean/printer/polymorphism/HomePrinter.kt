@@ -1,46 +1,57 @@
 package eloom.holybean.printer.polymorphism
 
 import eloom.holybean.data.model.Order
+import eloom.holybean.printer.network.PrintAlign
+import eloom.holybean.printer.network.PrintCommandDto
+import eloom.holybean.printer.network.PrintSize
+import eloom.holybean.printer.network.ReceiptBuilder
+import eloom.holybean.printer.network.ReceiptBuilder.Companion.seg
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Text formatter for home screen receipts.
- * Generates ESC/POS formatted text for customer and POS receipts.
+ * 홈 화면 영수증 명령 생성기. 고객용/POS용 명령 배열을 만든다.
+ * ESC/POS 변환은 Pi 서버가 담당한다.
  */
 @Singleton
 class HomePrinter @Inject constructor() {
 
-    fun receiptTextForCustomer(data: Order): String = buildString {
-        appendLine("[C]=====================================")
-        appendLine("[L]")
-        appendLine("[C]<u><font size='big'>주문번호 : ${data.orderNum}</font></u>")
-        appendLine("[L]")
-        appendLine("[C]-------------------------------------")
-        appendLine("[L]")
-        data.orderItems.forEach { item ->
-            appendLine("[L]<b>${item.name}</b>[R]${item.count}")
+    fun receiptForCustomer(data: Order): List<PrintCommandDto> = ReceiptBuilder()
+        .divider('=')
+        .blank()
+        .text("주문번호 : ${data.orderNum}", align = PrintAlign.CENTER, underline = true, size = PrintSize.BIG)
+        .blank()
+        .divider('-')
+        .blank()
+        .also { builder ->
+            data.orderItems.forEach { item ->
+                builder.row(seg(item.name, bold = true), seg(item.count.toString(), align = PrintAlign.RIGHT))
+            }
         }
-        appendLine("[L]")
-        append("[C]=====================================")
-    }
+        .blank()
+        .divider('=')
+        .cut()
+        .build()
 
-    fun receiptTextForPOS(data: Order, option: String): String = buildString {
-        appendLine("[C]=====================================")
-        appendLine("[L]")
-        appendLine("[C]<u><font size='big'>주문번호 : ${data.orderNum}</font></u>")
-        appendLine("[L]")
-        appendLine("[L]<font size='big'>${option}</font>")
-        appendLine("[L]")
-        appendLine("[R]주문자 : ${data.customerName}")
-        appendLine("[C]-------------------------------------")
-        appendLine("[L]")
-        data.orderItems.forEach { item ->
-            appendLine("[L]<b>${item.name}</b>[R]${item.count}")
+    fun receiptForPOS(data: Order, option: String): List<PrintCommandDto> = ReceiptBuilder()
+        .divider('=')
+        .blank()
+        .text("주문번호 : ${data.orderNum}", align = PrintAlign.CENTER, underline = true, size = PrintSize.BIG)
+        .blank()
+        .text(option, align = PrintAlign.LEFT, size = PrintSize.BIG)
+        .blank()
+        .text("주문자 : ${data.customerName}", align = PrintAlign.RIGHT)
+        .divider('-')
+        .blank()
+        .also { builder ->
+            data.orderItems.forEach { item ->
+                builder.row(seg(item.name, bold = true), seg(item.count.toString(), align = PrintAlign.RIGHT))
+            }
         }
-        appendLine("[L]")
-        appendLine("[R]합계 : ${data.totalAmount}")
-        appendLine("[R]${data.orderDate}")
-        append("[C]=====================================")
-    }
+        .blank()
+        .text("합계 : ${data.totalAmount}", align = PrintAlign.RIGHT)
+        .text(data.orderDate, align = PrintAlign.RIGHT)
+        .divider('=')
+        .cut()
+        .build()
 }
