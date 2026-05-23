@@ -44,7 +44,6 @@ class PiPrintClientTest {
         var thrownException: Exception? = null
         try {
             client.print(emptyList())
-            advanceUntilIdle()
         } catch (e: Exception) {
             thrownException = e
         }

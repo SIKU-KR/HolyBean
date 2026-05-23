@@ -8,7 +8,6 @@ import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
 import com.google.android.material.navigation.NavigationView
 import dagger.hilt.android.AndroidEntryPoint
-import eloom.holybean.PermissionCoordinator.PermissionResult
 import eloom.holybean.interfaces.MainActivityListener
 import eloom.holybean.ui.credits.CreditsFragment
 import eloom.holybean.ui.home.HomeFragment
@@ -18,8 +17,6 @@ import eloom.holybean.ui.report.ReportFragment
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity(), MainActivityListener {
-    private val permissionCoordinator by lazy { PermissionCoordinator(this) }
-
     private lateinit var drawerLayout: DrawerLayout
     private lateinit var navigationView: NavigationView
 
@@ -47,7 +44,6 @@ class MainActivity : AppCompatActivity(), MainActivityListener {
         initializeViews()
         setupInitialFragment(savedInstanceState)
         setupNavigationDrawer()
-        requestBluetoothPermissions()
     }
 
     private fun configureSystemBars() {
@@ -93,21 +89,6 @@ class MainActivity : AppCompatActivity(), MainActivityListener {
             loadFragment(it)
             true
         } ?: false
-    }
-
-    private fun requestBluetoothPermissions() {
-        permissionCoordinator.requestBluetoothPermissions { result ->
-            when (result) {
-                PermissionResult.Granted -> Unit
-                is PermissionResult.ShowRationale -> {
-                    // Surface an educational UI before re-requesting if needed.
-                }
-
-                is PermissionResult.Denied -> {
-                    // Consider guiding users to Settings when permission is essential.
-                }
-            }
-        }
     }
 
     private fun loadFragment(fragment: Fragment) {

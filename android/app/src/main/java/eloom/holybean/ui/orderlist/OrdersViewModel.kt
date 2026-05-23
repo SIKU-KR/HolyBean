@@ -112,8 +112,7 @@ class OrdersViewModel @Inject constructor(
             return
         }
 
-        val orderDetailsArrayList = ArrayList(currentState.orderDetails)
-        val commands = ordersPrinter.makeCommands(currentState.selectedOrderNumber, orderDetailsArrayList)
+        val commands = ordersPrinter.makeCommands(currentState.selectedOrderNumber, currentState.orderDetails.toList())
 
         // Printer I/O - Application Scope에서 실행 (ViewModel 생명주기와 독립)
         applicationScope.launch {

@@ -197,7 +197,7 @@ class HomeViewModelTest {
         advanceUntilIdle()
 
         // Then
-        coVerify { piPrintClient.print(any<List<PrintCommandDto>>()) }
+        coVerify(exactly = 2) { piPrintClient.print(any<List<PrintCommandDto>>()) }
     }
 
     // 헬퍼 메서드: 테스트용 Order 객체 생성

@@ -51,6 +51,7 @@ class PiPrintClient @Inject constructor(
             try {
                 return block()
             } catch (error: Exception) {
+                if (error is kotlinx.coroutines.CancellationException) throw error
                 if (attempt >= retry.maxAttempts) {
                     throw error
                 }
