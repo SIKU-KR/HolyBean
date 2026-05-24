@@ -2,7 +2,6 @@ package eloom.holybean.ui.home
 
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -31,12 +30,14 @@ import eloom.holybean.data.model.MenuItem
 import eloom.holybean.ui.components.BasketRow
 import eloom.holybean.ui.components.MenuTile
 import eloom.holybean.ui.components.TileStyle
+import eloom.holybean.ui.components.layout.Pane
+import eloom.holybean.ui.components.layout.ScreenContainer
+import eloom.holybean.ui.components.layout.TotalRow
 import eloom.holybean.ui.theme.Dimens
 import eloom.holybean.ui.theme.HolyBeanTheme
 import eloom.holybean.ui.theme.OnSurface
 import eloom.holybean.ui.theme.OnSurfaceMuted
 import eloom.holybean.ui.theme.Orange
-import eloom.holybean.ui.theme.OrangeOnContainer
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -112,46 +113,50 @@ fun HomeScreen(
     onHistoryClick: () -> Unit,
     onCheckout: () -> Unit,
 ) {
-    Row(
-        Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(Dimens.screenPadding),
-        horizontalArrangement = Arrangement.spacedBy(Dimens.gap),
-    ) {
-        Column(Modifier.weight(1f)) {
-            CategoryChips(categories, selectedCategory, onCategory)
-            Spacer(Modifier.height(8.dp))
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(3),
-                horizontalArrangement = Arrangement.spacedBy(7.dp),
-                verticalArrangement = Arrangement.spacedBy(7.dp),
-                modifier = Modifier.fillMaxSize(),
-            ) {
-                items(menuItems, key = { it.id }) { item ->
-                    MenuTile(item.name, item.price, onClick = { onMenuClick(item.id) })
-                }
-                item(key = COUPON_TILE_ID) {
-                    MenuTile("쿠폰", null, onClick = onCouponClick, style = TileStyle.Coupon)
-                }
-                item(key = SETTINGS_TILE_ID) {
-                    MenuTile("⚙ 설정", null, onClick = onSettingsClick, style = TileStyle.Settings)
+    ScreenContainer {
+        Row(
+            Modifier.fillMaxSize(),
+            horizontalArrangement = Arrangement.spacedBy(Dimens.paneGap),
+        ) {
+            Column(Modifier.weight(1f)) {
+                CategoryChips(categories, selectedCategory, onCategory)
+                Spacer(Modifier.height(Dimens.spaceSm))
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(3),
+                    horizontalArrangement = Arrangement.spacedBy(Dimens.gridGap),
+                    verticalArrangement = Arrangement.spacedBy(Dimens.gridGap),
+                    modifier = Modifier.fillMaxSize(),
+                ) {
+                    items(menuItems, key = { it.id }) { item ->
+                        MenuTile(item.name, item.price, onClick = { onMenuClick(item.id) })
+                    }
+                    item(key = COUPON_TILE_ID) {
+                        MenuTile("쿠폰", null, onClick = onCouponClick, style = TileStyle.Coupon)
+                    }
+                    item(key = SETTINGS_TILE_ID) {
+                        MenuTile("⚙ 설정", null, onClick = onSettingsClick, style = TileStyle.Settings)
+                    }
                 }
             }
+            BasketPane(
+                orderId, basket, total, onBasketClick, onHistoryClick, onCheckout,
+                Modifier.fillMaxHeight().fillMaxWidth(Dimens.paneSplitNarrow),
+            )
         }
-        BasketPane(orderId, basket, total, onBasketClick, onHistoryClick, onCheckout,
-            Modifier.fillMaxHeight().fillMaxWidth(Dimens.basketWidthFraction))
     }
 }
 
 @Composable
 private fun CategoryChips(categories: ImmutableList<String>, selected: Int, onSelect: (Int) -> Unit) {
     LazyRow(
-        horizontalArrangement = Arrangement.spacedBy(5.dp),
+        horizontalArrangement = Arrangement.spacedBy(Dimens.spaceSm),
     ) {
         itemsIndexed(categories) { index, name ->
             FilterChip(
                 selected = index == selected,
                 onClick = { onSelect(index) },
                 label = { Text(name, style = MaterialTheme.typography.bodyMedium) },
-                shape = RoundedCornerShape(14.dp),
+                shape = RoundedCornerShape(Dimens.radiusChip),
                 colors = FilterChipDefaults.filterChipColors(
                     selectedContainerColor = Orange,
                     selectedLabelColor = OnSurface,
@@ -171,43 +176,37 @@ private fun BasketPane(
     orderId: Int, basket: ImmutableList<CartItem>, total: Int,
     onItemClick: (Int) -> Unit, onHistory: () -> Unit, onCheckout: () -> Unit, modifier: Modifier,
 ) {
-    Surface(modifier, shape = RoundedCornerShape(Dimens.paneRadius),
-        color = MaterialTheme.colorScheme.surface, shadowElevation = Dimens.paneElevation) {
-        Column(Modifier.padding(12.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("${orderId}번 주문", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-                OutlinedButton(
-                    onClick = onHistory,
-                    shape = RoundedCornerShape(Dimens.radiusButton),
-                    border = BorderStroke(2.dp, Orange),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Orange),
-                ) { Text("주문기록", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold) }
+    Pane(modifier) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("${orderId}번 주문", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+            OutlinedButton(
+                onClick = onHistory,
+                shape = RoundedCornerShape(Dimens.radiusButton),
+                border = BorderStroke(2.dp, Orange),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = Orange),
+            ) { Text("주문기록", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold) }
+        }
+        if (basket.isEmpty()) {
+            Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                Text("담긴 상품이 없습니다", style = MaterialTheme.typography.bodyMedium, color = OnSurfaceMuted)
             }
-            if (basket.isEmpty()) {
-                Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    Text("담긴 상품이 없습니다", style = MaterialTheme.typography.bodyMedium, color = OnSurfaceMuted)
-                }
-            } else {
-                LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Dimens.spaceXs)) {
-                    // 쿠폰은 항상 id=999 라 key=it.id 면 중복 → 인덱스 키 사용.
-                    itemsIndexed(basket, key = { index, _ -> index }) { _, item ->
-                        BasketRow(item.name, item.count, item.count * item.price, isCoupon = item.id == 999) {
-                            onItemClick(item.id)
-                        }
+        } else {
+            LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Dimens.spaceXs)) {
+                // 쿠폰은 항상 id=999 라 key=it.id 면 중복 → 인덱스 키 사용.
+                itemsIndexed(basket, key = { index, _ -> index }) { _, item ->
+                    BasketRow(item.name, item.count, item.count * item.price, isCoupon = item.id == 999) {
+                        onItemClick(item.id)
                     }
                 }
             }
-            Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalArrangement = Arrangement.End) {
-                Text("합계 ", style = MaterialTheme.typography.titleMedium)
-                Text("%,d원".format(total), style = MaterialTheme.typography.titleMedium, color = OrangeOnContainer)
-            }
-            Button(
-                onClick = onCheckout, enabled = basket.isNotEmpty(),
-                modifier = Modifier.fillMaxWidth().height(Dimens.primaryTouchTarget),
-                shape = RoundedCornerShape(Dimens.radiusButton),
-                colors = ButtonDefaults.buttonColors(containerColor = Orange),
-            ) { Text("결제", style = MaterialTheme.typography.titleMedium) }
         }
+        TotalRow(total, Modifier.padding(vertical = Dimens.spaceSm))
+        Button(
+            onClick = onCheckout, enabled = basket.isNotEmpty(),
+            modifier = Modifier.fillMaxWidth().height(Dimens.primaryTouchTarget),
+            shape = RoundedCornerShape(Dimens.radiusButton),
+            colors = ButtonDefaults.buttonColors(containerColor = Orange),
+        ) { Text("결제", style = MaterialTheme.typography.titleMedium) }
     }
 }
 
