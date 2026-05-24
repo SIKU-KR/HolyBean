@@ -39,7 +39,7 @@ fun MenuTile(
     }
     Card(
         onClick = onClick,
-        modifier = modifier.height(90.dp),
+        modifier = modifier.height(Dimens.menuTileHeight),
         shape = RoundedCornerShape(Dimens.radiusTile),
         colors = CardDefaults.cardColors(containerColor = container),
         elevation = CardDefaults.cardElevation(defaultElevation = Dimens.tileElevation),
