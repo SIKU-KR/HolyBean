@@ -24,7 +24,7 @@ fun SegmentedToggle(options: ImmutableList<String>, selected: String, onSelect: 
                     inactiveContainerColor = Color(0xFFF0F0F0),
                     inactiveContentColor = OnSurfaceMuted,
                 ),
-            ) { Text(opt) }
+            ) { Text(opt, style = MaterialTheme.typography.bodyMedium) }
         }
     }
 }

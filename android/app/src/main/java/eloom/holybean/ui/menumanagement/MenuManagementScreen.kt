@@ -101,11 +101,11 @@ fun MenuManagementRoute(
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.weight(1f),
             )
-            OutlinedButton(onClick = { editingItem = null; dialogOpen = true }) { Text("추가") }
+            OutlinedButton(onClick = { editingItem = null; dialogOpen = true }) { Text("추가", style = MaterialTheme.typography.bodyMedium) }
             Spacer(Modifier.width(8.dp))
-            OutlinedButton(onClick = { vm.saveMenuOrder() }) { Text("순서 저장") }
+            OutlinedButton(onClick = { vm.saveMenuOrder() }) { Text("순서 저장", style = MaterialTheme.typography.bodyMedium) }
             Spacer(Modifier.width(8.dp))
-            OutlinedButton(onClick = onClose) { Text("닫기") }
+            OutlinedButton(onClick = onClose) { Text("닫기", style = MaterialTheme.typography.bodyMedium) }
         }
 
         // 카테고리 칩(전체(0)는 정렬 의미가 없어 1~5만 노출). names 인덱스 i == 카테고리 번호.
@@ -120,7 +120,7 @@ fun MenuManagementRoute(
                 FilterChip(
                     selected = i == state.selectedCategoryIndex,
                     onClick = { vm.onCategorySelected(i - 1) },
-                    label = { Text(categoryNames[i]) },
+                    label = { Text(categoryNames[i], style = MaterialTheme.typography.bodyMedium) },
                 )
             }
         }
@@ -139,8 +139,8 @@ fun MenuManagementRoute(
                     Surface(tonalElevation = if (isDragging) 4.dp else 0.dp) {
                         ListItem(
                             colors = ListItemDefaults.colors(containerColor = containerColor),
-                            headlineContent = { Text(item.name) },
-                            supportingContent = { Text("id:${item.id}  placement:${item.order}") },
+                            headlineContent = { Text(item.name, style = MaterialTheme.typography.bodyLarge) },
+                            supportingContent = { Text("id:${item.id}  placement:${item.order}", style = MaterialTheme.typography.labelSmall) },
                             leadingContent = {
                                 // 드래그 핸들: 길게 눌러 정렬. 행 본문 탭은 수정.
                                 IconButton(
@@ -152,7 +152,7 @@ fun MenuManagementRoute(
                             },
                             trailingContent = {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text("%,d".format(item.price))
+                                    Text("%,d".format(item.price), style = MaterialTheme.typography.labelSmall)
                                     Spacer(Modifier.width(8.dp))
                                     Switch(
                                         checked = item.inuse,
@@ -207,19 +207,19 @@ private fun MenuEditDialog(
     var price by remember { mutableStateOf(initialPrice) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(title) },
+        title = { Text(title, style = MaterialTheme.typography.titleMedium) },
         text = {
             Column {
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("이름") },
+                    label = { Text("이름", style = MaterialTheme.typography.labelSmall) },
                     singleLine = true,
                 )
                 OutlinedTextField(
                     value = price,
                     onValueChange = { price = it.filter(Char::isDigit) },
-                    label = { Text("가격") },
+                    label = { Text("가격", style = MaterialTheme.typography.labelSmall) },
                     singleLine = true,
                 )
             }
@@ -228,9 +228,9 @@ private fun MenuEditDialog(
             TextButton(onClick = {
                 val p = price.toIntOrNull()
                 if (name.isNotBlank() && p != null) onConfirm(name.trim(), p)
-            }) { Text("저장") }
+            }) { Text("저장", style = MaterialTheme.typography.bodyMedium) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("취소") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("취소", style = MaterialTheme.typography.bodyMedium) } },
     )
 }
 
@@ -240,14 +240,14 @@ private fun PasswordGate(onPass: () -> Unit, onCancel: () -> Unit) {
     val context = LocalContext.current
     AlertDialog(
         onDismissRequest = onCancel,
-        title = { Text("비밀번호 확인") },
+        title = { Text("비밀번호 확인", style = MaterialTheme.typography.titleMedium) },
         text = {
             OutlinedTextField(
                 value = pw,
                 onValueChange = { pw = it },
                 visualTransformation = PasswordVisualTransformation(),
                 singleLine = true,
-                label = { Text("비밀번호를 입력하세요") },
+                label = { Text("비밀번호를 입력하세요", style = MaterialTheme.typography.labelSmall) },
             )
         },
         confirmButton = {
@@ -257,8 +257,8 @@ private fun PasswordGate(onPass: () -> Unit, onCancel: () -> Unit) {
                 } else {
                     android.widget.Toast.makeText(context, "비밀번호가 일치하지 않습니다.", android.widget.Toast.LENGTH_SHORT).show()
                 }
-            }) { Text("확인") }
+            }) { Text("확인", style = MaterialTheme.typography.bodyMedium) }
         },
-        dismissButton = { TextButton(onClick = onCancel) { Text("취소") } },
+        dismissButton = { TextButton(onClick = onCancel) { Text("취소", style = MaterialTheme.typography.bodyMedium) } },
     )
 }

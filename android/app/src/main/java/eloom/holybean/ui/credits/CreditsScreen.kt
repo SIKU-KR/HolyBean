@@ -23,10 +23,10 @@ fun CreditsRoute(onClose: () -> Unit, vm: CreditsViewModel = hiltViewModel()) {
     if (confirmPaid) {
         AlertDialog(
             onDismissRequest = { confirmPaid = false },
-            title = { Text("외상 결제완료") },
-            text = { Text("${state.selectedOrderNumber}번 외상을 결제완료 처리하시겠습니까?") },
-            confirmButton = { TextButton(onClick = { vm.handleDeleteButton(); confirmPaid = false }) { Text("처리") } },
-            dismissButton = { TextButton(onClick = { confirmPaid = false }) { Text("취소") } },
+            title = { Text("외상 결제완료", style = MaterialTheme.typography.titleMedium) },
+            text = { Text("${state.selectedOrderNumber}번 외상을 결제완료 처리하시겠습니까?", style = MaterialTheme.typography.bodyMedium) },
+            confirmButton = { TextButton(onClick = { vm.handleDeleteButton(); confirmPaid = false }) { Text("처리", style = MaterialTheme.typography.bodyMedium) } },
+            dismissButton = { TextButton(onClick = { confirmPaid = false }) { Text("취소", style = MaterialTheme.typography.bodyMedium) } },
         )
     }
     LaunchedEffect(Unit) {
@@ -41,7 +41,7 @@ fun CreditsRoute(onClose: () -> Unit, vm: CreditsViewModel = hiltViewModel()) {
     Column(Modifier.fillMaxSize().padding(16.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text("외상 관리", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-            OutlinedButton(onClick = onClose) { Text("닫기") }
+            OutlinedButton(onClick = onClose) { Text("닫기", style = MaterialTheme.typography.bodyMedium) }
         }
         Row(Modifier.weight(1f).padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Surface(Modifier.fillMaxWidth(0.46f).fillMaxHeight(), color = MaterialTheme.colorScheme.surface) {
@@ -72,7 +72,7 @@ fun CreditsRoute(onClose: () -> Unit, vm: CreditsViewModel = hiltViewModel()) {
                         enabled = state.selectedOrderNumber != 0,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("외상 결제완료 처리")
+                        Text("외상 결제완료 처리", style = MaterialTheme.typography.bodyMedium)
                     }
                 }
             }

@@ -14,7 +14,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -101,7 +100,7 @@ fun PaymentScreen(
                 onClick = onCancel,
                 shape = RoundedCornerShape(Dimens.radiusButton),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = OnSurfaceMuted),
-            ) { Text("✕ 취소") }
+            ) { Text("✕ 취소", style = MaterialTheme.typography.bodyMedium) }
         }
         Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(Dimens.gap)) {
             Surface(
@@ -159,7 +158,7 @@ fun PaymentScreen(
                             MethodRow(candidates, second) { second = it }
                             OutlinedTextField(
                                 value = secondAmt, onValueChange = { secondAmt = it.filter(Char::isDigit) },
-                                label = { Text("${second ?: ""} 금액") }, singleLine = true,
+                                label = { Text("${second ?: ""} 금액", style = MaterialTheme.typography.labelSmall) }, singleLine = true,
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                 modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
                             )
@@ -185,7 +184,7 @@ fun PaymentScreen(
                         modifier = Modifier.fillMaxWidth().height(Dimens.primaryTouchTarget).padding(12.dp),
                         shape = RoundedCornerShape(Dimens.radiusButton),
                         colors = ButtonDefaults.buttonColors(containerColor = Orange),
-                    ) { Text("결제 완료", fontWeight = FontWeight.Bold) }
+                    ) { Text("결제 완료", style = MaterialTheme.typography.titleMedium) }
                 }
             }
         }

@@ -69,7 +69,7 @@ fun DevToolsScreen(
                 modifier = Modifier.weight(1f),
             )
             OutlinedButton(onClick = onClose, shape = RoundedCornerShape(Dimens.radiusButton)) {
-                Text("닫기")
+                Text("닫기", style = MaterialTheme.typography.bodyMedium)
             }
         }
         Spacer(Modifier.height(12.dp))
@@ -93,7 +93,7 @@ fun DevToolsScreen(
         )
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedButton(onClick = onRefresh, shape = RoundedCornerShape(Dimens.radiusButton)) {
-                Text("새로고침")
+                Text("새로고침", style = MaterialTheme.typography.bodyMedium)
             }
             Button(
                 onClick = onTestPrint,
@@ -101,7 +101,7 @@ fun DevToolsScreen(
                 shape = RoundedCornerShape(Dimens.radiusButton),
                 colors = ButtonDefaults.buttonColors(containerColor = Orange),
             ) {
-                Text("테스트 영수증 출력", fontWeight = FontWeight.Bold)
+                Text("테스트 영수증 출력", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
             }
         }
     }

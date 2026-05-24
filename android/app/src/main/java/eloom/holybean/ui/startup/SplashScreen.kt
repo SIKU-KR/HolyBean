@@ -60,7 +60,7 @@ fun SplashScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        Text("HolyBean", style = MaterialTheme.typography.headlineMedium)
+        Text("HolyBean", style = MaterialTheme.typography.titleLarge)
         Spacer(Modifier.height(24.dp))
 
         StatusRow("데이터", state.data, loadingText = "데이터 불러오는 중…", successText = "데이터 준비 완료")
@@ -81,7 +81,7 @@ fun SplashScreen(
                     style = MaterialTheme.typography.bodyMedium,
                 )
                 Spacer(Modifier.height(16.dp))
-                Button(onClick = onRetry) { Text("다시 시도") }
+                Button(onClick = onRetry) { Text("다시 시도", style = MaterialTheme.typography.bodyMedium) }
             }
             // 데이터 성공 + 프린터 실패 → 경고 후 진입 허용
             state.data == StepStatus.Success && state.printer == StepStatus.Failed -> {
@@ -96,8 +96,8 @@ fun SplashScreen(
                 )
                 Spacer(Modifier.height(16.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    OutlinedButton(onClick = onRetry) { Text("다시 시도") }
-                    Button(onClick = onEnterAnyway) { Text("그대로 진입") }
+                    OutlinedButton(onClick = onRetry) { Text("다시 시도", style = MaterialTheme.typography.bodyMedium) }
+                    Button(onClick = onEnterAnyway) { Text("그대로 진입", style = MaterialTheme.typography.bodyMedium) }
                 }
             }
             // 그 외(진행 중 또는 모두 성공 직전): 스피너

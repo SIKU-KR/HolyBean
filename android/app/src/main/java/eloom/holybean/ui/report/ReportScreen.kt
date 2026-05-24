@@ -46,13 +46,13 @@ fun ReportRoute(onClose: () -> Unit, vm: ReportViewModel = hiltViewModel()) {
     Column(Modifier.fillMaxSize().padding(16.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text("기간 매출 리포트", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-            OutlinedButton(onClick = onClose) { Text("닫기") }
+            OutlinedButton(onClick = onClose) { Text("닫기", style = MaterialTheme.typography.bodyMedium) }
         }
         Row(Modifier.padding(vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedButton(onClick = { pick { start = it } }) { Text(start) }
-            OutlinedButton(onClick = { pick { end = it } }) { Text(end) }
-            Button(onClick = { vm.loadReportData(start, end) }) { Text("조회") }
-            OutlinedButton(onClick = { vm.printReport() }) { Text("출력") }
+            OutlinedButton(onClick = { pick { start = it } }) { Text(start, style = MaterialTheme.typography.bodyMedium) }
+            OutlinedButton(onClick = { pick { end = it } }) { Text(end, style = MaterialTheme.typography.bodyMedium) }
+            Button(onClick = { vm.loadReportData(start, end) }) { Text("조회", style = MaterialTheme.typography.bodyMedium) }
+            OutlinedButton(onClick = { vm.printReport() }) { Text("출력", style = MaterialTheme.typography.bodyMedium) }
         }
         Text(state.reportTitle, style = MaterialTheme.typography.bodyMedium)
         Row(Modifier.padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {

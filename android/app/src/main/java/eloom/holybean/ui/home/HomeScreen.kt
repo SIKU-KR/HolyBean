@@ -181,7 +181,7 @@ private fun BasketPane(
                     shape = RoundedCornerShape(Dimens.radiusButton),
                     border = BorderStroke(2.dp, Orange),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = Orange),
-                ) { Text("주문기록", fontWeight = FontWeight.Bold) }
+                ) { Text("주문기록", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold) }
             }
             if (basket.isEmpty()) {
                 Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
@@ -216,7 +216,7 @@ private fun CouponAmountDialog(onConfirm: (Int) -> Unit, onDismiss: () -> Unit) 
     var text by remember { mutableStateOf("") }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("쿠폰 금액 입력") },
+        title = { Text("쿠폰 금액 입력", style = MaterialTheme.typography.titleMedium) },
         text = {
             OutlinedTextField(
                 value = text, onValueChange = { text = it.filter(Char::isDigit) },
@@ -225,9 +225,9 @@ private fun CouponAmountDialog(onConfirm: (Int) -> Unit, onDismiss: () -> Unit) 
             )
         },
         confirmButton = {
-            TextButton(onClick = { text.toIntOrNull()?.let(onConfirm) }) { Text("담기") }
+            TextButton(onClick = { text.toIntOrNull()?.let(onConfirm) }) { Text("담기", style = MaterialTheme.typography.bodyMedium) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("취소") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("취소", style = MaterialTheme.typography.bodyMedium) } },
     )
 }
 
