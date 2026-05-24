@@ -351,6 +351,29 @@ class HomeViewModelTest {
         verify(exactly = 1) { firestoreRepository.postOrder(any()) }
     }
 
+    @Test
+    fun `consecutive identical print failures produce distinct values so state re-emits`() = runTest(testDispatcher) {
+        val order = createTestOrder()
+        every { firestoreRepository.postOrder(any()) } returns Unit
+        coEvery { piPrintClient.print(any<List<PrintCommandDto>>()) } throws
+            eloom.holybean.printer.network.PrintServerException(
+                eloom.holybean.printer.network.PrintFailureReason.PrinterOffline, "offline"
+            )
+
+        homeViewModel.onOrderConfirmed(order, "포장")
+        advanceUntilIdle()
+        val first = homeViewModel.uiState.value.printFailure
+
+        // 같은 원인으로 재출력 재실패 → 값이 달라야(seq 증가) StateFlow가 다시 emit 한다
+        homeViewModel.reprintLastOrder()
+        advanceUntilIdle()
+        val second = homeViewModel.uiState.value.printFailure
+
+        assertEquals(eloom.holybean.printer.network.PrintFailureReason.PrinterOffline, second?.reason)
+        assertEquals(order.orderNum, second?.orderNum)
+        assertTrue("consecutive identical failures must differ for re-emit", first != second)
+    }
+
     // 헬퍼 메서드: 테스트용 Order 객체 생성
     private fun createTestOrder(orderNum: Int = 1): Order {
         val cartItems = listOf(

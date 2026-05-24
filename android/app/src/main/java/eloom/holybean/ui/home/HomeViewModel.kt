@@ -33,7 +33,7 @@ class HomeViewModel @Inject constructor(
     private val homePrinter: HomePrinter,
 ) : ViewModel() {
 
-    data class PrintFailure(val orderNum: Int, val reason: PrintFailureReason)
+    data class PrintFailure(val orderNum: Int, val reason: PrintFailureReason, val seq: Long = 0L)
 
     data class UiState(
         val allMenuItems: List<MenuItem> = emptyList(),
@@ -73,6 +73,9 @@ class HomeViewModel @Inject constructor(
     val uiEvent: SharedFlow<UiEvent> = _uiEvent.asSharedFlow()
 
     private var lastOrder: Pair<Order, String>? = null
+
+    // 동일 실패가 연속될 때도 StateFlow/Snackbar가 다시 발화하도록 하는 단조 증가 시퀀스
+    private var printFailureSeq = 0L
 
     init {
         // Load initial data — 스플래시가 채운 캐시를 우선 사용하고, 없으면 네트워크 페치로 폴백
@@ -229,7 +232,7 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun reportPrintFailure(orderNum: Int, reason: PrintFailureReason, e: Throwable) {
-        _uiState.value = _uiState.value.copy(printFailure = PrintFailure(orderNum, reason))
+        _uiState.value = _uiState.value.copy(printFailure = PrintFailure(orderNum, reason, ++printFailureSeq))
         FirebaseCrashlytics.getInstance().apply {
             setCustomKey("orderNum", orderNum)
             setCustomKey("print_reason", reason.name)
