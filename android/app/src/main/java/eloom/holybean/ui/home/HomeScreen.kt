@@ -1,7 +1,6 @@
 package eloom.holybean.ui.home
 
 import android.widget.Toast
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -17,7 +16,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -27,6 +25,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import eloom.holybean.data.model.CartItem
 import eloom.holybean.data.model.MenuItem
+import eloom.holybean.ui.components.buttons.AppTextButton
+import eloom.holybean.ui.components.buttons.PrimaryButton
+import eloom.holybean.ui.components.buttons.SecondaryButton
 import eloom.holybean.ui.components.BasketRow
 import eloom.holybean.ui.components.MenuTile
 import eloom.holybean.ui.components.TileStyle
@@ -204,12 +205,7 @@ private fun BasketPane(
     Pane(modifier) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("${orderId}번 주문", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-            OutlinedButton(
-                onClick = onHistory,
-                shape = RoundedCornerShape(Dimens.radiusButton),
-                border = BorderStroke(2.dp, Orange),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = Orange),
-            ) { Text("주문기록", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold) }
+            SecondaryButton("주문기록", onClick = onHistory)
         }
         if (basket.isEmpty()) {
             Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
@@ -226,12 +222,12 @@ private fun BasketPane(
             }
         }
         TotalRow(total, Modifier.padding(vertical = Dimens.spaceSm))
-        Button(
-            onClick = onCheckout, enabled = basket.isNotEmpty(),
-            modifier = Modifier.fillMaxWidth().height(Dimens.primaryTouchTarget),
-            shape = RoundedCornerShape(Dimens.radiusButton),
-            colors = ButtonDefaults.buttonColors(containerColor = Orange),
-        ) { Text("결제", style = MaterialTheme.typography.titleMedium) }
+        PrimaryButton(
+            "결제",
+            onClick = onCheckout,
+            modifier = Modifier.fillMaxWidth(),
+            enabled = basket.isNotEmpty(),
+        )
     }
 }
 
@@ -248,10 +244,8 @@ private fun CouponAmountDialog(onConfirm: (Int) -> Unit, onDismiss: () -> Unit) 
                 singleLine = true,
             )
         },
-        confirmButton = {
-            TextButton(onClick = { text.toIntOrNull()?.let(onConfirm) }) { Text("담기", style = MaterialTheme.typography.bodyMedium) }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("취소", style = MaterialTheme.typography.bodyMedium) } },
+        confirmButton = { AppTextButton("담기", onClick = { text.toIntOrNull()?.let(onConfirm) }) },
+        dismissButton = { AppTextButton("취소", onClick = onDismiss) },
     )
 }
 

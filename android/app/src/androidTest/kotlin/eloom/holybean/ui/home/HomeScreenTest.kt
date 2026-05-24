@@ -22,7 +22,7 @@ class HomeScreenTest {
                 onBasketClick = {}, onHistoryClick = {}, onCheckout = {},
             )
         }
-        rule.onNodeWithText("결제 →").assertIsNotEnabled()
+        rule.onNodeWithText("결제").assertIsNotEnabled()
     }
 
     @Test fun menuClickEmitsId() {
