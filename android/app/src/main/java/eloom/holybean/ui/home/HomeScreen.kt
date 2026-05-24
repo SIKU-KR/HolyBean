@@ -120,7 +120,7 @@ fun HomeScreen(
             CategoryChips(categories, selectedCategory, onCategory)
             Spacer(Modifier.height(8.dp))
             LazyVerticalGrid(
-                columns = GridCells.Fixed(4),
+                columns = GridCells.Fixed(3),
                 horizontalArrangement = Arrangement.spacedBy(7.dp),
                 verticalArrangement = Arrangement.spacedBy(7.dp),
                 modifier = Modifier.fillMaxSize(),
@@ -150,7 +150,7 @@ private fun CategoryChips(categories: ImmutableList<String>, selected: Int, onSe
             FilterChip(
                 selected = index == selected,
                 onClick = { onSelect(index) },
-                label = { Text(name) },
+                label = { Text(name, style = MaterialTheme.typography.bodyMedium) },
                 shape = RoundedCornerShape(14.dp),
                 colors = FilterChipDefaults.filterChipColors(
                     selectedContainerColor = Orange,
@@ -206,7 +206,7 @@ private fun BasketPane(
                 modifier = Modifier.fillMaxWidth().height(Dimens.primaryTouchTarget),
                 shape = RoundedCornerShape(Dimens.radiusButton),
                 colors = ButtonDefaults.buttonColors(containerColor = Orange),
-            ) { Text("결제 →", fontWeight = FontWeight.Bold) }
+            ) { Text("결제", style = MaterialTheme.typography.titleMedium) }
         }
     }
 }
