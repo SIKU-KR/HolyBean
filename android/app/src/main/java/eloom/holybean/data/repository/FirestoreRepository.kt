@@ -149,8 +149,12 @@ class FirestoreRepository @Inject constructor(
         }
     }
 
-    /** 핫패스: 로컬에 즉시 적용되고 동기화는 백그라운드(NFR-7). 서버 ack를 await하지 않는다. */
-    fun postOrder(data: Order) {
+    /**
+     * 주문을 저장하고 서버 commit ack까지 대기한다(결제 완료 흐름이 저장 성공을 보장받아야 하므로).
+     * 오프라인 등으로 ack가 지연되면 무한 대기하지 않도록 타임아웃을 둔다 — 타임아웃 시 예외를 던져
+     * 호출부가 저장 실패로 처리(재시도)하게 한다.
+     */
+    suspend fun postOrder(data: Order) {
         val batch = db.batch()
         val orderRef = db.collection(FirestoreSchema.ORDERS)
             .document(FirestoreSchema.orderId(data.orderDate, data.orderNum))
@@ -184,7 +188,11 @@ class FirestoreRepository @Inject constructor(
                 SetOptions.merge()
             )
         }
-        batch.commit().addOnFailureListener { FirebaseCrashlytics.getInstance().recordException(it) }  // await 하지 않음 — 로컬 즉시 반영, 동기화는 SDK가 큐잉
+        withTimeout(POST_ORDER_ACK_TIMEOUT_MS) { batch.commit().await() }  // 서버 ack까지 대기(타임아웃 시 예외)
+    }
+
+    private companion object {
+        const val POST_ORDER_ACK_TIMEOUT_MS = 10_000L
     }
 
     private fun applyRollupDelta(
