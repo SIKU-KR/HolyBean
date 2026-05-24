@@ -72,4 +72,32 @@ class AppButtonsTest {
         rule.onNodeWithContentDescription("추가").performClick()
         assert(clicked)
     }
+
+    @Test fun secondary_disabled_doesNotClick() {
+        var clicked = false
+        rule.setContent { SecondaryButton("취소", onClick = { clicked = true }, enabled = false) }
+        rule.onNodeWithText("취소").assertIsNotEnabled().performClick()
+        assert(!clicked)
+    }
+
+    @Test fun danger_disabled_doesNotClick() {
+        var clicked = false
+        rule.setContent { DangerButton("삭제", onClick = { clicked = true }, enabled = false) }
+        rule.onNodeWithText("삭제").assertIsNotEnabled().performClick()
+        assert(!clicked)
+    }
+
+    @Test fun iconButton_disabled_doesNotClick() {
+        var clicked = false
+        rule.setContent {
+            AppIconButton(
+                icon = Icons.Filled.Add,
+                contentDescription = "추가",
+                onClick = { clicked = true },
+                enabled = false,
+            )
+        }
+        rule.onNodeWithContentDescription("추가").assertIsNotEnabled().performClick()
+        assert(!clicked)
+    }
 }

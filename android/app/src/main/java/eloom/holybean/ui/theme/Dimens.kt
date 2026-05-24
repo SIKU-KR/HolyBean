@@ -35,7 +35,6 @@ object Dimens {
 
     // ── 터치 타깃 ─────────────────────────────────────────────
     val minTouchTarget = 48.dp
-    val primaryTouchTarget = 56.dp
 
     // ── 고정 치수 (스케일 예외) ───────────────────────────────
     val statusDot = 10.dp
