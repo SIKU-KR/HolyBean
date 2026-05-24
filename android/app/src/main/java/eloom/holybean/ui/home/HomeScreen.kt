@@ -80,21 +80,39 @@ fun HomeRoute(
         )
     }
 
-    HomeScreen(
-        categories = MenuCategories.names.toImmutableList(),
-        selectedCategory = state.selectedCategoryIndex,
-        menuItems = state.filteredMenuItems.toImmutableList(),
-        basket = state.basketItems.toImmutableList(),
-        orderId = state.orderId,
-        total = state.totalPrice,
-        onCategory = sharedViewModel::onCategorySelected,
-        onMenuClick = sharedViewModel::addToBasket,
-        onCouponClick = { couponDialog = true },
-        onSettingsClick = onNavigateToSettings,
-        onBasketClick = sharedViewModel::deleteFromBasket,
-        onHistoryClick = onNavigateToOrders,
-        onCheckout = sharedViewModel::onCheckoutClicked,
-    )
+    val snackbarHostState = remember { SnackbarHostState() }
+    LaunchedEffect(state.printFailure) {
+        val failure = state.printFailure ?: return@LaunchedEffect
+        val result = snackbarHostState.showSnackbar(
+            message = printFailureMessage(failure),
+            actionLabel = "재출력",
+            duration = SnackbarDuration.Indefinite,
+            withDismissAction = true,
+        )
+        when (result) {
+            SnackbarResult.ActionPerformed -> sharedViewModel.reprintLastOrder()
+            SnackbarResult.Dismissed -> sharedViewModel.dismissPrintFailure()
+        }
+    }
+
+    Box(Modifier.fillMaxSize()) {
+        HomeScreen(
+            categories = MenuCategories.names.toImmutableList(),
+            selectedCategory = state.selectedCategoryIndex,
+            menuItems = state.filteredMenuItems.toImmutableList(),
+            basket = state.basketItems.toImmutableList(),
+            orderId = state.orderId,
+            total = state.totalPrice,
+            onCategory = sharedViewModel::onCategorySelected,
+            onMenuClick = sharedViewModel::addToBasket,
+            onCouponClick = { couponDialog = true },
+            onSettingsClick = onNavigateToSettings,
+            onBasketClick = sharedViewModel::deleteFromBasket,
+            onHistoryClick = onNavigateToOrders,
+            onCheckout = sharedViewModel::onCheckoutClicked,
+        )
+        SnackbarHost(snackbarHostState, Modifier.align(Alignment.BottomCenter))
+    }
 }
 
 @Composable
@@ -241,4 +259,18 @@ private fun HomeScreenPreview() = HolyBeanTheme {
         onCategory = {}, onMenuClick = {}, onCouponClick = {}, onSettingsClick = {},
         onBasketClick = {}, onHistoryClick = {}, onCheckout = {},
     )
+}
+
+private fun printFailureMessage(f: HomeViewModel.PrintFailure): String {
+    val prefix = "${f.orderNum}번 영수증 출력 실패 — "
+    return prefix + when (f.reason) {
+        eloom.holybean.printer.network.PrintFailureReason.ServerUnreachable ->
+            "프린터 서버에 연결되지 않았어요. Pi 전원·네트워크 확인 후 재출력하세요."
+        eloom.holybean.printer.network.PrintFailureReason.PrinterOffline ->
+            "프린터가 응답하지 않아요. 전원·USB 연결 확인 후 재출력하세요."
+        eloom.holybean.printer.network.PrintFailureReason.PrinterError ->
+            "출력에 실패했어요. 용지·덮개 상태 확인 후 재출력하세요."
+        eloom.holybean.printer.network.PrintFailureReason.Unknown ->
+            "다시 출력해 주세요."
+    }
 }
