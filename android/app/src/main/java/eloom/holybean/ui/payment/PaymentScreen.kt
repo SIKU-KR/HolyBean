@@ -77,6 +77,24 @@ fun PaymentRoute(sharedViewModel: HomeViewModel, onClose: () -> Unit, onPaid: ()
                 }
         },
     )
+
+    when (val err = state.submitError) {
+        is HomeViewModel.SubmitError.SaveFailed ->
+            SubmitErrorDialog(
+                message = "주문 저장에 실패했습니다. 네트워크를 확인하고 다시 시도해 주세요.",
+                onRetry = { sharedViewModel.retrySubmission() },
+                onSecondary = null,
+                secondaryLabel = null,
+            )
+        is HomeViewModel.SubmitError.PrintFailed ->
+            SubmitErrorDialog(
+                message = printFailureMessage(err.reason),
+                onRetry = { sharedViewModel.retrySubmission() },
+                onSecondary = { sharedViewModel.skipPrintAndComplete() },
+                secondaryLabel = "영수증 없이 홈으로",
+            )
+        null -> Unit
+    }
 }
 
 @Composable
@@ -218,6 +236,38 @@ private fun MethodRow(methods: ImmutableList<String>, selected: String?, onSelec
         methods.forEach { m -> PaymentMethodTile(m, m == selected, { onSelect(m) }, Modifier.weight(1f)) }
     }
 }
+
+@Composable
+private fun SubmitErrorDialog(
+    message: String,
+    onRetry: () -> Unit,
+    onSecondary: (() -> Unit)?,
+    secondaryLabel: String?,
+) {
+    AlertDialog(
+        onDismissRequest = {},   // 임의 닫기 방지: 명시적 선택만 허용
+        title = { Text("처리 실패") },
+        text = { Text(message) },
+        confirmButton = {
+            TextButton(onClick = onRetry) { Text("재시도") }
+        },
+        dismissButton = if (onSecondary != null && secondaryLabel != null) {
+            { TextButton(onClick = onSecondary) { Text(secondaryLabel) } }
+        } else null,
+    )
+}
+
+private fun printFailureMessage(reason: eloom.holybean.printer.network.PrintFailureReason): String =
+    when (reason) {
+        eloom.holybean.printer.network.PrintFailureReason.ServerUnreachable ->
+            "프린터 서버에 연결되지 않았어요. Pi 전원·네트워크 확인 후 재출력하세요."
+        eloom.holybean.printer.network.PrintFailureReason.PrinterOffline ->
+            "프린터가 응답하지 않아요. 전원·USB 연결 확인 후 재출력하세요."
+        eloom.holybean.printer.network.PrintFailureReason.PrinterError ->
+            "출력에 실패했어요. 용지·덮개 상태 확인 후 재출력하세요."
+        eloom.holybean.printer.network.PrintFailureReason.Unknown ->
+            "다시 출력해 주세요."
+    }
 
 @androidx.compose.ui.tooling.preview.Preview(widthDp = 900, heightDp = 500)
 @Composable
