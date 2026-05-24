@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -18,17 +17,13 @@ import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -44,6 +39,9 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import eloom.holybean.data.model.MenuItem
+import eloom.holybean.ui.components.buttons.AppIconButton
+import eloom.holybean.ui.components.buttons.AppTextButton
+import eloom.holybean.ui.components.buttons.SecondaryButton
 import eloom.holybean.ui.components.layout.ScreenContainer
 import eloom.holybean.ui.components.layout.ScreenHeader
 import eloom.holybean.ui.home.MenuCategories
@@ -98,9 +96,9 @@ fun MenuManagementRoute(
             ScreenHeader(
                 "메뉴 관리",
                 actions = {
-                    OutlinedButton(onClick = { editingItem = null; dialogOpen = true }, modifier = Modifier.heightIn(min = Dimens.minTouchTarget)) { Text("추가", style = MaterialTheme.typography.bodyMedium) }
-                    OutlinedButton(onClick = { vm.saveMenuOrder() }, modifier = Modifier.heightIn(min = Dimens.minTouchTarget)) { Text("순서 저장", style = MaterialTheme.typography.bodyMedium) }
-                    OutlinedButton(onClick = onClose, modifier = Modifier.heightIn(min = Dimens.minTouchTarget)) { Text("닫기", style = MaterialTheme.typography.bodyMedium) }
+                    SecondaryButton("추가", onClick = { editingItem = null; dialogOpen = true })
+                    SecondaryButton("순서 저장", onClick = { vm.saveMenuOrder() })
+                    SecondaryButton("닫기", onClick = onClose)
                 },
             )
 
@@ -136,12 +134,12 @@ fun MenuManagementRoute(
                             supportingContent = { Text("id:${item.id}  placement:${item.order}", style = MaterialTheme.typography.labelSmall) },
                             leadingContent = {
                                 // 드래그 핸들: 길게 눌러 정렬. 행 본문 탭은 수정.
-                                IconButton(
+                                AppIconButton(
+                                    icon = Icons.Filled.DragHandle,
+                                    contentDescription = "정렬 핸들",
                                     onClick = {},
                                     modifier = Modifier.longPressDraggableHandle(),
-                                ) {
-                                    Icon(Icons.Filled.DragHandle, contentDescription = "정렬 핸들")
-                                }
+                                )
                             },
                             trailingContent = {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -219,12 +217,12 @@ private fun MenuEditDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = {
+            AppTextButton("저장", onClick = {
                 val p = price.toIntOrNull()
                 if (name.isNotBlank() && p != null) onConfirm(name.trim(), p)
-            }) { Text("저장", style = MaterialTheme.typography.bodyMedium) }
+            })
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("취소", style = MaterialTheme.typography.bodyMedium) } },
+        dismissButton = { AppTextButton("취소", onClick = onDismiss) },
     )
 }
 
@@ -245,14 +243,14 @@ private fun PasswordGate(onPass: () -> Unit, onCancel: () -> Unit) {
             )
         },
         confirmButton = {
-            TextButton(onClick = {
+            AppTextButton("확인", onClick = {
                 if (pw == MENU_PASSWORD) {
                     onPass()
                 } else {
                     android.widget.Toast.makeText(context, "비밀번호가 일치하지 않습니다.", android.widget.Toast.LENGTH_SHORT).show()
                 }
-            }) { Text("확인", style = MaterialTheme.typography.bodyMedium) }
+            })
         },
-        dismissButton = { TextButton(onClick = onCancel) { Text("취소", style = MaterialTheme.typography.bodyMedium) } },
+        dismissButton = { AppTextButton("취소", onClick = onCancel) },
     )
 }
