@@ -10,8 +10,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.compose.foundation.shape.RoundedCornerShape
 import eloom.holybean.ui.components.BasketRow
+import eloom.holybean.ui.components.buttons.AppTextButton
+import eloom.holybean.ui.components.buttons.PrimaryButton
+import eloom.holybean.ui.components.buttons.SecondaryButton
 import eloom.holybean.ui.components.layout.Pane
 import eloom.holybean.ui.components.layout.ScreenContainer
 import eloom.holybean.ui.components.layout.ScreenHeader
@@ -28,8 +30,8 @@ fun CreditsRoute(onClose: () -> Unit, vm: CreditsViewModel = hiltViewModel()) {
             onDismissRequest = { confirmPaid = false },
             title = { Text("외상 결제완료", style = MaterialTheme.typography.titleMedium) },
             text = { Text("${state.selectedOrderNumber}번 외상을 결제완료 처리하시겠습니까?", style = MaterialTheme.typography.bodyMedium) },
-            confirmButton = { TextButton(onClick = { vm.handleDeleteButton(); confirmPaid = false }) { Text("처리", style = MaterialTheme.typography.bodyMedium) } },
-            dismissButton = { TextButton(onClick = { confirmPaid = false }) { Text("취소", style = MaterialTheme.typography.bodyMedium) } },
+            confirmButton = { AppTextButton("처리", onClick = { vm.handleDeleteButton(); confirmPaid = false }) },
+            dismissButton = { AppTextButton("취소", onClick = { confirmPaid = false }) },
         )
     }
     LaunchedEffect(Unit) {
@@ -46,10 +48,7 @@ fun CreditsRoute(onClose: () -> Unit, vm: CreditsViewModel = hiltViewModel()) {
             ScreenHeader(
                 "외상 관리",
                 actions = {
-                    OutlinedButton(
-                        onClick = onClose,
-                        modifier = Modifier.heightIn(min = Dimens.minTouchTarget),
-                    ) { Text("닫기", style = MaterialTheme.typography.bodyMedium) }
+                    SecondaryButton("닫기", onClick = onClose)
                 },
             )
             Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(Dimens.paneGap)) {
@@ -75,14 +74,12 @@ fun CreditsRoute(onClose: () -> Unit, vm: CreditsViewModel = hiltViewModel()) {
                             BasketRow(it.name, it.count, it.subtotal) {}
                         }
                     }
-                    Button(
+                    PrimaryButton(
+                        "외상 결제완료 처리",
                         onClick = { confirmPaid = true },
                         enabled = state.selectedOrderNumber != 0,
-                        modifier = Modifier.fillMaxWidth().height(Dimens.primaryTouchTarget),
-                        shape = RoundedCornerShape(Dimens.radiusButton),
-                    ) {
-                        Text("외상 결제완료 처리", style = MaterialTheme.typography.bodyMedium)
-                    }
+                        modifier = Modifier.fillMaxWidth(),
+                    )
                 }
             }
         }
