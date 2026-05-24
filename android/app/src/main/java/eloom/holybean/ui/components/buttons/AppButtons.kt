@@ -9,9 +9,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -86,5 +90,33 @@ fun DangerButton(
         colors = ButtonDefaults.outlinedButtonColors(contentColor = DangerRed),
     ) {
         Text(text, style = MaterialTheme.typography.bodyMedium)
+    }
+}
+
+@Composable
+fun AppTextButton(
+    text: String,
+    onClick: () -> Unit,
+    enabled: Boolean = true,
+) {
+    TextButton(onClick = onClick, enabled = enabled) {
+        Text(text, style = MaterialTheme.typography.bodyMedium)
+    }
+}
+
+@Composable
+fun AppIconButton(
+    icon: ImageVector,
+    contentDescription: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+) {
+    IconButton(
+        onClick = onClick,
+        modifier = modifier.size(Dimens.minTouchTarget),
+        enabled = enabled,
+    ) {
+        Icon(icon, contentDescription = contentDescription, tint = OnSurface)
     }
 }

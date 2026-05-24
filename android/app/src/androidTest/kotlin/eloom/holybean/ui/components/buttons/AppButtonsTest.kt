@@ -1,5 +1,7 @@
 package eloom.holybean.ui.components.buttons
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Text
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -41,6 +43,26 @@ class AppButtonsTest {
         var clicked = false
         rule.setContent { DangerButton("삭제", onClick = { clicked = true }) }
         rule.onNodeWithText("삭제").performClick()
+        assert(clicked)
+    }
+
+    @Test fun textButton_click_invokesCallback() {
+        var clicked = false
+        rule.setContent { AppTextButton("담기", onClick = { clicked = true }) }
+        rule.onNodeWithText("담기").performClick()
+        assert(clicked)
+    }
+
+    @Test fun iconButton_click_invokesCallback() {
+        var clicked = false
+        rule.setContent {
+            AppIconButton(
+                icon = Icons.Filled.Add,
+                contentDescription = "추가",
+                onClick = { clicked = true },
+            )
+        }
+        rule.onNodeWithContentDescription("추가").performClick()
         assert(clicked)
     }
 }
