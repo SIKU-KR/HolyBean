@@ -13,7 +13,7 @@ class PaymentScreenTest {
     @Test fun confirmEmitsCashSelectionByDefault() {
         var sel: PaymentSelection? = null
         rule.setContent {
-            PaymentScreen(128, persistentListOf(CartItem(1001, "아메리카노", 3500, 2, 7000)), 7000, {}, { sel = it })
+            PaymentScreen(128, persistentListOf(CartItem(1001, "아메리카노", 3500, 2, 7000)), 7000, onCancel = {}, onConfirm = { sel = it })
         }
         rule.onNodeWithText("결제 완료").performClick()
         assert(sel?.firstMethod == "현금")
