@@ -81,10 +81,10 @@ class HomeViewModel @Inject constructor(
         // Load initial data — 스플래시가 채운 캐시를 우선 사용하고, 없으면 네트워크 페치로 폴백
         viewModelScope.launch(ioDispatcher) {
             val menus = menuRepository.getCachedMenu() ?: menuRepository.getMenuListSync()
-            _uiState.value = _uiState.value.copy(
+            _uiState.update { it.copy(
                 allMenuItems = menus,
                 filteredMenuItems = menus
-            )
+            ) }
             refreshOrderNumber()
         }
     }
@@ -92,7 +92,7 @@ class HomeViewModel @Inject constructor(
     fun refreshOrderNumber() {
         viewModelScope.launch(ioDispatcher) {
             val id = firestoreRepository.getOrderNumber()
-            _uiState.value = _uiState.value.copy(orderId = id)
+            _uiState.update { it.copy(orderId = id) }
         }
     }
 
@@ -103,10 +103,10 @@ class HomeViewModel @Inject constructor(
             } else {
                 _uiState.value.allMenuItems.filter { it.id / 1000 == index }
             }
-            _uiState.value = _uiState.value.copy(
+            _uiState.update { it.copy(
                 selectedCategoryIndex = index,
                 filteredMenuItems = filtered
-            )
+            ) }
         }
     }
 
@@ -124,10 +124,10 @@ class HomeViewModel @Inject constructor(
                 currentBasket[idx] = updated
             }
             val total = currentBasket.sumOf { it.count * it.price }
-            _uiState.value = _uiState.value.copy(
+            _uiState.update { it.copy(
                 basketItems = currentBasket,
                 totalPrice = total
-            )
+            ) }
         }
     }
 
@@ -144,10 +144,10 @@ class HomeViewModel @Inject constructor(
                 currentBasket[idx] = updated
             }
             val total = currentBasket.sumOf { it.count * it.price }
-            _uiState.value = _uiState.value.copy(
+            _uiState.update { it.copy(
                 basketItems = currentBasket,
                 totalPrice = total
-            )
+            ) }
         }
     }
 
@@ -162,10 +162,10 @@ class HomeViewModel @Inject constructor(
             val currentBasket = _uiState.value.basketItems.toMutableList()
             currentBasket.add(CartItem(999, "쿠폰", amount, 1, amount))
             val total = currentBasket.sumOf { it.count * it.price }
-            _uiState.value = _uiState.value.copy(
+            _uiState.update { it.copy(
                 basketItems = currentBasket,
                 totalPrice = total
-            )
+            ) }
         }
     }
 
@@ -184,21 +184,21 @@ class HomeViewModel @Inject constructor(
         if (_uiState.value.isSubmitting) return
         // 새 주문 시작 — 직전 실패 스낵바 제거 + 제출 잠금(동기, 메인 스레드 단독)
         lastOrder = data to takeOption
-        _uiState.value = _uiState.value.copy(isSubmitting = true, printFailure = null)
+        _uiState.update { it.copy(isSubmitting = true, printFailure = null) }
 
         viewModelScope.launch(ioDispatcher) {
             try {
                 firestoreRepository.postOrder(data)
                 val nextOrderId = firestoreRepository.getOrderNumber()
-                _uiState.value = _uiState.value.copy(
+                _uiState.update { it.copy(
                     basketItems = emptyList(), totalPrice = 0, orderId = nextOrderId,
-                )
+                ) }
                 _uiEvent.emit(UiEvent.NavigateHome)
             } catch (e: Exception) {
                 FirebaseCrashlytics.getInstance().recordException(e) // 파트 B
                 _uiEvent.emit(UiEvent.ShowToast("주문 처리 중 오류가 발생했습니다."))
             } finally {
-                _uiState.value = _uiState.value.copy(isSubmitting = false)
+                _uiState.update { it.copy(isSubmitting = false) }
             }
         }
 
@@ -211,7 +211,7 @@ class HomeViewModel @Inject constructor(
     }
 
     fun dismissPrintFailure() {
-        _uiState.value = _uiState.value.copy(printFailure = null)
+        _uiState.update { it.copy(printFailure = null) }
     }
 
     // 인쇄는 ViewModel 생명주기와 독립인 applicationScope에서 실행(홈 복귀를 막지 않음).
@@ -220,9 +220,7 @@ class HomeViewModel @Inject constructor(
             try {
                 printReceipt(order, takeOption)
                 // 성공: 이 주문에 대한 실패 표시가 남아 있으면 해제(재출력 성공 케이스)
-                _uiState.value = _uiState.value.let {
-                    if (it.printFailure?.orderNum == order.orderNum) it.copy(printFailure = null) else it
-                }
+                _uiState.update { if (it.printFailure?.orderNum == order.orderNum) it.copy(printFailure = null) else it }
             } catch (e: PrintServerException) {
                 reportPrintFailure(order.orderNum, e.reason, e)
             } catch (e: Exception) {
@@ -232,7 +230,7 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun reportPrintFailure(orderNum: Int, reason: PrintFailureReason, e: Throwable) {
-        _uiState.value = _uiState.value.copy(printFailure = PrintFailure(orderNum, reason, ++printFailureSeq))
+        _uiState.update { it.copy(printFailure = PrintFailure(orderNum, reason, ++printFailureSeq)) }
         FirebaseCrashlytics.getInstance().apply {
             setCustomKey("orderNum", orderNum)
             setCustomKey("print_reason", reason.name)
