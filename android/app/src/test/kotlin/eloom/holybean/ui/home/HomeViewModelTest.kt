@@ -357,6 +357,44 @@ class HomeViewModelTest {
         job.cancel()
     }
 
+    @Test
+    fun `when both save and print fail SaveFailed takes precedence`() = runTest(testDispatcher) {
+        val order = createTestOrder()
+        coEvery { firestoreRepository.postOrder(any()) } throws Exception("commit failed")
+        coEvery { piPrintClient.print(any<List<PrintCommandDto>>()) } throws
+            eloom.holybean.printer.network.PrintServerException(
+                eloom.holybean.printer.network.PrintFailureReason.PrinterOffline, "offline"
+            )
+        val events = mutableListOf<HomeViewModel.UiEvent>()
+        val job: Job = launch { homeViewModel.uiEvent.collect { events.add(it) } }
+
+        homeViewModel.onOrderConfirmed(order, "포장")
+        advanceUntilIdle()
+
+        assertTrue(homeViewModel.uiState.value.submitError is HomeViewModel.SubmitError.SaveFailed)
+        assertTrue(events.none { it is HomeViewModel.UiEvent.NavigateHome })
+        job.cancel()
+    }
+
+    @Test
+    fun `postOrder timeout is reported as SaveFailed and does not navigate`() = runTest(testDispatcher) {
+        val order = createTestOrder()
+        // 실제 타임아웃을 유발해 TimeoutCancellationException 경로를 검증한다(가상 시계).
+        coEvery { firestoreRepository.postOrder(any()) } coAnswers {
+            kotlinx.coroutines.withTimeout(1) { kotlinx.coroutines.delay(100) }
+        }
+        val events = mutableListOf<HomeViewModel.UiEvent>()
+        val job: Job = launch { homeViewModel.uiEvent.collect { events.add(it) } }
+
+        homeViewModel.onOrderConfirmed(order, "포장")
+        advanceUntilIdle()
+
+        assertTrue(homeViewModel.uiState.value.submitError is HomeViewModel.SubmitError.SaveFailed)
+        assertTrue(events.none { it is HomeViewModel.UiEvent.NavigateHome })
+        assertEquals(false, homeViewModel.uiState.value.isSubmitting)
+        job.cancel()
+    }
+
     // 헬퍼 메서드: 테스트용 Order 객체 생성
     private fun createTestOrder(orderNum: Int = 1): Order {
         val cartItems = listOf(

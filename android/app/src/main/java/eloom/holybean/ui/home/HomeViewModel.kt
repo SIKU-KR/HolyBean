@@ -13,7 +13,9 @@ import eloom.holybean.printer.PiPrintClient
 import eloom.holybean.printer.network.PrintFailureReason
 import eloom.holybean.printer.network.PrintServerException
 import eloom.holybean.printer.polymorphism.HomePrinter
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.coroutineScope
@@ -222,11 +224,22 @@ class HomeViewModel @Inject constructor(
     // 인쇄만 실패한(저장은 끝난) 주문을 영수증 없이 정상 완료 처리하고 홈으로 복귀한다.
     fun skipPrintAndComplete() {
         if (!orderSaved) return
+        if (_uiState.value.isSubmitting) return
+        _uiState.update { it.copy(isSubmitting = true) }
         viewModelScope.launch(ioDispatcher) {
-            val nextOrderId = firestoreRepository.getOrderNumber()
-            _uiState.update { it.copy(basketItems = emptyList(), totalPrice = 0, orderId = nextOrderId, submitError = null) }
-            _uiEvent.emit(UiEvent.NavigateHome)
+            try {
+                completeAndNavigate()
+            } finally {
+                _uiState.update { it.copy(isSubmitting = false) }
+            }
         }
+    }
+
+    // 성공/인쇄생략 공통: 다음 주문번호 채번 + 장바구니 리셋 + 홈 이동.
+    private suspend fun completeAndNavigate() {
+        val nextOrderId = firestoreRepository.getOrderNumber()
+        _uiState.update { it.copy(basketItems = emptyList(), totalPrice = 0, orderId = nextOrderId, submitError = null) }
+        _uiEvent.emit(UiEvent.NavigateHome)
     }
 
     // 저장(서버 ack 대기)과 인쇄를 병렬 실행하고 둘 다 성공해야 홈으로 전환한다.
@@ -236,15 +249,14 @@ class HomeViewModel @Inject constructor(
             try {
                 coroutineScope {
                     val printDeferred = async { printReceipt(data, takeOption) }
+                    // postOrder를 print await보다 먼저 await → 저장 실패가 인쇄 실패보다 우선 보고된다(저장 실패가 더 중요).
                     if (!orderSaved) {
                         firestoreRepository.postOrder(data)
                         orderSaved = true
                     }
                     printDeferred.await()
                 }
-                val nextOrderId = firestoreRepository.getOrderNumber()
-                _uiState.update { it.copy(basketItems = emptyList(), totalPrice = 0, orderId = nextOrderId) }
-                _uiEvent.emit(UiEvent.NavigateHome)
+                completeAndNavigate()
             } catch (e: PrintServerException) {
                 _uiState.update { it.copy(submitError = SubmitError.PrintFailed(e.reason, ++submitSeq)) }
                 FirebaseCrashlytics.getInstance().apply {
@@ -252,6 +264,12 @@ class HomeViewModel @Inject constructor(
                     setCustomKey("print_reason", e.reason.name)
                     recordException(e)
                 }
+            } catch (e: TimeoutCancellationException) {
+                // 서버 ack 타임아웃(오프라인 등) → 저장 실패로 처리
+                _uiState.update { it.copy(submitError = SubmitError.SaveFailed(++submitSeq)) }
+                FirebaseCrashlytics.getInstance().recordException(e)
+            } catch (e: CancellationException) {
+                throw e   // ViewModel teardown 등 정상 취소는 삼키지 않는다
             } catch (e: Exception) {
                 _uiState.update { it.copy(submitError = SubmitError.SaveFailed(++submitSeq)) }
                 FirebaseCrashlytics.getInstance().recordException(e)
