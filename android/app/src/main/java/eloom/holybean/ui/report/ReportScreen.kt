@@ -13,6 +13,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import eloom.holybean.data.model.ReportDetailItem
 import eloom.holybean.ui.components.StatChip
+import eloom.holybean.ui.components.buttons.PrimaryButton
+import eloom.holybean.ui.components.buttons.SecondaryButton
 import eloom.holybean.ui.components.layout.ScreenContainer
 import eloom.holybean.ui.components.layout.ScreenHeader
 import eloom.holybean.ui.theme.Dimens
@@ -49,17 +51,14 @@ fun ReportRoute(onClose: () -> Unit, vm: ReportViewModel = hiltViewModel()) {
             ScreenHeader(
                 "기간 매출 리포트",
                 actions = {
-                    OutlinedButton(
-                        onClick = onClose,
-                        modifier = Modifier.heightIn(min = Dimens.minTouchTarget),
-                    ) { Text("닫기", style = MaterialTheme.typography.bodyMedium) }
+                    SecondaryButton("닫기", onClick = onClose)
                 },
             )
             Row(Modifier.padding(vertical = Dimens.spaceMd), horizontalArrangement = Arrangement.spacedBy(Dimens.spaceSm)) {
-                OutlinedButton(onClick = { pick { start = it } }, modifier = Modifier.heightIn(min = Dimens.minTouchTarget)) { Text(start, style = MaterialTheme.typography.bodyMedium) }
-                OutlinedButton(onClick = { pick { end = it } }, modifier = Modifier.heightIn(min = Dimens.minTouchTarget)) { Text(end, style = MaterialTheme.typography.bodyMedium) }
-                Button(onClick = { vm.loadReportData(start, end) }, modifier = Modifier.heightIn(min = Dimens.minTouchTarget)) { Text("조회", style = MaterialTheme.typography.bodyMedium) }
-                OutlinedButton(onClick = { vm.printReport() }, modifier = Modifier.heightIn(min = Dimens.minTouchTarget)) { Text("출력", style = MaterialTheme.typography.bodyMedium) }
+                SecondaryButton(start, onClick = { pick { start = it } })
+                SecondaryButton(end, onClick = { pick { end = it } })
+                PrimaryButton("조회", onClick = { vm.loadReportData(start, end) })
+                SecondaryButton("출력", onClick = { vm.printReport() })
             }
             Text(state.reportTitle, style = MaterialTheme.typography.bodyMedium)
             Row(Modifier.padding(vertical = Dimens.spaceSm), horizontalArrangement = Arrangement.spacedBy(Dimens.spaceMd)) {
