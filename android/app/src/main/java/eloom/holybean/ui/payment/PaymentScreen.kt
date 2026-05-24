@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
@@ -24,6 +23,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import eloom.holybean.data.model.CartItem
 import eloom.holybean.ui.components.BasketRow
+import eloom.holybean.ui.components.buttons.PrimaryButton
+import eloom.holybean.ui.components.buttons.SecondaryButton
 import eloom.holybean.ui.components.PaymentMethodTile
 import eloom.holybean.ui.components.SegmentedToggle
 import eloom.holybean.ui.components.layout.Pane
@@ -36,10 +37,7 @@ import eloom.holybean.ui.theme.Dimens
 import eloom.holybean.ui.theme.DividerGray
 import eloom.holybean.ui.theme.HolyBeanTheme
 import eloom.holybean.ui.theme.OnSurfaceMuted
-import eloom.holybean.ui.theme.Orange
 import eloom.holybean.ui.theme.OrangeText
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -107,21 +105,7 @@ fun PaymentScreen(
                 ScreenHeader(
                     "${orderId}번 주문 · 결제",
                     actions = {
-                        OutlinedButton(
-                            onClick = onCancel,
-                            enabled = !isSubmitting,
-                            modifier = Modifier.heightIn(min = Dimens.minTouchTarget),
-                            shape = RoundedCornerShape(Dimens.radiusButton),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = OnSurfaceMuted),
-                        ) {
-                            Icon(
-                                Icons.Filled.Close,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp),
-                            )
-                            Spacer(Modifier.width(Dimens.spaceXs))
-                            Text("취소", style = MaterialTheme.typography.bodyMedium)
-                        }
+                        SecondaryButton("취소", onClick = onCancel, enabled = !isSubmitting)
                     },
                 )
                 Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(Dimens.paneGap)) {
@@ -194,25 +178,12 @@ fun PaymentScreen(
                             }
                         }
                         HorizontalDivider(color = DividerGray)
-                        Button(
+                        PrimaryButton(
+                            text = if (isSubmitting) "처리 중…" else "결제 완료",
                             onClick = { onConfirm(PaymentSelection(cup, first, orderer, split, second, secondAmt)) },
-                            enabled = !isSubmitting,
-                            modifier = Modifier.fillMaxWidth().padding(Dimens.panePadding).height(Dimens.primaryTouchTarget),
-                            shape = RoundedCornerShape(Dimens.radiusButton),
-                            colors = ButtonDefaults.buttonColors(containerColor = Orange),
-                        ) {
-                            if (isSubmitting) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(20.dp),
-                                    strokeWidth = 2.dp,
-                                    color = MaterialTheme.colorScheme.onPrimary,
-                                )
-                                Spacer(Modifier.width(Dimens.spaceSm))
-                                Text("처리 중…", style = MaterialTheme.typography.titleMedium)
-                            } else {
-                                Text("결제 완료", style = MaterialTheme.typography.titleMedium)
-                            }
-                        }
+                            modifier = Modifier.fillMaxWidth().padding(Dimens.panePadding),
+                            loading = isSubmitting,
+                        )
                     }
                 }
             }
