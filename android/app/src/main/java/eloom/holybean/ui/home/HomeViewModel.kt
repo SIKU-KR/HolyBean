@@ -14,8 +14,9 @@ import eloom.holybean.printer.network.PrintFailureReason
 import eloom.holybean.printer.network.PrintServerException
 import eloom.holybean.printer.polymorphism.HomePrinter
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -28,11 +29,18 @@ class HomeViewModel @Inject constructor(
     private val firestoreRepository: FirestoreRepository,
     private val menuRepository: MenuRepository,
     @Named("IO") private val ioDispatcher: CoroutineDispatcher,
-    @Named("ApplicationScope") private val applicationScope: CoroutineScope,
     private val piPrintClient: PiPrintClient,
     private val homePrinter: HomePrinter,
 ) : ViewModel() {
 
+    sealed class SubmitError {
+        abstract val seq: Long
+        data class SaveFailed(override val seq: Long) : SubmitError()
+        data class PrintFailed(val reason: PrintFailureReason, override val seq: Long) : SubmitError()
+    }
+
+    // TODO(Task 4): remove — kept temporarily so HomeScreen.kt compiles until print-failure UI is migrated
+    @Deprecated("Replaced by submitError; remove in Task 4")
     data class PrintFailure(val orderNum: Int, val reason: PrintFailureReason, val seq: Long = 0L)
 
     data class UiState(
@@ -43,9 +51,13 @@ class HomeViewModel @Inject constructor(
         val orderId: Int = 0,
         val totalPrice: Int = 0,
         val currentDate: String = currentDateString(),
-        val printFailure: PrintFailure? = null,
+        val submitError: SubmitError? = null,
         val isSubmitting: Boolean = false,
     ) {
+        // TODO(Task 4): remove — kept temporarily so HomeScreen.kt compiles until print-failure UI is migrated
+        @Suppress("DEPRECATION")
+        @Deprecated("Replaced by submitError; remove in Task 4")
+        val printFailure: PrintFailure? get() = null
         companion object {
             private fun currentDateString(): String {
                 val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
@@ -73,9 +85,9 @@ class HomeViewModel @Inject constructor(
     val uiEvent: SharedFlow<UiEvent> = _uiEvent.asSharedFlow()
 
     private var lastOrder: Pair<Order, String>? = null
-
-    // 동일 실패가 연속될 때도 StateFlow/Snackbar가 다시 발화하도록 하는 단조 증가 시퀀스
-    private var printFailureSeq = 0L
+    private var orderSaved: Boolean = false
+    // 동일 실패가 연속될 때도 StateFlow가 다시 발화하도록 하는 단조 증가 시퀀스
+    private var submitSeq: Long = 0L
 
     init {
         // Load initial data — 스플래시가 채운 캐시를 우선 사용하고, 없으면 네트워크 페치로 폴백
@@ -182,59 +194,70 @@ class HomeViewModel @Inject constructor(
             return
         }
         if (_uiState.value.isSubmitting) return
-        // 새 주문 시작 — 직전 실패 스낵바 제거 + 제출 잠금(동기, 메인 스레드 단독)
         lastOrder = data to takeOption
-        _uiState.update { it.copy(isSubmitting = true, printFailure = null) }
+        orderSaved = false
+        _uiState.update { it.copy(isSubmitting = true, submitError = null) }
+        runSubmission(data, takeOption)
+    }
 
+    fun retrySubmission() {
+        val (data, takeOption) = lastOrder ?: return
+        if (_uiState.value.isSubmitting) return
+        _uiState.update { it.copy(isSubmitting = true, submitError = null) }
+        runSubmission(data, takeOption)
+    }
+
+    fun dismissSubmitError() {
+        _uiState.update { it.copy(submitError = null) }
+    }
+
+    // TODO(Task 4): remove — kept temporarily so HomeScreen.kt compiles until print-failure UI is migrated
+    @Deprecated("Replaced by retrySubmission; remove in Task 4")
+    fun reprintLastOrder() { /* no-op until HomeScreen is updated in Task 4 */ }
+
+    // TODO(Task 4): remove — kept temporarily so HomeScreen.kt compiles until print-failure UI is migrated
+    @Deprecated("Replaced by dismissSubmitError; remove in Task 4")
+    fun dismissPrintFailure() { dismissSubmitError() }
+
+    // 인쇄만 실패한(저장은 끝난) 주문을 영수증 없이 정상 완료 처리하고 홈으로 복귀한다.
+    fun skipPrintAndComplete() {
+        if (!orderSaved) return
+        viewModelScope.launch(ioDispatcher) {
+            val nextOrderId = firestoreRepository.getOrderNumber()
+            _uiState.update { it.copy(basketItems = emptyList(), totalPrice = 0, orderId = nextOrderId, submitError = null) }
+            _uiEvent.emit(UiEvent.NavigateHome)
+        }
+    }
+
+    // 저장(서버 ack 대기)과 인쇄를 병렬 실행하고 둘 다 성공해야 홈으로 전환한다.
+    // 저장이 한 번 성공하면 orderSaved=true 가 되어, 재시도 시 중복 저장(집계 이중 계상)을 막는다.
+    private fun runSubmission(data: Order, takeOption: String) {
         viewModelScope.launch(ioDispatcher) {
             try {
-                firestoreRepository.postOrder(data)
+                coroutineScope {
+                    val printDeferred = async { printReceipt(data, takeOption) }
+                    if (!orderSaved) {
+                        firestoreRepository.postOrder(data)
+                        orderSaved = true
+                    }
+                    printDeferred.await()
+                }
                 val nextOrderId = firestoreRepository.getOrderNumber()
-                _uiState.update { it.copy(
-                    basketItems = emptyList(), totalPrice = 0, orderId = nextOrderId,
-                ) }
+                _uiState.update { it.copy(basketItems = emptyList(), totalPrice = 0, orderId = nextOrderId) }
                 _uiEvent.emit(UiEvent.NavigateHome)
+            } catch (e: PrintServerException) {
+                _uiState.update { it.copy(submitError = SubmitError.PrintFailed(e.reason, ++submitSeq)) }
+                FirebaseCrashlytics.getInstance().apply {
+                    setCustomKey("orderNum", data.orderNum)
+                    setCustomKey("print_reason", e.reason.name)
+                    recordException(e)
+                }
             } catch (e: Exception) {
-                FirebaseCrashlytics.getInstance().recordException(e) // 파트 B
-                _uiEvent.emit(UiEvent.ShowToast("주문 처리 중 오류가 발생했습니다."))
+                _uiState.update { it.copy(submitError = SubmitError.SaveFailed(++submitSeq)) }
+                FirebaseCrashlytics.getInstance().recordException(e)
             } finally {
                 _uiState.update { it.copy(isSubmitting = false) }
             }
-        }
-
-        launchPrint(data, takeOption)
-    }
-
-    fun reprintLastOrder() {
-        val (order, takeOption) = lastOrder ?: return
-        launchPrint(order, takeOption)
-    }
-
-    fun dismissPrintFailure() {
-        _uiState.update { it.copy(printFailure = null) }
-    }
-
-    // 인쇄는 ViewModel 생명주기와 독립인 applicationScope에서 실행(홈 복귀를 막지 않음).
-    private fun launchPrint(order: Order, takeOption: String) {
-        applicationScope.launch {
-            try {
-                printReceipt(order, takeOption)
-                // 성공: 이 주문에 대한 실패 표시가 남아 있으면 해제(재출력 성공 케이스)
-                _uiState.update { if (it.printFailure?.orderNum == order.orderNum) it.copy(printFailure = null) else it }
-            } catch (e: PrintServerException) {
-                reportPrintFailure(order.orderNum, e.reason, e)
-            } catch (e: Exception) {
-                reportPrintFailure(order.orderNum, PrintFailureReason.Unknown, e)
-            }
-        }
-    }
-
-    private fun reportPrintFailure(orderNum: Int, reason: PrintFailureReason, e: Throwable) {
-        _uiState.update { it.copy(printFailure = PrintFailure(orderNum, reason, ++printFailureSeq)) }
-        FirebaseCrashlytics.getInstance().apply {
-            setCustomKey("orderNum", orderNum)
-            setCustomKey("print_reason", reason.name)
-            recordException(e)
         }
     }
 

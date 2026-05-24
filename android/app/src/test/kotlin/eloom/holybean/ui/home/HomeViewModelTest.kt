@@ -17,11 +17,8 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
-import io.mockk.verify
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -59,7 +56,6 @@ class HomeViewModelTest {
             firestoreRepository,
             menuRepository,
             testDispatcher,
-            CoroutineScope(SupervisorJob() + testDispatcher),
             piPrintClient,
             homePrinter,
         )
@@ -75,7 +71,7 @@ class HomeViewModelTest {
         // Given
         val testOrder = createTestOrder()
         val takeOption = "포장"
-        every { firestoreRepository.postOrder(any()) } returns Unit
+        coEvery { firestoreRepository.postOrder(any()) } returns Unit
 
         val events = mutableListOf<HomeViewModel.UiEvent>()
         val job: Job = launch { homeViewModel.uiEvent.collect { events.add(it) } }
@@ -85,29 +81,8 @@ class HomeViewModelTest {
         advanceUntilIdle()
 
         // Then
-        verify(exactly = 1) { firestoreRepository.postOrder(testOrder) }
+        coVerify(exactly = 1) { firestoreRepository.postOrder(testOrder) }
         assertTrue(events.any { it is HomeViewModel.UiEvent.NavigateHome })
-        job.cancel()
-    }
-
-    @Test
-    fun `onOrderConfirmed should handle repository error and emit toast`() = runTest(testDispatcher) {
-        // Given
-        val testOrder = createTestOrder()
-        val takeOption = "매장"
-        val testException = Exception("Network Error")
-        every { firestoreRepository.postOrder(any()) } throws testException
-
-        val events = mutableListOf<HomeViewModel.UiEvent>()
-        val job: Job = launch { homeViewModel.uiEvent.collect { events.add(it) } }
-
-        // When
-        homeViewModel.onOrderConfirmed(testOrder, takeOption)
-        advanceUntilIdle()
-
-        // Then
-        verify(exactly = 1) { firestoreRepository.postOrder(testOrder) }
-        assertTrue(events.firstOrNull() is HomeViewModel.UiEvent.ShowToast)
         job.cancel()
     }
 
@@ -116,7 +91,7 @@ class HomeViewModelTest {
         // Given
         val testOrder1 = createTestOrder(orderNum = 1)
         val testOrder2 = createTestOrder(orderNum = 2)
-        every { firestoreRepository.postOrder(any()) } returns Unit
+        coEvery { firestoreRepository.postOrder(any()) } returns Unit
 
         // When
         homeViewModel.onOrderConfirmed(testOrder1, "포장")
@@ -124,7 +99,7 @@ class HomeViewModelTest {
         advanceUntilIdle()
 
         // Then
-        verify(exactly = 2) { firestoreRepository.postOrder(any()) }
+        coVerify(exactly = 2) { firestoreRepository.postOrder(any()) }
         // Navigation events should be emitted twice
         // (optional explicit check omitted for brevity)
     }
@@ -142,7 +117,7 @@ class HomeViewModelTest {
         advanceUntilIdle()
 
         // Then - postOrder는 절대 호출되지 않고, 에러 토스트가 발생한다
-        verify(exactly = 0) { firestoreRepository.postOrder(any()) }
+        coVerify(exactly = 0) { firestoreRepository.postOrder(any()) }
         assertTrue(events.any { it is HomeViewModel.UiEvent.ShowToast })
         assertTrue(events.none { it is HomeViewModel.UiEvent.NavigateHome })
         job.cancel()
@@ -152,7 +127,7 @@ class HomeViewModelTest {
     fun `onOrderConfirmed should call piPrintClient with receipt commands`() = runTest(testDispatcher) {
         // Given
         val testOrder = createTestOrder()
-        every { firestoreRepository.postOrder(any()) } returns Unit
+        coEvery { firestoreRepository.postOrder(any()) } returns Unit
 
         // When
         homeViewModel.onOrderConfirmed(testOrder, "포장")
@@ -180,12 +155,11 @@ class HomeViewModelTest {
         // Given - getOrderNumber()를 [초기 채번 10, 성공 후 재채번 11]로 스텁한 뒤
         // ViewModel을 재구성해 init이 10을, 주문 성공 분기가 11을 소비하도록 한다.
         coEvery { firestoreRepository.getOrderNumber() } returnsMany listOf(10, 11)
-        every { firestoreRepository.postOrder(any()) } returns Unit
+        coEvery { firestoreRepository.postOrder(any()) } returns Unit
         homeViewModel = HomeViewModel(
             firestoreRepository,
             menuRepository,
             testDispatcher,
-            CoroutineScope(SupervisorJob() + testDispatcher),
             piPrintClient,
             homePrinter,
         )
@@ -221,7 +195,6 @@ class HomeViewModelTest {
             firestoreRepository,
             menuRepository,
             testDispatcher,
-            CoroutineScope(SupervisorJob() + testDispatcher),
             piPrintClient,
             homePrinter,
         )
@@ -233,79 +206,13 @@ class HomeViewModelTest {
     }
 
     @Test
-    fun `print failure sets printFailure with reason`() = runTest(testDispatcher) {
-        val order = createTestOrder()
-        every { firestoreRepository.postOrder(any()) } returns Unit
-        coEvery { piPrintClient.print(any<List<PrintCommandDto>>()) } throws
-            eloom.holybean.printer.network.PrintServerException(
-                eloom.holybean.printer.network.PrintFailureReason.PrinterOffline, "offline"
-            )
-
-        homeViewModel.onOrderConfirmed(order, "포장")
-        advanceUntilIdle()
-
-        val f = homeViewModel.uiState.value.printFailure
-        assertEquals(order.orderNum, f?.orderNum)
-        assertEquals(
-            eloom.holybean.printer.network.PrintFailureReason.PrinterOffline,
-            f?.reason,
-        )
-    }
-
-    @Test
-    fun `successful print leaves printFailure null`() = runTest(testDispatcher) {
-        val order = createTestOrder()
-        every { firestoreRepository.postOrder(any()) } returns Unit
-
-        homeViewModel.onOrderConfirmed(order, "포장")
-        advanceUntilIdle()
-
-        assertEquals(null, homeViewModel.uiState.value.printFailure)
-    }
-
-    @Test
-    fun `new order resets prior printFailure`() = runTest(testDispatcher) {
-        val failing = createTestOrder(orderNum = 5)
-        every { firestoreRepository.postOrder(any()) } returns Unit
-        coEvery { piPrintClient.print(any<List<PrintCommandDto>>()) } throws
-            eloom.holybean.printer.network.PrintServerException(
-                eloom.holybean.printer.network.PrintFailureReason.PrinterError, "err"
-            )
-        homeViewModel.onOrderConfirmed(failing, "포장")
-        advanceUntilIdle()
-        assertTrue(homeViewModel.uiState.value.printFailure != null)
-
-        coEvery { piPrintClient.print(any<List<PrintCommandDto>>()) } returns Unit
-        homeViewModel.onOrderConfirmed(createTestOrder(orderNum = 6), "포장")
-        advanceUntilIdle()
-        assertEquals(null, homeViewModel.uiState.value.printFailure)
-    }
-
-    @Test
-    fun `dismissPrintFailure clears state`() = runTest(testDispatcher) {
-        val order = createTestOrder()
-        every { firestoreRepository.postOrder(any()) } returns Unit
-        coEvery { piPrintClient.print(any<List<PrintCommandDto>>()) } throws
-            eloom.holybean.printer.network.PrintServerException(
-                eloom.holybean.printer.network.PrintFailureReason.Unknown, "x"
-            )
-        homeViewModel.onOrderConfirmed(order, "포장")
-        advanceUntilIdle()
-        assertTrue(homeViewModel.uiState.value.printFailure != null)
-
-        homeViewModel.dismissPrintFailure()
-        assertEquals(null, homeViewModel.uiState.value.printFailure)
-    }
-
-    @Test
     fun `isSubmitting is true after confirm and false after completion`() = runTest {
         val std = StandardTestDispatcher(testScheduler)
         val vm = HomeViewModel(
-            firestoreRepository, menuRepository, std,
-            CoroutineScope(SupervisorJob() + std), piPrintClient, homePrinter,
+            firestoreRepository, menuRepository, std, piPrintClient, homePrinter,
         )
         advanceUntilIdle() // init 소비
-        every { firestoreRepository.postOrder(any()) } returns Unit
+        coEvery { firestoreRepository.postOrder(any()) } returns Unit
 
         vm.onOrderConfirmed(createTestOrder(), "포장")
         assertTrue(vm.uiState.value.isSubmitting) // 런치 전 동기 세팅, 본문 미실행
@@ -315,63 +222,139 @@ class HomeViewModelTest {
     }
 
     @Test
-    fun `reprintLastOrder retries print and clears failure on success`() = runTest(testDispatcher) {
-        val order = createTestOrder()
-        every { firestoreRepository.postOrder(any()) } returns Unit
-        coEvery { piPrintClient.print(any<List<PrintCommandDto>>()) } throws
-            eloom.holybean.printer.network.PrintServerException(
-                eloom.holybean.printer.network.PrintFailureReason.PrinterOffline, "offline"
-            )
-        homeViewModel.onOrderConfirmed(order, "포장")
-        advanceUntilIdle()
-        assertTrue(homeViewModel.uiState.value.printFailure != null)
-
-        // 프린터 복구 후 재출력 → 실패 표시 해제
-        coEvery { piPrintClient.print(any<List<PrintCommandDto>>()) } returns Unit
-        homeViewModel.reprintLastOrder()
-        advanceUntilIdle()
-        assertEquals(null, homeViewModel.uiState.value.printFailure)
-    }
-
-    @Test
     fun `second concurrent onOrderConfirmed is blocked while submitting`() = runTest {
         val std = StandardTestDispatcher(testScheduler)
         val vm = HomeViewModel(
-            firestoreRepository, menuRepository, std,
-            CoroutineScope(SupervisorJob() + std), piPrintClient, homePrinter,
+            firestoreRepository, menuRepository, std, piPrintClient, homePrinter,
         )
         advanceUntilIdle()
-        every { firestoreRepository.postOrder(any()) } returns Unit
+        coEvery { firestoreRepository.postOrder(any()) } returns Unit
 
         vm.onOrderConfirmed(createTestOrder(orderNum = 1), "포장")
         // 첫 제출 코루틴이 StandardTestDispatcher 상 아직 진행 중 — isSubmitting 가드로 두 번째는 차단
         vm.onOrderConfirmed(createTestOrder(orderNum = 2), "매장")
         advanceUntilIdle()
 
-        verify(exactly = 1) { firestoreRepository.postOrder(any()) }
+        coVerify(exactly = 1) { firestoreRepository.postOrder(any()) }
     }
 
+    // --- New tests for await-all submit flow ---
+
     @Test
-    fun `consecutive identical print failures produce distinct values so state re-emits`() = runTest(testDispatcher) {
+    fun `print failure keeps user on screen with PrintFailed error and no navigate`() = runTest(testDispatcher) {
         val order = createTestOrder()
-        every { firestoreRepository.postOrder(any()) } returns Unit
+        coEvery { firestoreRepository.postOrder(any()) } returns Unit
         coEvery { piPrintClient.print(any<List<PrintCommandDto>>()) } throws
             eloom.holybean.printer.network.PrintServerException(
                 eloom.holybean.printer.network.PrintFailureReason.PrinterOffline, "offline"
             )
+        val events = mutableListOf<HomeViewModel.UiEvent>()
+        val job: Job = launch { homeViewModel.uiEvent.collect { events.add(it) } }
 
         homeViewModel.onOrderConfirmed(order, "포장")
         advanceUntilIdle()
-        val first = homeViewModel.uiState.value.printFailure
 
-        // 같은 원인으로 재출력 재실패 → 값이 달라야(seq 증가) StateFlow가 다시 emit 한다
-        homeViewModel.reprintLastOrder()
+        val err = homeViewModel.uiState.value.submitError
+        assertTrue(err is HomeViewModel.SubmitError.PrintFailed)
+        assertEquals(
+            eloom.holybean.printer.network.PrintFailureReason.PrinterOffline,
+            (err as HomeViewModel.SubmitError.PrintFailed).reason,
+        )
+        assertTrue(events.none { it is HomeViewModel.UiEvent.NavigateHome })
+        assertEquals(false, homeViewModel.uiState.value.isSubmitting)
+        job.cancel()
+    }
+
+    @Test
+    fun `successful submit leaves submitError null and navigates`() = runTest(testDispatcher) {
+        val order = createTestOrder()
+        coEvery { firestoreRepository.postOrder(any()) } returns Unit
+        val events = mutableListOf<HomeViewModel.UiEvent>()
+        val job: Job = launch { homeViewModel.uiEvent.collect { events.add(it) } }
+
+        homeViewModel.onOrderConfirmed(order, "포장")
         advanceUntilIdle()
-        val second = homeViewModel.uiState.value.printFailure
 
-        assertEquals(eloom.holybean.printer.network.PrintFailureReason.PrinterOffline, second?.reason)
-        assertEquals(order.orderNum, second?.orderNum)
-        assertTrue("consecutive identical failures must differ for re-emit", first != second)
+        assertEquals(null, homeViewModel.uiState.value.submitError)
+        assertTrue(events.any { it is HomeViewModel.UiEvent.NavigateHome })
+        job.cancel()
+    }
+
+    @Test
+    fun `save failure sets SaveFailed and does not navigate`() = runTest(testDispatcher) {
+        val order = createTestOrder()
+        coEvery { firestoreRepository.postOrder(any()) } throws Exception("commit failed")
+        val events = mutableListOf<HomeViewModel.UiEvent>()
+        val job: Job = launch { homeViewModel.uiEvent.collect { events.add(it) } }
+
+        homeViewModel.onOrderConfirmed(order, "포장")
+        advanceUntilIdle()
+
+        assertTrue(homeViewModel.uiState.value.submitError is HomeViewModel.SubmitError.SaveFailed)
+        assertTrue(events.none { it is HomeViewModel.UiEvent.NavigateHome })
+        job.cancel()
+    }
+
+    @Test
+    fun `retry after print failure reprints only and does not re-save order`() = runTest(testDispatcher) {
+        val order = createTestOrder()
+        coEvery { firestoreRepository.postOrder(any()) } returns Unit
+        coEvery { piPrintClient.print(any<List<PrintCommandDto>>()) } throws
+            eloom.holybean.printer.network.PrintServerException(
+                eloom.holybean.printer.network.PrintFailureReason.PrinterOffline, "offline"
+            )
+        homeViewModel.onOrderConfirmed(order, "포장")
+        advanceUntilIdle()
+        assertTrue(homeViewModel.uiState.value.submitError is HomeViewModel.SubmitError.PrintFailed)
+
+        coEvery { piPrintClient.print(any<List<PrintCommandDto>>()) } returns Unit
+        val events = mutableListOf<HomeViewModel.UiEvent>()
+        val job: Job = launch { homeViewModel.uiEvent.collect { events.add(it) } }
+        homeViewModel.retrySubmission()
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { firestoreRepository.postOrder(order) }
+        assertEquals(null, homeViewModel.uiState.value.submitError)
+        assertTrue(events.any { it is HomeViewModel.UiEvent.NavigateHome })
+        job.cancel()
+    }
+
+    @Test
+    fun `retry after save failure re-saves order`() = runTest(testDispatcher) {
+        val order = createTestOrder()
+        coEvery { firestoreRepository.postOrder(any()) } throws Exception("commit failed")
+        homeViewModel.onOrderConfirmed(order, "포장")
+        advanceUntilIdle()
+        assertTrue(homeViewModel.uiState.value.submitError is HomeViewModel.SubmitError.SaveFailed)
+
+        coEvery { firestoreRepository.postOrder(any()) } returns Unit
+        homeViewModel.retrySubmission()
+        advanceUntilIdle()
+
+        coVerify(exactly = 2) { firestoreRepository.postOrder(order) }
+        assertEquals(null, homeViewModel.uiState.value.submitError)
+    }
+
+    @Test
+    fun `skipPrintAndComplete completes saved order without reprint`() = runTest(testDispatcher) {
+        val order = createTestOrder()
+        coEvery { firestoreRepository.postOrder(any()) } returns Unit
+        coEvery { piPrintClient.print(any<List<PrintCommandDto>>()) } throws
+            eloom.holybean.printer.network.PrintServerException(
+                eloom.holybean.printer.network.PrintFailureReason.PrinterError, "err"
+            )
+        homeViewModel.onOrderConfirmed(order, "포장")
+        advanceUntilIdle()
+        assertTrue(homeViewModel.uiState.value.submitError is HomeViewModel.SubmitError.PrintFailed)
+
+        val events = mutableListOf<HomeViewModel.UiEvent>()
+        val job: Job = launch { homeViewModel.uiEvent.collect { events.add(it) } }
+        homeViewModel.skipPrintAndComplete()
+        advanceUntilIdle()
+
+        assertEquals(null, homeViewModel.uiState.value.submitError)
+        assertTrue(events.any { it is HomeViewModel.UiEvent.NavigateHome })
+        job.cancel()
     }
 
     // 헬퍼 메서드: 테스트용 Order 객체 생성
