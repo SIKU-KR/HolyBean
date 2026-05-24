@@ -38,5 +38,5 @@ object Dimens {
 
     // ── 고정 치수 (스케일 예외) ───────────────────────────────
     val statusDot = 10.dp
-    val menuTileHeight = 90.dp
+    val menuTileHeight = 112.dp
 }

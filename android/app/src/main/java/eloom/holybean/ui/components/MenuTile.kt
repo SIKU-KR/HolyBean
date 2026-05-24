@@ -3,6 +3,8 @@ package eloom.holybean.ui.components
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -10,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import eloom.holybean.ui.theme.*
 
 enum class TileStyle { Menu, Coupon, Settings }
@@ -60,11 +63,18 @@ fun MenuTile(
                 )
                 Spacer(Modifier.height(Dimens.spaceXs))
             }
-            Text(
+            BasicText(
                 name,
-                style = MaterialTheme.typography.bodyMedium,
-                color = labelColor,
-                fontWeight = if (style == TileStyle.Menu) FontWeight.Medium else FontWeight.Bold,
+                maxLines = 1,
+                // 긴 메뉴명은 줄바꿈 대신 글자 크기를 자동 축소해 한 줄에 맞춘다.
+                autoSize = TextAutoSize.StepBased(
+                    minFontSize = 12.sp,
+                    maxFontSize = MaterialTheme.typography.bodyMedium.fontSize,
+                ),
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    color = labelColor,
+                    fontWeight = if (style == TileStyle.Menu) FontWeight.Medium else FontWeight.Bold,
+                ),
             )
             if (price != null) {
                 Text(

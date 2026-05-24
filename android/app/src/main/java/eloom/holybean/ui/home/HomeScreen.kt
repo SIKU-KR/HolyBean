@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
@@ -142,7 +143,11 @@ fun HomeScreen(
             Column(Modifier.weight(1f)) {
                 CategoryChips(categories, selectedCategory, onCategory)
                 Spacer(Modifier.height(Dimens.spaceSm))
+                val gridState = rememberLazyGridState()
+                // 카테고리를 바꾸면 이전 스크롤 위치가 남지 않도록 맨 위로 되돌린다.
+                LaunchedEffect(selectedCategory) { gridState.scrollToItem(0) }
                 LazyVerticalGrid(
+                    state = gridState,
                     columns = GridCells.Fixed(3),
                     horizontalArrangement = Arrangement.spacedBy(Dimens.gridGap),
                     verticalArrangement = Arrangement.spacedBy(Dimens.gridGap),
@@ -207,6 +212,7 @@ private fun BasketPane(
             Text("${orderId}번 주문", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
             SecondaryButton("주문기록", onClick = onHistory)
         }
+        Spacer(Modifier.height(16.dp))
         if (basket.isEmpty()) {
             Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                 Text("담긴 상품이 없습니다", style = MaterialTheme.typography.bodyMedium, color = OnSurfaceMuted)

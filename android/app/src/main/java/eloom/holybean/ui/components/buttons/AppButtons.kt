@@ -49,7 +49,7 @@ fun PrimaryButton(
             )
             Spacer(Modifier.width(Dimens.spaceSm))
         }
-        Text(text, style = MaterialTheme.typography.bodyMedium)
+        Text(text, style = MaterialTheme.typography.bodyLarge)
     }
 }
 
