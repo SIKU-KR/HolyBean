@@ -1,6 +1,7 @@
 package eloom.holybean.ui.home
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
+import com.google.firebase.crashlytics.FirebaseCrashlytics
 import eloom.holybean.data.model.CartItem
 import eloom.holybean.data.model.Order
 import eloom.holybean.data.model.PaymentMethod
@@ -14,12 +15,15 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.unmockkAll
 import io.mockk.verify
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -45,6 +49,8 @@ class HomeViewModelTest {
 
     @Before
     fun setUp() {
+        mockkStatic(FirebaseCrashlytics::class)
+        every { FirebaseCrashlytics.getInstance() } returns mockk(relaxed = true)
         coEvery { menuRepository.getMenuListSync() } returns emptyList()
         coEvery { firestoreRepository.getOrderNumber() } returns 1
         coEvery { homePrinter.receiptForCustomer(any()) } returns emptyList()
@@ -61,7 +67,7 @@ class HomeViewModelTest {
 
     @After
     fun tearDown() {
-        clearAllMocks()
+        unmockkAll()
     }
 
     @Test
@@ -224,6 +230,125 @@ class HomeViewModelTest {
         // Then - 캐시 사용, 네트워크 페치 미호출
         assertEquals(cached, homeViewModel.uiState.value.allMenuItems)
         coVerify(exactly = 0) { menuRepository.getMenuListSync() }
+    }
+
+    @Test
+    fun `print failure sets printFailure with reason`() = runTest(testDispatcher) {
+        val order = createTestOrder()
+        every { firestoreRepository.postOrder(any()) } returns Unit
+        coEvery { piPrintClient.print(any<List<PrintCommandDto>>()) } throws
+            eloom.holybean.printer.network.PrintServerException(
+                eloom.holybean.printer.network.PrintFailureReason.PrinterOffline, "offline"
+            )
+
+        homeViewModel.onOrderConfirmed(order, "포장")
+        advanceUntilIdle()
+
+        val f = homeViewModel.uiState.value.printFailure
+        assertEquals(order.orderNum, f?.orderNum)
+        assertEquals(
+            eloom.holybean.printer.network.PrintFailureReason.PrinterOffline,
+            f?.reason,
+        )
+    }
+
+    @Test
+    fun `successful print leaves printFailure null`() = runTest(testDispatcher) {
+        val order = createTestOrder()
+        every { firestoreRepository.postOrder(any()) } returns Unit
+
+        homeViewModel.onOrderConfirmed(order, "포장")
+        advanceUntilIdle()
+
+        assertEquals(null, homeViewModel.uiState.value.printFailure)
+    }
+
+    @Test
+    fun `new order resets prior printFailure`() = runTest(testDispatcher) {
+        val failing = createTestOrder(orderNum = 5)
+        every { firestoreRepository.postOrder(any()) } returns Unit
+        coEvery { piPrintClient.print(any<List<PrintCommandDto>>()) } throws
+            eloom.holybean.printer.network.PrintServerException(
+                eloom.holybean.printer.network.PrintFailureReason.PrinterError, "err"
+            )
+        homeViewModel.onOrderConfirmed(failing, "포장")
+        advanceUntilIdle()
+        assertTrue(homeViewModel.uiState.value.printFailure != null)
+
+        coEvery { piPrintClient.print(any<List<PrintCommandDto>>()) } returns Unit
+        homeViewModel.onOrderConfirmed(createTestOrder(orderNum = 6), "포장")
+        advanceUntilIdle()
+        assertEquals(null, homeViewModel.uiState.value.printFailure)
+    }
+
+    @Test
+    fun `dismissPrintFailure clears state`() = runTest(testDispatcher) {
+        val order = createTestOrder()
+        every { firestoreRepository.postOrder(any()) } returns Unit
+        coEvery { piPrintClient.print(any<List<PrintCommandDto>>()) } throws
+            eloom.holybean.printer.network.PrintServerException(
+                eloom.holybean.printer.network.PrintFailureReason.Unknown, "x"
+            )
+        homeViewModel.onOrderConfirmed(order, "포장")
+        advanceUntilIdle()
+        assertTrue(homeViewModel.uiState.value.printFailure != null)
+
+        homeViewModel.dismissPrintFailure()
+        assertEquals(null, homeViewModel.uiState.value.printFailure)
+    }
+
+    @Test
+    fun `isSubmitting is true after confirm and false after completion`() = runTest {
+        val std = StandardTestDispatcher(testScheduler)
+        val vm = HomeViewModel(
+            firestoreRepository, menuRepository, std,
+            CoroutineScope(SupervisorJob() + std), piPrintClient, homePrinter,
+        )
+        advanceUntilIdle() // init 소비
+        every { firestoreRepository.postOrder(any()) } returns Unit
+
+        vm.onOrderConfirmed(createTestOrder(), "포장")
+        assertTrue(vm.uiState.value.isSubmitting) // 런치 전 동기 세팅, 본문 미실행
+
+        advanceUntilIdle()
+        assertEquals(false, vm.uiState.value.isSubmitting)
+    }
+
+    @Test
+    fun `reprintLastOrder retries print and clears failure on success`() = runTest(testDispatcher) {
+        val order = createTestOrder()
+        every { firestoreRepository.postOrder(any()) } returns Unit
+        coEvery { piPrintClient.print(any<List<PrintCommandDto>>()) } throws
+            eloom.holybean.printer.network.PrintServerException(
+                eloom.holybean.printer.network.PrintFailureReason.PrinterOffline, "offline"
+            )
+        homeViewModel.onOrderConfirmed(order, "포장")
+        advanceUntilIdle()
+        assertTrue(homeViewModel.uiState.value.printFailure != null)
+
+        // 프린터 복구 후 재출력 → 실패 표시 해제
+        coEvery { piPrintClient.print(any<List<PrintCommandDto>>()) } returns Unit
+        homeViewModel.reprintLastOrder()
+        advanceUntilIdle()
+        assertEquals(null, homeViewModel.uiState.value.printFailure)
+    }
+
+    @Test
+    fun `second concurrent onOrderConfirmed is blocked while submitting`() = runTest {
+        val std = StandardTestDispatcher(testScheduler)
+        val vm = HomeViewModel(
+            firestoreRepository, menuRepository, std,
+            CoroutineScope(SupervisorJob() + std), piPrintClient, homePrinter,
+        )
+        advanceUntilIdle()
+        every { firestoreRepository.postOrder(any()) } returns Unit
+
+        vm.onOrderConfirmed(createTestOrder(orderNum = 1), "포장")
+        // 첫 제출 코루틴이 StandardTestDispatcher 상 아직 진행 중 — isSubmitting 가드로 두 번째는 차단
+        vm.onOrderConfirmed(createTestOrder(orderNum = 2), "매장")
+        advanceUntilIdle()
+
+        verify(exactly = 1) { firestoreRepository.postOrder(any()) }
     }
 
     // 헬퍼 메서드: 테스트용 Order 객체 생성

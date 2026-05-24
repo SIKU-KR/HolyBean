@@ -2,6 +2,7 @@ package eloom.holybean.ui.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.crashlytics.FirebaseCrashlytics
 import dagger.hilt.android.lifecycle.HiltViewModel
 import eloom.holybean.data.model.CartItem
 import eloom.holybean.data.model.MenuItem
@@ -9,6 +10,8 @@ import eloom.holybean.data.model.Order
 import eloom.holybean.data.repository.FirestoreRepository
 import eloom.holybean.data.repository.MenuRepository
 import eloom.holybean.printer.PiPrintClient
+import eloom.holybean.printer.network.PrintFailureReason
+import eloom.holybean.printer.network.PrintServerException
 import eloom.holybean.printer.polymorphism.HomePrinter
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -30,6 +33,8 @@ class HomeViewModel @Inject constructor(
     private val homePrinter: HomePrinter,
 ) : ViewModel() {
 
+    data class PrintFailure(val orderNum: Int, val reason: PrintFailureReason)
+
     data class UiState(
         val allMenuItems: List<MenuItem> = emptyList(),
         val filteredMenuItems: List<MenuItem> = emptyList(),
@@ -37,7 +42,9 @@ class HomeViewModel @Inject constructor(
         val basketItems: List<CartItem> = emptyList(),
         val orderId: Int = 0,
         val totalPrice: Int = 0,
-        val currentDate: String = currentDateString()
+        val currentDate: String = currentDateString(),
+        val printFailure: PrintFailure? = null,
+        val isSubmitting: Boolean = false,
     ) {
         companion object {
             private fun currentDateString(): String {
@@ -65,8 +72,7 @@ class HomeViewModel @Inject constructor(
     )
     val uiEvent: SharedFlow<UiEvent> = _uiEvent.asSharedFlow()
 
-    // 결제 완료 재진입 가드 (메인 스레드 단독 접근이므로 plain var 로 충분)
-    private var orderInFlight = false
+    private var lastOrder: Pair<Order, String>? = null
 
     init {
         // Load initial data — 스플래시가 채운 캐시를 우선 사용하고, 없으면 네트워크 페치로 폴백
@@ -166,47 +172,71 @@ class HomeViewModel @Inject constructor(
     }
 
     fun onOrderConfirmed(data: Order, takeOption: String) {
-        // 주문번호 조회 실패(-1) 등 유효하지 않은 주문번호는 절대 저장하지 않는다
         if (data.orderNum <= 0) {
             viewModelScope.launch(ioDispatcher) {
                 _uiEvent.emit(UiEvent.ShowToast("주문번호를 불러오지 못했습니다. 다시 시도해 주세요."))
             }
             return
         }
+        if (_uiState.value.isSubmitting) return
+        // 새 주문 시작 — 직전 실패 스낵바 제거 + 제출 잠금(동기, 메인 스레드 단독)
+        lastOrder = data to takeOption
+        _uiState.value = _uiState.value.copy(isSubmitting = true, printFailure = null)
 
-        // 결제 완료 버튼 더블탭 시 중복 주문/출력을 막는 재진입 가드.
-        // onOrderConfirmed 는 버튼 클릭으로 메인 스레드에서 호출되고, 체크+설정이 코루틴
-        // 런치 전 동기적으로 일어나므로 동시 메인 스레드 탭이 직렬화되어 plain var 로 안전하다.
-        if (orderInFlight) return
-        orderInFlight = true
-
-        // Network I/O - 완료 대기 후 UI 업데이트
         viewModelScope.launch(ioDispatcher) {
             try {
                 firestoreRepository.postOrder(data)
-                // 다음 주문번호를 동기적으로 채번하여 NavigateHome 전에 상태가 확정되도록 한다
                 val nextOrderId = firestoreRepository.getOrderNumber()
-                _uiState.value = _uiState.value.copy(basketItems = emptyList(), totalPrice = 0, orderId = nextOrderId)
+                _uiState.value = _uiState.value.copy(
+                    basketItems = emptyList(), totalPrice = 0, orderId = nextOrderId,
+                )
                 _uiEvent.emit(UiEvent.NavigateHome)
             } catch (e: Exception) {
-                e.printStackTrace()
+                FirebaseCrashlytics.getInstance().recordException(e) // 파트 B
                 _uiEvent.emit(UiEvent.ShowToast("주문 처리 중 오류가 발생했습니다."))
             } finally {
-                orderInFlight = false
+                _uiState.value = _uiState.value.copy(isSubmitting = false)
             }
         }
 
-        // Printer I/O - Application Scope에서 실행 (ViewModel 생명주기와 독립)
+        launchPrint(data, takeOption)
+    }
+
+    fun reprintLastOrder() {
+        val (order, takeOption) = lastOrder ?: return
+        launchPrint(order, takeOption)
+    }
+
+    fun dismissPrintFailure() {
+        _uiState.value = _uiState.value.copy(printFailure = null)
+    }
+
+    // 인쇄는 ViewModel 생명주기와 독립인 applicationScope에서 실행(홈 복귀를 막지 않음).
+    private fun launchPrint(order: Order, takeOption: String) {
         applicationScope.launch {
-            runCatching {
-                printReceipt(data, takeOption)
-            }.onFailure { error ->
-                error.printStackTrace()
+            try {
+                printReceipt(order, takeOption)
+                // 성공: 이 주문에 대한 실패 표시가 남아 있으면 해제(재출력 성공 케이스)
+                _uiState.value = _uiState.value.let {
+                    if (it.printFailure?.orderNum == order.orderNum) it.copy(printFailure = null) else it
+                }
+            } catch (e: PrintServerException) {
+                reportPrintFailure(order.orderNum, e.reason, e)
+            } catch (e: Exception) {
+                reportPrintFailure(order.orderNum, PrintFailureReason.Unknown, e)
             }
         }
     }
 
-    // 영수증 출력은 독립적으로 실행 (Network 완료와 무관)
+    private fun reportPrintFailure(orderNum: Int, reason: PrintFailureReason, e: Throwable) {
+        _uiState.value = _uiState.value.copy(printFailure = PrintFailure(orderNum, reason))
+        FirebaseCrashlytics.getInstance().apply {
+            setCustomKey("orderNum", orderNum)
+            setCustomKey("print_reason", reason.name)
+            recordException(e)
+        }
+    }
+
     private suspend fun printReceipt(data: Order, takeOption: String) {
         val customerCommands = homePrinter.receiptForCustomer(data)
         val posCommands = homePrinter.receiptForPOS(data, takeOption)
