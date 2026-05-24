@@ -1,5 +1,6 @@
 package eloom.holybean.printer
 
+import eloom.holybean.printer.network.PrintFailureReason
 import eloom.holybean.printer.network.PrintRequestDto
 import eloom.holybean.printer.network.PrintServerApi
 import eloom.holybean.printer.network.PrintServerException
@@ -10,9 +11,12 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import okhttp3.ResponseBody
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import retrofit2.Response
+import java.io.IOException
 
 @ExperimentalCoroutinesApi
 class PiPrintClientTest {
@@ -40,7 +44,7 @@ class PiPrintClientTest {
     @Test
     fun `throws after exhausting retries`() = runTest {
         val client = PiPrintClient(api, StandardTestDispatcher(testScheduler))
-        coEvery { api.print(any()) } returns Response.error(503, okhttp3.ResponseBody.create(null, ""))
+        coEvery { api.print(any()) } returns Response.error(503, ResponseBody.create(null, ""))
         var thrownException: Exception? = null
         try {
             client.print(emptyList())
@@ -50,5 +54,30 @@ class PiPrintClientTest {
         advanceUntilIdle()
         assertTrue("Expected PrintServerException", thrownException is PrintServerException)
         coVerify(exactly = 3) { api.print(any<PrintRequestDto>()) }
+    }
+
+    @Test
+    fun `http 503 maps to PrinterOffline`() = runTest {
+        val client = PiPrintClient(api, StandardTestDispatcher(testScheduler))
+        coEvery { api.print(any()) } returns Response.error(503, ResponseBody.create(null, ""))
+        val ex = runCatching { client.print(emptyList()) }.exceptionOrNull()
+        assertTrue(ex is PrintServerException)
+        assertEquals(PrintFailureReason.PrinterOffline, (ex as PrintServerException).reason)
+    }
+
+    @Test
+    fun `http 500 maps to PrinterError`() = runTest {
+        val client = PiPrintClient(api, StandardTestDispatcher(testScheduler))
+        coEvery { api.print(any()) } returns Response.error(500, ResponseBody.create(null, ""))
+        val ex = runCatching { client.print(emptyList()) }.exceptionOrNull()
+        assertEquals(PrintFailureReason.PrinterError, (ex as PrintServerException).reason)
+    }
+
+    @Test
+    fun `IOException maps to ServerUnreachable`() = runTest {
+        val client = PiPrintClient(api, StandardTestDispatcher(testScheduler))
+        coEvery { api.print(any()) } throws IOException("connection refused")
+        val ex = runCatching { client.print(emptyList()) }.exceptionOrNull()
+        assertEquals(PrintFailureReason.ServerUnreachable, (ex as PrintServerException).reason)
     }
 }

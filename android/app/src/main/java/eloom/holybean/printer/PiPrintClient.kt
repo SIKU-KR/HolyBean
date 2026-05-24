@@ -1,6 +1,7 @@
 package eloom.holybean.printer
 
 import eloom.holybean.printer.network.PrintCommandDto
+import eloom.holybean.printer.network.PrintFailureReason
 import eloom.holybean.printer.network.PrintRequestDto
 import eloom.holybean.printer.network.PrintServerApi
 import eloom.holybean.printer.network.PrintServerException
@@ -37,9 +38,22 @@ class PiPrintClient @Inject constructor(
     suspend fun print(commands: List<PrintCommandDto>) = withContext(printerDispatcher) {
         mutex.withLock {
             withRetry {
-                val response = api.print(PrintRequestDto(commands))
+                val response = try {
+                    api.print(PrintRequestDto(commands))
+                } catch (e: java.io.IOException) {
+                    throw PrintServerException(
+                        PrintFailureReason.ServerUnreachable,
+                        "print server unreachable",
+                        e,
+                    )
+                }
                 if (!response.isSuccessful) {
-                    throw PrintServerException("print server returned HTTP ${response.code()}")
+                    val reason = when (response.code()) {
+                        503 -> PrintFailureReason.PrinterOffline
+                        500 -> PrintFailureReason.PrinterError
+                        else -> PrintFailureReason.Unknown
+                    }
+                    throw PrintServerException(reason, "print server returned HTTP ${response.code()}")
                 }
             }
         }
