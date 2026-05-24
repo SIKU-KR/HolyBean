@@ -448,6 +448,39 @@ class OrdersViewModelTest {
     }
 
     @Test
+    fun `deleteOrder refreshes todaySummary on success`() = runTest {
+        // Given - an order is selected with details
+        val orderDetails = arrayListOf(OrdersDetailItem("Coffee", 1, 1000))
+        val orderNumber = 555
+        val currentDate = viewModel.getCurrentDate()
+
+        viewModel.selectOrder(orderNumber, 1000)
+        coEvery { firestoreRepository.getOrderDetail(any(), any()) } returns orderDetails
+        viewModel.fetchOrderDetail(orderNumber)
+
+        coEvery { firestoreRepository.deleteOrder(currentDate, orderNumber) } returns true
+        // After deletion the rollups reflect the reduced totals
+        coEvery { firestoreRepository.getReport(any(), any()) } returns
+            SalesReport(
+                menuSales = listOf(ReportDetailItem("아메리카노", 2, 7000)),
+                paymentSales = mapOf("총합" to 7000),
+            )
+        coEvery { firestoreRepository.getOrdersOfDay() } returns arrayListOf(
+            OrderItem(1, 7000, "현금", "")
+        )
+
+        // When
+        viewModel.deleteOrder()
+        advanceUntilIdle()
+
+        // Then - the summary reflects the post-deletion totals, not the stale init values
+        val s = viewModel.uiState.value.todaySummary
+        assertEquals(7000, s.totalSales)
+        assertEquals(1, s.orderCount)
+        assertEquals(2, s.drinkCount)
+    }
+
+    @Test
     fun `loadTodaySummary populates totals`() = runTest {
         coEvery { firestoreRepository.getReport(any(), any()) } returns
             SalesReport(

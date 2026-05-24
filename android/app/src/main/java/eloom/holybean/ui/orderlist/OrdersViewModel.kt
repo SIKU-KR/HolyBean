@@ -181,6 +181,7 @@ class OrdersViewModel @Inject constructor(
                     _uiState.update { it.copy(deleteStatus = DeleteStatus.Success) }
                     _uiEvent.tryEmit(OrdersUiEvent.ShowToast("주문이 성공적으로 삭제되었습니다."))
                     _uiEvent.tryEmit(OrdersUiEvent.RefreshOrders)
+                    loadTodaySummary()
                 } else {
                     _uiState.update { it.copy(deleteStatus = DeleteStatus.Error("주문 삭제에 실패했습니다.")) }
                 }
