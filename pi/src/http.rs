@@ -50,11 +50,11 @@ async fn print(
         Ok(()) => (StatusCode::OK, Json(serde_json::json!({ "status": "printed" }))),
         Err(PrintError::Unavailable(msg)) => (
             StatusCode::SERVICE_UNAVAILABLE,
-            Json(serde_json::json!({ "error": msg })),
+            Json(serde_json::json!({ "code": "device_unavailable", "error": msg })),
         ),
         Err(PrintError::Write(msg)) => (
             StatusCode::INTERNAL_SERVER_ERROR,
-            Json(serde_json::json!({ "error": msg })),
+            Json(serde_json::json!({ "code": "write_failed", "error": msg })),
         ),
     }
 }
@@ -148,5 +148,6 @@ mod tests {
         let bytes = res.into_body().collect().await.unwrap().to_bytes();
         let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
         assert!(v.get("error").is_some());
+        assert_eq!(v.get("code").and_then(|c| c.as_str()), Some("write_failed"));
     }
 }
