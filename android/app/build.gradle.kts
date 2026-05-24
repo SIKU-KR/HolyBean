@@ -62,6 +62,15 @@ kotlin {
 }
 
 dependencies {
+    // Align the atomic androidx.concurrent group on 1.2.0: androidx.test:core:1.7.0
+    // (via androidx.test.ext:junit:1.3.0) pulls concurrent-futures-ktx:1.2.0, which
+    // strictly forces concurrent-futures:1.2.0, while profileinstaller pulls 1.1.0 at
+    // runtime. Consistent resolution requires compile & runtime to match, so pin both.
+    constraints {
+        implementation("androidx.concurrent:concurrent-futures:1.2.0")
+        androidTestImplementation("androidx.concurrent:concurrent-futures:1.2.0")
+    }
+
     implementation("androidx.core:core-ktx:1.17.0")
     implementation("androidx.appcompat:appcompat:1.7.1")
     implementation("com.google.android.material:material:1.13.0")
