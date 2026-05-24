@@ -91,7 +91,8 @@ sealed class SubmitError {
 **PaymentScreen/PaymentRoute** (PaymentScreen.kt):
 - `state.submitError`를 받아 AlertDialog로 표시.
   - `SaveFailed`: 메시지 + `재시도`(→ `retrySubmission()`). 닫기 없음(닫으면 주문 유실).
-  - `PrintFailed`: 메시지(사유별 문구) + `재시도(재출력)`(→ `retrySubmission()`) + `영수증 없이 홈으로`(→ `onPaid()`, 저장은 완료됨). 사유별 문구는 기존 `printFailureMessage`(HomeScreen.kt:271) 로직을 결제 화면으로 이전.
+  - `PrintFailed`: 메시지(사유별 문구) + `재시도(재출력)`(→ `retrySubmission()`) + `영수증 없이 홈으로`(→ `skipPrintAndComplete()`, 저장은 완료됨). 사유별 문구는 기존 `printFailureMessage`(HomeScreen.kt:271) 로직을 결제 화면으로 이전.
+- `skipPrintAndComplete()`(ViewModel): 저장된 주문(`orderSaved`)에 한해 성공 경로와 동일하게 바구니 비우기 + `getOrderNumber` 갱신 + `submitError` 해제 후 `NavigateHome`. 인쇄만 포기하고 홈으로 정상 복귀.
 - 기존 `isSubmitting` 오버레이/`처리 중…` 버튼은 그대로 유지.
 
 **HomeScreen** (HomeScreen.kt):
