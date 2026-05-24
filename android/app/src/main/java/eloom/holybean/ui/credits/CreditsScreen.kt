@@ -7,12 +7,15 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.foundation.shape.RoundedCornerShape
 import eloom.holybean.ui.components.BasketRow
+import eloom.holybean.ui.components.layout.Pane
+import eloom.holybean.ui.components.layout.ScreenContainer
+import eloom.holybean.ui.components.layout.ScreenHeader
+import eloom.holybean.ui.theme.Dimens
 import kotlinx.collections.immutable.toImmutableList
 
 @Composable
@@ -38,29 +41,34 @@ fun CreditsRoute(onClose: () -> Unit, vm: CreditsViewModel = hiltViewModel()) {
             }
         }
     }
-    Column(Modifier.fillMaxSize().padding(16.dp)) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text("외상 관리", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-            OutlinedButton(onClick = onClose) { Text("닫기", style = MaterialTheme.typography.bodyMedium) }
-        }
-        Row(Modifier.weight(1f).padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Surface(Modifier.fillMaxWidth(0.46f).fillMaxHeight(), color = MaterialTheme.colorScheme.surface) {
-                LazyColumn(Modifier.padding(12.dp)) {
-                    items(state.creditsList.toImmutableList(), key = { it.orderId }) { c ->
-                        Column(
-                            Modifier.fillMaxWidth()
-                                .clickable { vm.selectOrder(c.orderId, c.totalAmount, c.date); vm.fetchOrderDetail() }
-                                .padding(vertical = 8.dp)
-                        ) {
-                            Text("${c.orderId}번 · ${c.orderer}", style = MaterialTheme.typography.bodyMedium)
-                            Text("%,d원 · ${c.date}".format(c.totalAmount), style = MaterialTheme.typography.labelSmall)
+    ScreenContainer {
+        Column(Modifier.fillMaxSize()) {
+            ScreenHeader(
+                "외상 관리",
+                actions = {
+                    OutlinedButton(
+                        onClick = onClose,
+                        modifier = Modifier.heightIn(min = Dimens.minTouchTarget),
+                    ) { Text("닫기", style = MaterialTheme.typography.bodyMedium) }
+                },
+            )
+            Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(Dimens.paneGap)) {
+                Pane(Modifier.fillMaxWidth(Dimens.paneSplitWide).fillMaxHeight()) {
+                    LazyColumn {
+                        items(state.creditsList.toImmutableList(), key = { it.orderId }) { c ->
+                            Column(
+                                Modifier.fillMaxWidth()
+                                    .clickable { vm.selectOrder(c.orderId, c.totalAmount, c.date); vm.fetchOrderDetail() }
+                                    .padding(vertical = Dimens.spaceSm)
+                            ) {
+                                Text("${c.orderId}번 · ${c.orderer}", style = MaterialTheme.typography.bodyMedium)
+                                Text("%,d원 · ${c.date}".format(c.totalAmount), style = MaterialTheme.typography.labelSmall)
+                            }
+                            HorizontalDivider()
                         }
-                        HorizontalDivider()
                     }
                 }
-            }
-            Surface(Modifier.weight(1f).fillMaxHeight(), color = MaterialTheme.colorScheme.surface) {
-                Column(Modifier.padding(12.dp)) {
+                Pane(Modifier.weight(1f).fillMaxHeight()) {
                     Text("상세", style = MaterialTheme.typography.titleMedium)
                     LazyColumn(Modifier.weight(1f)) {
                         itemsIndexed(state.orderDetails.toImmutableList(), key = { index, _ -> index }) { _, it ->
@@ -70,7 +78,8 @@ fun CreditsRoute(onClose: () -> Unit, vm: CreditsViewModel = hiltViewModel()) {
                     Button(
                         onClick = { confirmPaid = true },
                         enabled = state.selectedOrderNumber != 0,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth().height(Dimens.primaryTouchTarget),
+                        shape = RoundedCornerShape(Dimens.radiusButton),
                     ) {
                         Text("외상 결제완료 처리", style = MaterialTheme.typography.bodyMedium)
                     }
