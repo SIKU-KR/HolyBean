@@ -1,17 +1,13 @@
 package eloom.holybean.ui.startup
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -22,11 +18,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import eloom.holybean.ui.components.layout.StatusDot
+import eloom.holybean.ui.theme.Dimens
 import kotlinx.coroutines.delay
 
 @Composable
@@ -56,17 +51,17 @@ fun SplashScreen(
     onEnterAnyway: () -> Unit,
 ) {
     Column(
-        modifier = Modifier.fillMaxSize().padding(32.dp),
+        modifier = Modifier.fillMaxSize().padding(Dimens.spaceXl),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
         Text("HolyBean", style = MaterialTheme.typography.titleLarge)
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(Dimens.sectionGap))
 
         StatusRow("데이터", state.data, loadingText = "데이터 불러오는 중…", successText = "데이터 준비 완료")
         StatusRow("프린터", state.printer, loadingText = "프린터 연결 확인 중…", successText = "프린터 연결됨")
 
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(Dimens.sectionGap))
 
         when {
             // 데이터 실패 → 진입 차단, 재시도만
@@ -75,12 +70,12 @@ fun SplashScreen(
                     "데이터를 불러오지 못했습니다",
                     style = MaterialTheme.typography.titleMedium,
                 )
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(Dimens.spaceSm))
                 Text(
                     "인터넷 연결 상태를 확인한 뒤 다시 시도해 주세요.",
                     style = MaterialTheme.typography.bodyMedium,
                 )
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(Dimens.spaceMd))
                 Button(onClick = onRetry) { Text("다시 시도", style = MaterialTheme.typography.bodyMedium) }
             }
             // 데이터 성공 + 프린터 실패 → 경고 후 진입 허용
@@ -89,13 +84,13 @@ fun SplashScreen(
                     "프린터에 연결할 수 없습니다",
                     style = MaterialTheme.typography.titleMedium,
                 )
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(Dimens.spaceSm))
                 Text(
                     "영수증이 출력되지 않을 수 있습니다. 프린터 전원과 와이파이 연결을 확인해 주세요. 이대로도 주문은 가능합니다.",
                     style = MaterialTheme.typography.bodyMedium,
                 )
-                Spacer(Modifier.height(16.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Spacer(Modifier.height(Dimens.spaceMd))
+                Row(horizontalArrangement = Arrangement.spacedBy(Dimens.spaceMd)) {
                     OutlinedButton(onClick = onRetry) { Text("다시 시도", style = MaterialTheme.typography.bodyMedium) }
                     Button(onClick = onEnterAnyway) { Text("그대로 진입", style = MaterialTheme.typography.bodyMedium) }
                 }
@@ -115,21 +110,16 @@ private fun StatusRow(
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.padding(vertical = 6.dp),
+        modifier = Modifier.padding(vertical = Dimens.spaceSm),
     ) {
-        Box(
-            Modifier
-                .size(10.dp)
-                .clip(CircleShape)
-                .background(
-                    when (status) {
-                        StepStatus.Success -> Color(0xFF22C55E)
-                        StepStatus.Failed -> Color(0xFFEF4444)
-                        StepStatus.Loading -> Color(0xFFBBBBBB)
-                    },
-                ),
+        StatusDot(
+            when (status) {
+                StepStatus.Success -> true
+                StepStatus.Failed -> false
+                StepStatus.Loading -> null
+            },
         )
-        Spacer(Modifier.width(10.dp))
+        Spacer(Modifier.width(Dimens.spaceSm))
         Text(
             text = when (status) {
                 StepStatus.Loading -> loadingText
