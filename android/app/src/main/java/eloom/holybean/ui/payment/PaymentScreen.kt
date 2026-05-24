@@ -31,6 +31,7 @@ import eloom.holybean.ui.components.layout.ScreenContainer
 import eloom.holybean.ui.components.layout.ScreenHeader
 import eloom.holybean.ui.components.layout.SectionLabel
 import eloom.holybean.ui.components.layout.TotalRow
+import eloom.holybean.printer.network.PrintFailureReason
 import eloom.holybean.ui.home.HomeViewModel
 import eloom.holybean.ui.theme.Dimens
 import eloom.holybean.ui.theme.DividerGray
@@ -246,8 +247,8 @@ private fun SubmitErrorDialog(
 ) {
     AlertDialog(
         onDismissRequest = {},   // 임의 닫기 방지: 명시적 선택만 허용
-        title = { Text("처리 실패") },
-        text = { Text(message) },
+        title = { Text("처리 실패", style = MaterialTheme.typography.titleMedium) },
+        text = { Text(message, style = MaterialTheme.typography.bodyMedium) },
         confirmButton = {
             TextButton(onClick = onRetry) { Text("재시도") }
         },
@@ -257,15 +258,15 @@ private fun SubmitErrorDialog(
     )
 }
 
-private fun printFailureMessage(reason: eloom.holybean.printer.network.PrintFailureReason): String =
+private fun printFailureMessage(reason: PrintFailureReason): String =
     when (reason) {
-        eloom.holybean.printer.network.PrintFailureReason.ServerUnreachable ->
+        PrintFailureReason.ServerUnreachable ->
             "프린터 서버에 연결되지 않았어요. Pi 전원·네트워크 확인 후 재출력하세요."
-        eloom.holybean.printer.network.PrintFailureReason.PrinterOffline ->
+        PrintFailureReason.PrinterOffline ->
             "프린터가 응답하지 않아요. 전원·USB 연결 확인 후 재출력하세요."
-        eloom.holybean.printer.network.PrintFailureReason.PrinterError ->
+        PrintFailureReason.PrinterError ->
             "출력에 실패했어요. 용지·덮개 상태 확인 후 재출력하세요."
-        eloom.holybean.printer.network.PrintFailureReason.Unknown ->
+        PrintFailureReason.Unknown ->
             "다시 출력해 주세요."
     }
 
