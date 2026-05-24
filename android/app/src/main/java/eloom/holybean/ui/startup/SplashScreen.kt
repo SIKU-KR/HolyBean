@@ -8,11 +8,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import eloom.holybean.ui.components.buttons.PrimaryButton
+import eloom.holybean.ui.components.buttons.SecondaryButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -76,7 +76,7 @@ fun SplashScreen(
                     style = MaterialTheme.typography.bodyMedium,
                 )
                 Spacer(Modifier.height(Dimens.spaceMd))
-                Button(onClick = onRetry) { Text("다시 시도", style = MaterialTheme.typography.bodyMedium) }
+                PrimaryButton("다시 시도", onClick = onRetry)
             }
             // 데이터 성공 + 프린터 실패 → 경고 후 진입 허용
             state.data == StepStatus.Success && state.printer == StepStatus.Failed -> {
@@ -91,8 +91,8 @@ fun SplashScreen(
                 )
                 Spacer(Modifier.height(Dimens.spaceMd))
                 Row(horizontalArrangement = Arrangement.spacedBy(Dimens.spaceMd)) {
-                    OutlinedButton(onClick = onRetry) { Text("다시 시도", style = MaterialTheme.typography.bodyMedium) }
-                    Button(onClick = onEnterAnyway) { Text("그대로 진입", style = MaterialTheme.typography.bodyMedium) }
+                    SecondaryButton("다시 시도", onClick = onRetry)
+                    PrimaryButton("그대로 진입", onClick = onEnterAnyway)
                 }
             }
             // 그 외(진행 중 또는 모두 성공 직전): 스피너
