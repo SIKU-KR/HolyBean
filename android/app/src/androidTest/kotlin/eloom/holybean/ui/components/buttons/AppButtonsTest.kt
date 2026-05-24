@@ -19,14 +19,14 @@ class AppButtonsTest {
     @Test fun primary_disabled_doesNotClick() {
         var clicked = false
         rule.setContent { PrimaryButton("결제 완료", onClick = { clicked = true }, enabled = false) }
-        rule.onNodeWithText("결제 완료").performClick()
+        rule.onNodeWithText("결제 완료").assertIsNotEnabled().performClick()
         assert(!clicked)
     }
 
     @Test fun primary_loading_doesNotClick() {
         var clicked = false
         rule.setContent { PrimaryButton("결제 완료", onClick = { clicked = true }, loading = true) }
-        rule.onNodeWithText("결제 완료").performClick()
+        rule.onNodeWithText("결제 완료").assertIsNotEnabled().performClick()
         assert(!clicked)
     }
 

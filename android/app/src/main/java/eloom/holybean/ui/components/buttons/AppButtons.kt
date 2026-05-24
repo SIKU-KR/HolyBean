@@ -56,12 +56,13 @@ fun SecondaryButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
 ) {
+    val borderColor = if (enabled) OnSurface else OnSurface.copy(alpha = 0.38f)
     OutlinedButton(
         onClick = onClick,
         enabled = enabled,
         modifier = modifier.heightIn(min = Dimens.minTouchTarget),
         shape = ButtonShape,
-        border = BorderStroke(1.dp, OnSurface),
+        border = BorderStroke(1.dp, borderColor),
         colors = ButtonDefaults.outlinedButtonColors(contentColor = OnSurface),
     ) {
         Text(text, style = MaterialTheme.typography.bodyMedium)
@@ -75,12 +76,13 @@ fun DangerButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
 ) {
+    val borderColor = if (enabled) DangerRed else DangerRed.copy(alpha = 0.38f)
     OutlinedButton(
         onClick = onClick,
         enabled = enabled,
         modifier = modifier.heightIn(min = Dimens.minTouchTarget),
         shape = ButtonShape,
-        border = BorderStroke(1.dp, DangerRed),
+        border = BorderStroke(1.dp, borderColor),
         colors = ButtonDefaults.outlinedButtonColors(contentColor = DangerRed),
     ) {
         Text(text, style = MaterialTheme.typography.bodyMedium)
