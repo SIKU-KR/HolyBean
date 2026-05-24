@@ -21,6 +21,7 @@ fun MenuTile(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     style: TileStyle = TileStyle.Menu,
+    icon: androidx.compose.ui.graphics.vector.ImageVector? = null,
 ) {
     val container = when (style) {
         TileStyle.Menu -> Surface
@@ -50,6 +51,15 @@ fun MenuTile(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
+            if (icon != null) {
+                Icon(
+                    icon,
+                    contentDescription = null, // 라벨 동반이라 장식용
+                    tint = labelColor,
+                    modifier = Modifier.size(20.dp),
+                )
+                Spacer(Modifier.height(Dimens.spaceXs))
+            }
             Text(
                 name,
                 style = MaterialTheme.typography.bodyMedium,

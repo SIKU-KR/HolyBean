@@ -38,6 +38,8 @@ import eloom.holybean.ui.theme.HolyBeanTheme
 import eloom.holybean.ui.theme.OnSurface
 import eloom.holybean.ui.theme.OnSurfaceMuted
 import eloom.holybean.ui.theme.Orange
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -152,7 +154,12 @@ fun HomeScreen(
                         MenuTile("쿠폰", null, onClick = onCouponClick, style = TileStyle.Coupon)
                     }
                     item(key = SETTINGS_TILE_ID) {
-                        MenuTile("⚙ 설정", null, onClick = onSettingsClick, style = TileStyle.Settings)
+                        MenuTile(
+                            "설정", null,
+                            onClick = onSettingsClick,
+                            style = TileStyle.Settings,
+                            icon = Icons.Filled.Settings,
+                        )
                     }
                 }
             }

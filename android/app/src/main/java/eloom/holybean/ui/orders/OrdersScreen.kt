@@ -24,6 +24,8 @@ import eloom.holybean.ui.components.layout.ScreenHeader
 import eloom.holybean.ui.components.layout.TotalRow
 import eloom.holybean.ui.orderlist.OrdersViewModel
 import eloom.holybean.ui.theme.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -88,7 +90,15 @@ fun OrdersScreen(
                         modifier = Modifier.heightIn(min = Dimens.minTouchTarget),
                         shape = RoundedCornerShape(Dimens.radiusButton),
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = OnSurfaceMuted),
-                    ) { Text("✕ 닫기", style = MaterialTheme.typography.bodyMedium) }
+                    ) {
+                        Icon(
+                            Icons.Filled.Close,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Spacer(Modifier.width(Dimens.spaceXs))
+                        Text("닫기", style = MaterialTheme.typography.bodyMedium)
+                    }
                 },
             )
             Pane(Modifier.fillMaxWidth().padding(bottom = Dimens.spaceSm)) {

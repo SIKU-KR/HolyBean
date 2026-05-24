@@ -38,6 +38,8 @@ import eloom.holybean.ui.theme.HolyBeanTheme
 import eloom.holybean.ui.theme.OnSurfaceMuted
 import eloom.holybean.ui.theme.Orange
 import eloom.holybean.ui.theme.OrangeText
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -111,7 +113,15 @@ fun PaymentScreen(
                             modifier = Modifier.heightIn(min = Dimens.minTouchTarget),
                             shape = RoundedCornerShape(Dimens.radiusButton),
                             colors = ButtonDefaults.outlinedButtonColors(contentColor = OnSurfaceMuted),
-                        ) { Text("✕ 취소", style = MaterialTheme.typography.bodyMedium) }
+                        ) {
+                            Icon(
+                                Icons.Filled.Close,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                            )
+                            Spacer(Modifier.width(Dimens.spaceXs))
+                            Text("취소", style = MaterialTheme.typography.bodyMedium)
+                        }
                     },
                 )
                 Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(Dimens.paneGap)) {
