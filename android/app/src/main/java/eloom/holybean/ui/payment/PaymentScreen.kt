@@ -1,6 +1,5 @@
 package eloom.holybean.ui.payment
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -24,13 +23,17 @@ import eloom.holybean.data.model.CartItem
 import eloom.holybean.ui.components.BasketRow
 import eloom.holybean.ui.components.PaymentMethodTile
 import eloom.holybean.ui.components.SegmentedToggle
+import eloom.holybean.ui.components.layout.Pane
+import eloom.holybean.ui.components.layout.ScreenContainer
+import eloom.holybean.ui.components.layout.ScreenHeader
+import eloom.holybean.ui.components.layout.SectionLabel
+import eloom.holybean.ui.components.layout.TotalRow
 import eloom.holybean.ui.home.HomeViewModel
 import eloom.holybean.ui.theme.Dimens
 import eloom.holybean.ui.theme.DividerGray
 import eloom.holybean.ui.theme.HolyBeanTheme
 import eloom.holybean.ui.theme.OnSurfaceMuted
 import eloom.holybean.ui.theme.Orange
-import eloom.holybean.ui.theme.OrangeOnContainer
 import eloom.holybean.ui.theme.OrangeText
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -91,24 +94,22 @@ fun PaymentScreen(
     // 무료제공 선택 시 분할 비활성화
     LaunchedEffect(first) { if (first == "무료제공") { split = false } }
 
-    Column(
-        Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(Dimens.screenPadding)
-    ) {
-        Row(Modifier.fillMaxWidth().padding(bottom = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("${orderId}번 주문 · 결제", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-            OutlinedButton(
-                onClick = onCancel,
-                shape = RoundedCornerShape(Dimens.radiusButton),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = OnSurfaceMuted),
-            ) { Text("✕ 취소", style = MaterialTheme.typography.bodyMedium) }
-        }
-        Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(Dimens.gap)) {
-            Surface(
-                Modifier.fillMaxWidth(0.38f).fillMaxHeight(), shape = RoundedCornerShape(Dimens.paneRadius),
-                color = MaterialTheme.colorScheme.surface, shadowElevation = Dimens.paneElevation
-            ) {
-                Column(Modifier.padding(12.dp)) {
-                    Text("주문 요약", style = MaterialTheme.typography.labelSmall, color = OnSurfaceMuted)
+    ScreenContainer {
+        Column(Modifier.fillMaxSize()) {
+            ScreenHeader(
+                "${orderId}번 주문 · 결제",
+                actions = {
+                    OutlinedButton(
+                        onClick = onCancel,
+                        modifier = Modifier.heightIn(min = Dimens.minTouchTarget),
+                        shape = RoundedCornerShape(Dimens.radiusButton),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = OnSurfaceMuted),
+                    ) { Text("✕ 취소", style = MaterialTheme.typography.bodyMedium) }
+                },
+            )
+            Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(Dimens.paneGap)) {
+                Pane(Modifier.fillMaxWidth(Dimens.paneSplitNarrow).fillMaxHeight()) {
+                    SectionLabel("주문 요약")
                     if (items.isEmpty()) {
                         Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                             Text("담긴 상품이 없습니다", style = MaterialTheme.typography.bodyMedium, color = OnSurfaceMuted)
@@ -120,29 +121,26 @@ fun PaymentScreen(
                             }
                         }
                     }
-                    HorizontalDivider(color = DividerGray)
-                    Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("합계", style = MaterialTheme.typography.titleMedium)
-                        Text("%,d원".format(total), style = MaterialTheme.typography.titleMedium, color = OrangeOnContainer)
-                    }
+                    HorizontalDivider(color = DividerGray, modifier = Modifier.padding(vertical = Dimens.spaceSm))
+                    TotalRow(total)
                 }
-            }
-            Surface(
-                Modifier.weight(1f).fillMaxHeight(), shape = RoundedCornerShape(Dimens.paneRadius),
-                color = MaterialTheme.colorScheme.surface, shadowElevation = Dimens.paneElevation
-            ) {
-                Column {
-                    Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(12.dp)) {
-                        Text("컵 선택", style = MaterialTheme.typography.labelSmall, color = OnSurfaceMuted)
-                        SegmentedToggle(persistentListOf("일회용컵", "머그컵"), cup) { cup = it }
-                        Spacer(Modifier.height(10.dp))
-                        Text("결제 수단", style = MaterialTheme.typography.labelSmall, color = OnSurfaceMuted)
-                        MethodGrid(PaymentForm.methods.toImmutableList(), first) { first = it }
-                        Spacer(Modifier.height(8.dp))
-                        if (first != "무료제공") {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Switch(checked = split, onCheckedChange = { split = it })
-                                Text("  결제수단 추가 (분할결제)", style = MaterialTheme.typography.bodyMedium)
+                Pane(Modifier.weight(1f).fillMaxHeight(), padding = 0.dp) {
+                    Column(
+                        Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(Dimens.panePadding),
+                        verticalArrangement = Arrangement.spacedBy(Dimens.sectionGap),
+                    ) {
+                        Column(verticalArrangement = Arrangement.spacedBy(Dimens.spaceSm)) {
+                            SectionLabel("컵 선택")
+                            SegmentedToggle(persistentListOf("일회용컵", "머그컵"), cup) { cup = it }
+                        }
+                        Column(verticalArrangement = Arrangement.spacedBy(Dimens.spaceSm)) {
+                            SectionLabel("결제 수단")
+                            MethodGrid(PaymentForm.methods.toImmutableList(), first) { first = it }
+                            if (first != "무료제공") {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Switch(checked = split, onCheckedChange = { split = it })
+                                    Text("  결제수단 추가 (분할결제)", style = MaterialTheme.typography.bodyMedium)
+                                }
                             }
                         }
                         if (split) {
@@ -153,35 +151,35 @@ fun PaymentScreen(
                                     secondAmt = ""
                                 }
                             }
-                            Spacer(Modifier.height(6.dp))
-                            Text("2번째 결제 수단 (${first} 제외)", style = MaterialTheme.typography.labelSmall, color = OnSurfaceMuted)
-                            MethodRow(candidates, second) { second = it }
-                            OutlinedTextField(
-                                value = secondAmt, onValueChange = { secondAmt = it.filter(Char::isDigit) },
-                                label = { Text("${second ?: ""} 금액", style = MaterialTheme.typography.labelSmall) }, singleLine = true,
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
-                            )
-                            val breakdown = PaymentForm.splitBreakdown(first, second, total, secondAmt)
-                            breakdown.forEach { line ->
-                                Row(Modifier.fillMaxWidth().padding(vertical = 1.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween) {
-                                    Text(line.label, style = MaterialTheme.typography.labelSmall, color = OrangeText)
-                                    Text("%,d원".format(line.amount), style = MaterialTheme.typography.labelSmall, color = OrangeText)
+                            Column(verticalArrangement = Arrangement.spacedBy(Dimens.spaceSm)) {
+                                SectionLabel("2번째 결제 수단 (${first} 제외)")
+                                MethodRow(candidates, second) { second = it }
+                                OutlinedTextField(
+                                    value = secondAmt, onValueChange = { secondAmt = it.filter(Char::isDigit) },
+                                    label = { Text("${second ?: ""} 금액", style = MaterialTheme.typography.labelSmall) }, singleLine = true,
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
+                                val breakdown = PaymentForm.splitBreakdown(first, second, total, secondAmt)
+                                Column(verticalArrangement = Arrangement.spacedBy(Dimens.spaceXs)) {
+                                    breakdown.forEach { line ->
+                                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                            Text(line.label, style = MaterialTheme.typography.labelSmall, color = OrangeText)
+                                            Text("%,d원".format(line.amount), style = MaterialTheme.typography.labelSmall, color = OrangeText)
+                                        }
+                                    }
                                 }
                             }
                         }
-                        Spacer(Modifier.height(10.dp))
-                        Text("주문자명", style = MaterialTheme.typography.labelSmall, color = OnSurfaceMuted)
-                        OutlinedTextField(
-                            orderer, { orderer = it }, singleLine = true,
-                            modifier = Modifier.fillMaxWidth()
-                        )
+                        Column(verticalArrangement = Arrangement.spacedBy(Dimens.spaceSm)) {
+                            SectionLabel("주문자명")
+                            OutlinedTextField(orderer, { orderer = it }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                        }
                     }
                     HorizontalDivider(color = DividerGray)
                     Button(
                         onClick = { onConfirm(PaymentSelection(cup, first, orderer, split, second, secondAmt)) },
-                        modifier = Modifier.fillMaxWidth().height(Dimens.primaryTouchTarget).padding(12.dp),
+                        modifier = Modifier.fillMaxWidth().padding(Dimens.panePadding).height(Dimens.primaryTouchTarget),
                         shape = RoundedCornerShape(Dimens.radiusButton),
                         colors = ButtonDefaults.buttonColors(containerColor = Orange),
                     ) { Text("결제 완료", style = MaterialTheme.typography.titleMedium) }
@@ -193,9 +191,9 @@ fun PaymentScreen(
 
 @Composable
 private fun MethodGrid(methods: ImmutableList<String>, selected: String, onSelect: (String) -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(Dimens.spaceSm)) {
         methods.chunked(3).forEach { rowItems ->
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(Dimens.spaceSm)) {
                 rowItems.forEach { m ->
                     PaymentMethodTile(m, m == selected, { onSelect(m) }, Modifier.weight(1f))
                 }
@@ -206,7 +204,7 @@ private fun MethodGrid(methods: ImmutableList<String>, selected: String, onSelec
 
 @Composable
 private fun MethodRow(methods: ImmutableList<String>, selected: String?, onSelect: (String) -> Unit) {
-    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+    Row(horizontalArrangement = Arrangement.spacedBy(Dimens.spaceSm)) {
         methods.forEach { m -> PaymentMethodTile(m, m == selected, { onSelect(m) }, Modifier.weight(1f)) }
     }
 }
