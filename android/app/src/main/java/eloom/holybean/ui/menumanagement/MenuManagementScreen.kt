@@ -6,7 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -44,7 +44,10 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import eloom.holybean.data.model.MenuItem
+import eloom.holybean.ui.components.layout.ScreenContainer
+import eloom.holybean.ui.components.layout.ScreenHeader
 import eloom.holybean.ui.home.MenuCategories
+import eloom.holybean.ui.theme.Dimens
 import kotlinx.coroutines.launch
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
@@ -90,47 +93,37 @@ fun MenuManagementRoute(
         vm.moveItem(from.index, to.index)
     }
 
-    Column(
-        Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-    ) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text(
+    ScreenContainer {
+        Column(Modifier.fillMaxSize()) {
+            ScreenHeader(
                 "메뉴 관리",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.weight(1f),
+                actions = {
+                    OutlinedButton(onClick = { editingItem = null; dialogOpen = true }, modifier = Modifier.heightIn(min = Dimens.minTouchTarget)) { Text("추가", style = MaterialTheme.typography.bodyMedium) }
+                    OutlinedButton(onClick = { vm.saveMenuOrder() }, modifier = Modifier.heightIn(min = Dimens.minTouchTarget)) { Text("순서 저장", style = MaterialTheme.typography.bodyMedium) }
+                    OutlinedButton(onClick = onClose, modifier = Modifier.heightIn(min = Dimens.minTouchTarget)) { Text("닫기", style = MaterialTheme.typography.bodyMedium) }
+                },
             )
-            OutlinedButton(onClick = { editingItem = null; dialogOpen = true }) { Text("추가", style = MaterialTheme.typography.bodyMedium) }
-            Spacer(Modifier.width(8.dp))
-            OutlinedButton(onClick = { vm.saveMenuOrder() }) { Text("순서 저장", style = MaterialTheme.typography.bodyMedium) }
-            Spacer(Modifier.width(8.dp))
-            OutlinedButton(onClick = onClose) { Text("닫기", style = MaterialTheme.typography.bodyMedium) }
-        }
 
-        // 카테고리 칩(전체(0)는 정렬 의미가 없어 1~5만 노출). names 인덱스 i == 카테고리 번호.
-        // ViewModel.onCategorySelected(idx) 는 내부에서 idx + 1 을 카테고리로 사용하므로 (i - 1) 을 넘긴다.
-        // state.selectedCategoryIndex 에는 카테고리 번호(1..5)가 들어 있다.
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(5.dp),
-            modifier = Modifier.padding(top = 8.dp),
-        ) {
-            val categoryNames = MenuCategories.names
-            items((1..categoryNames.lastIndex).toList()) { i ->
-                FilterChip(
-                    selected = i == state.selectedCategoryIndex,
-                    onClick = { vm.onCategorySelected(i - 1) },
-                    label = { Text(categoryNames[i], style = MaterialTheme.typography.bodyMedium) },
-                )
+            // 카테고리 칩(전체(0)는 정렬 의미가 없어 1~5만 노출). names 인덱스 i == 카테고리 번호.
+            // ViewModel.onCategorySelected(idx) 는 내부에서 idx + 1 을 카테고리로 사용하므로 (i - 1) 을 넘긴다.
+            // state.selectedCategoryIndex 에는 카테고리 번호(1..5)가 들어 있다.
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(Dimens.spaceSm)) {
+                val categoryNames = MenuCategories.names
+                items((1..categoryNames.lastIndex).toList()) { i ->
+                    FilterChip(
+                        selected = i == state.selectedCategoryIndex,
+                        onClick = { vm.onCategorySelected(i - 1) },
+                        label = { Text(categoryNames[i], style = MaterialTheme.typography.bodyMedium) },
+                    )
+                }
             }
-        }
 
-        LazyColumn(
-            state = listState,
-            modifier = Modifier
-                .weight(1f)
-                .padding(top = 10.dp),
-        ) {
+            LazyColumn(
+                state = listState,
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(top = Dimens.spaceSm),
+            ) {
             items(state.filteredMenuItems, key = { it.id }) { item ->
                 ReorderableItem(reorderState, key = item.id) { isDragging ->
                     val containerColor =
@@ -153,7 +146,7 @@ fun MenuManagementRoute(
                             trailingContent = {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text("%,d".format(item.price), style = MaterialTheme.typography.labelSmall)
-                                    Spacer(Modifier.width(8.dp))
+                                    Spacer(Modifier.width(Dimens.spaceSm))
                                     Switch(
                                         checked = item.inuse,
                                         onCheckedChange = { vm.toggleMenuInUse(item) },
@@ -169,6 +162,7 @@ fun MenuManagementRoute(
                     HorizontalDivider()
                 }
             }
+        }
         }
     }
 
