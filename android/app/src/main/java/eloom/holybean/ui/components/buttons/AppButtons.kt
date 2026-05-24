@@ -15,9 +15,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import eloom.holybean.ui.theme.DangerRed
 import eloom.holybean.ui.theme.Dimens
@@ -97,9 +97,10 @@ fun DangerButton(
 fun AppTextButton(
     text: String,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
     enabled: Boolean = true,
 ) {
-    TextButton(onClick = onClick, enabled = enabled) {
+    TextButton(onClick = onClick, modifier = modifier, enabled = enabled) {
         Text(text, style = MaterialTheme.typography.bodyMedium)
     }
 }
@@ -117,6 +118,7 @@ fun AppIconButton(
         modifier = modifier.size(Dimens.minTouchTarget),
         enabled = enabled,
     ) {
+        // tint is fixed; if a disabled state is ever needed, use LocalContentColor instead
         Icon(icon, contentDescription = contentDescription, tint = OnSurface)
     }
 }

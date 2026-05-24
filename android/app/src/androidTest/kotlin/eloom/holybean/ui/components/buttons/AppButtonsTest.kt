@@ -53,6 +53,13 @@ class AppButtonsTest {
         assert(clicked)
     }
 
+    @Test fun textButton_disabled_doesNotClick() {
+        var clicked = false
+        rule.setContent { AppTextButton("담기", onClick = { clicked = true }, enabled = false) }
+        rule.onNodeWithText("담기").assertIsNotEnabled().performClick()
+        assert(!clicked)
+    }
+
     @Test fun iconButton_click_invokesCallback() {
         var clicked = false
         rule.setContent {
