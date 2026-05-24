@@ -11,21 +11,19 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import eloom.holybean.data.model.OrderItem
 import eloom.holybean.data.model.OrdersDetailItem
 import eloom.holybean.ui.components.*
+import eloom.holybean.ui.components.buttons.*
 import eloom.holybean.ui.components.layout.Pane
 import eloom.holybean.ui.components.layout.ScreenContainer
 import eloom.holybean.ui.components.layout.ScreenHeader
 import eloom.holybean.ui.components.layout.TotalRow
 import eloom.holybean.ui.orderlist.OrdersViewModel
 import eloom.holybean.ui.theme.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -49,8 +47,8 @@ fun OrdersRoute(onClose: () -> Unit, viewModel: OrdersViewModel = hiltViewModel(
             onDismissRequest = { confirmDelete = false },
             title = { Text("주문 삭제", style = MaterialTheme.typography.titleMedium) },
             text = { Text("${state.selectedOrderNumber}번 주문을 삭제하시겠습니까? 복구할 수 없습니다.", style = MaterialTheme.typography.bodyMedium) },
-            confirmButton = { TextButton(onClick = { viewModel.deleteOrder(); confirmDelete = false }) { Text("삭제", style = MaterialTheme.typography.bodyMedium) } },
-            dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("취소", style = MaterialTheme.typography.bodyMedium) } },
+            confirmButton = { AppTextButton("삭제", onClick = { viewModel.deleteOrder(); confirmDelete = false }) },
+            dismissButton = { AppTextButton("취소", onClick = { confirmDelete = false }) },
         )
     }
     OrdersScreen(
@@ -85,20 +83,7 @@ fun OrdersScreen(
             ScreenHeader(
                 "주문기록",
                 actions = {
-                    OutlinedButton(
-                        onClick = onClose,
-                        modifier = Modifier.heightIn(min = Dimens.minTouchTarget),
-                        shape = RoundedCornerShape(Dimens.radiusButton),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = OnSurfaceMuted),
-                    ) {
-                        Icon(
-                            Icons.Filled.Close,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp),
-                        )
-                        Spacer(Modifier.width(Dimens.spaceXs))
-                        Text("닫기", style = MaterialTheme.typography.bodyMedium)
-                    }
+                    SecondaryButton("닫기", onClick = onClose)
                 },
             )
             Pane(Modifier.fillMaxWidth().padding(bottom = Dimens.spaceSm)) {
@@ -112,13 +97,7 @@ fun OrdersScreen(
                     VerticalDivider(Modifier.height(Dimens.spaceXl), color = DividerGray)
                     StatChip("총 잔수", "${summary.drinkCount}잔")
                     Spacer(Modifier.weight(1f))
-                    OutlinedButton(
-                        onClick = onPrintReport,
-                        modifier = Modifier.heightIn(min = Dimens.minTouchTarget),
-                        shape = RoundedCornerShape(Dimens.radiusButton),
-                        border = BorderStroke(2.dp, Orange),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Orange),
-                    ) { Text("보고서 출력", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold) }
+                    SecondaryButton("보고서 출력", onClick = onPrintReport)
                 }
             }
             Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(Dimens.paneGap)) {
@@ -143,15 +122,8 @@ fun OrdersScreen(
                         Modifier.fillMaxWidth().padding(top = Dimens.spaceMd),
                         horizontalArrangement = Arrangement.spacedBy(Dimens.spaceSm),
                     ) {
-                        Button(onClick = onReprint, modifier = Modifier.weight(1f).height(Dimens.primaryTouchTarget),
-                            shape = RoundedCornerShape(Dimens.radiusButton),
-                            colors = ButtonDefaults.buttonColors(containerColor = Orange)) {
-                            Text("재출력", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
-                        }
-                        OutlinedButton(onClick = onDelete, modifier = Modifier.height(Dimens.primaryTouchTarget),
-                            shape = RoundedCornerShape(Dimens.radiusButton),
-                            border = BorderStroke(1.dp, DangerRed),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = DangerRed)) { Text("삭제", style = MaterialTheme.typography.bodyMedium) }
+                        PrimaryButton("재출력", onClick = onReprint, modifier = Modifier.weight(1f))
+                        DangerButton("삭제", onClick = onDelete)
                     }
                 }
             }
