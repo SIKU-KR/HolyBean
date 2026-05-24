@@ -26,7 +26,6 @@ import eloom.holybean.ui.components.BasketRow
 import eloom.holybean.ui.components.buttons.PrimaryButton
 import eloom.holybean.ui.components.buttons.SecondaryButton
 import eloom.holybean.ui.components.PaymentMethodTile
-import eloom.holybean.ui.components.SegmentedToggle
 import eloom.holybean.ui.components.layout.Pane
 import eloom.holybean.ui.components.layout.ScreenContainer
 import eloom.holybean.ui.components.layout.ScreenHeader
@@ -124,6 +123,7 @@ fun PaymentScreen(
                         }
                         HorizontalDivider(color = DividerGray, modifier = Modifier.padding(vertical = Dimens.spaceSm))
                         TotalRow(total)
+                        Spacer(Modifier.height(Dimens.spaceMd))
                     }
                     Pane(Modifier.weight(1f).fillMaxHeight(), padding = 0.dp) {
                         Column(
@@ -132,7 +132,7 @@ fun PaymentScreen(
                         ) {
                             Column(verticalArrangement = Arrangement.spacedBy(Dimens.spaceSm)) {
                                 SectionLabel("컵 선택")
-                                SegmentedToggle(persistentListOf("일회용컵", "머그컵"), cup) { cup = it }
+                                MethodRow(persistentListOf("일회용컵", "머그컵"), cup) { cup = it }
                             }
                             Column(verticalArrangement = Arrangement.spacedBy(Dimens.spaceSm)) {
                                 SectionLabel("결제 수단")
