@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import eloom.holybean.ui.theme.Dimens
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -18,8 +17,8 @@ fun SettingsSheet(
     onDevTools: () -> Unit,
 ) {
     ModalBottomSheet(onDismissRequest = onDismiss) {
-        Column(Modifier.padding(bottom = 24.dp)) {
-            Text("설정", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(16.dp))
+        Column(Modifier.padding(bottom = Dimens.sectionGap)) {
+            Text("설정", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(Dimens.spaceMd))
             SettingsRow("메뉴 관리 (비밀번호)", onMenuMgmt)
             SettingsRow("외상 관리", onCredits)
             SettingsRow("기간 매출 리포트", onReport)
@@ -32,5 +31,5 @@ fun SettingsSheet(
 private fun SettingsRow(label: String, onClick: () -> Unit) {
     Text(label, style = MaterialTheme.typography.bodyLarge,
         modifier = Modifier.fillMaxWidth().heightIn(min = Dimens.minTouchTarget)
-            .clickable(onClick = onClick).padding(16.dp))
+            .clickable(onClick = onClick).padding(Dimens.spaceMd))
 }
