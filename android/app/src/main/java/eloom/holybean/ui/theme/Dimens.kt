@@ -40,10 +40,4 @@ object Dimens {
     // ── 고정 치수 (스케일 예외) ───────────────────────────────
     val statusDot = 10.dp
     val menuTileHeight = 90.dp
-
-    // ── 폐기 예정 alias (Task 13에서 제거) ─────────────────────
-    @Deprecated("Use paneGap", ReplaceWith("paneGap")) val gap = paneGap
-    @Deprecated("Use radiusTile", ReplaceWith("radiusTile")) val tileRadius = radiusTile
-    @Deprecated("Use radiusPane", ReplaceWith("radiusPane")) val paneRadius = radiusPane
-    @Deprecated("Use paneSplitNarrow", ReplaceWith("paneSplitNarrow")) val basketWidthFraction = paneSplitNarrow
 }
