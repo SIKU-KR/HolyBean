@@ -336,6 +336,26 @@ class HomeViewModelTest {
     }
 
     @Test
+    fun `retry after save failure does not reprint an already-printed receipt`() = runTest(testDispatcher) {
+        // 저장은 실패했지만 인쇄는 이미 성공한 경우(예: 서버 ack 타임아웃) — 재시도 시 영수증이 두 번
+        // 출력되면 안 된다. printReceipt 는 print()를 2회(고객/POS) 호출하므로 최초 1회만 = 총 2회여야 한다.
+        val order = createTestOrder()
+        coEvery { firestoreRepository.postOrder(any()) } throws Exception("commit failed")
+        coEvery { piPrintClient.print(any<List<PrintCommandDto>>()) } returns Unit
+        homeViewModel.onOrderConfirmed(order, "포장")
+        advanceUntilIdle()
+        assertTrue(homeViewModel.uiState.value.submitError is HomeViewModel.SubmitError.SaveFailed)
+
+        coEvery { firestoreRepository.postOrder(any()) } returns Unit
+        homeViewModel.retrySubmission()
+        advanceUntilIdle()
+
+        assertEquals(null, homeViewModel.uiState.value.submitError)
+        coVerify(exactly = 2) { firestoreRepository.postOrder(order) }   // 저장은 재시도(멱등 아님)
+        coVerify(exactly = 2) { piPrintClient.print(any<List<PrintCommandDto>>()) } // 인쇄는 최초 1회뿐
+    }
+
+    @Test
     fun `skipPrintAndComplete completes saved order without reprint`() = runTest(testDispatcher) {
         val order = createTestOrder()
         coEvery { firestoreRepository.postOrder(any()) } returns Unit

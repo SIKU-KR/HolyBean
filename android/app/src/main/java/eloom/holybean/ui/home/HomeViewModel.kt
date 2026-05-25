@@ -79,7 +79,10 @@ class HomeViewModel @Inject constructor(
     val uiEvent: SharedFlow<UiEvent> = _uiEvent.asSharedFlow()
 
     private var lastOrder: Pair<Order, String>? = null
+    // 재시도 시 이미 끝난 단계를 다시 하지 않도록 단계별 완료 여부를 추적한다.
+    // 저장(postOrder)은 멱등이 아니고(집계 이중 계상), 인쇄도 멱등이 아니므로(영수증 이중 출력) 둘 다 가드한다.
     private var orderSaved: Boolean = false
+    private var printDone: Boolean = false
     // 동일 실패가 연속될 때도 StateFlow가 다시 발화하도록 하는 단조 증가 시퀀스
     private var submitSeq: Long = 0L
 
@@ -190,6 +193,7 @@ class HomeViewModel @Inject constructor(
         if (_uiState.value.isSubmitting) return
         lastOrder = data to takeOption
         orderSaved = false
+        printDone = false
         _uiState.update { it.copy(isSubmitting = true, submitError = null) }
         runSubmission(data, takeOption)
     }
@@ -228,7 +232,8 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch(ioDispatcher) {
             try {
                 coroutineScope {
-                    val printDeferred = async { printReceipt(data, takeOption) }
+                    // 이미 출력된 영수증을 재시도 때 다시 찍지 않도록 printDone 으로 가드.
+                    val printDeferred = async { if (!printDone) { printReceipt(data, takeOption); printDone = true } }
                     // postOrder를 print await보다 먼저 await → 저장 실패가 인쇄 실패보다 우선 보고된다(저장 실패가 더 중요).
                     if (!orderSaved) {
                         firestoreRepository.postOrder(data)
