@@ -6,14 +6,12 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import eloom.holybean.data.repository.FirestoreRepository
 import eloom.holybean.data.repository.MenuRepository
 import eloom.holybean.printer.PiPrintClient
-import kotlinx.coroutines.CoroutineDispatcher
+import eloom.holybean.util.launchSafely
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 import javax.inject.Inject
-import javax.inject.Named
 
 enum class StepStatus { Loading, Success, Failed }
 
@@ -22,7 +20,6 @@ class StartupViewModel @Inject constructor(
     private val menuRepository: MenuRepository,
     private val firestoreRepository: FirestoreRepository,
     private val piPrintClient: PiPrintClient,
-    @Named("IO") private val ioDispatcher: CoroutineDispatcher,
 ) : ViewModel() {
 
     data class UiState(
@@ -43,24 +40,20 @@ class StartupViewModel @Inject constructor(
     /** 두 작업을 병렬 실행. retry 시 동일 로직으로 재실행. */
     fun check() {
         _uiState.update { it.copy(data = StepStatus.Loading, printer = StepStatus.Loading) }
-        viewModelScope.launch(ioDispatcher) { loadData() }
-        viewModelScope.launch(ioDispatcher) { checkPrinter() }
+        viewModelScope.launchSafely(onError = {
+            _uiState.update { it.copy(data = StepStatus.Failed) }
+        }) {
+            menuRepository.getMenuListSync()                 // 실패 시 throw → onError → Failed
+            val ok = firestoreRepository.getOrderNumber() > 0
+            _uiState.update { it.copy(data = if (ok) StepStatus.Success else StepStatus.Failed) }
+        }
+        viewModelScope.launchSafely(onError = {
+            _uiState.update { it.copy(printer = StepStatus.Failed) }
+        }) {
+            val ok = piPrintClient.checkHealth()             // checkHealth 는 throw 안 함(Boolean)
+            _uiState.update { it.copy(printer = if (ok) StepStatus.Success else StepStatus.Failed) }
+        }
     }
 
     fun retry() = check()
-
-    private suspend fun loadData() {
-        // 메뉴 페치가 예외 없이 끝나고(캐시도 채워짐) 주문번호가 유효(>0)하면 성공.
-        // getOrderNumber()는 실패 시 예외 대신 -1을 반환한다.
-        val ok = runCatching {
-            menuRepository.getMenuListSync()
-            firestoreRepository.getOrderNumber() > 0
-        }.getOrDefault(false)
-        _uiState.update { it.copy(data = if (ok) StepStatus.Success else StepStatus.Failed) }
-    }
-
-    private suspend fun checkPrinter() {
-        val ok = piPrintClient.checkHealth()
-        _uiState.update { it.copy(printer = if (ok) StepStatus.Success else StepStatus.Failed) }
-    }
 }

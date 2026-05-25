@@ -1,24 +1,47 @@
 package eloom.holybean.ui.startup
 
+import com.google.firebase.crashlytics.FirebaseCrashlytics
 import eloom.holybean.data.repository.FirestoreRepository
 import eloom.holybean.data.repository.MenuRepository
 import eloom.holybean.printer.PiPrintClient
+import eloom.holybean.util.MainDispatcherRule
 import io.mockk.coEvery
+import io.mockk.every
 import io.mockk.mockk
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import io.mockk.mockkStatic
+import io.mockk.unmockkAll
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 
+@ExperimentalCoroutinesApi
 class StartupViewModelTest {
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
+
     private val menu: MenuRepository = mockk(relaxed = true)
     private val firestore: FirestoreRepository = mockk(relaxed = true)
     private val pi: PiPrintClient = mockk(relaxed = true)
 
-    private fun vm() = StartupViewModel(menu, firestore, pi, UnconfinedTestDispatcher())
+    @Before
+    fun setUp() {
+        mockkStatic(FirebaseCrashlytics::class)
+        every { FirebaseCrashlytics.getInstance() } returns mockk(relaxed = true)
+    }
+
+    @After
+    fun tearDown() {
+        unmockkAll()
+    }
+
+    private fun vm() = StartupViewModel(menu, firestore, pi)
 
     @Test fun `both succeed sets success and autoEnter`() = runTest {
         coEvery { menu.getMenuListSync() } returns emptyList()
@@ -55,9 +78,9 @@ class StartupViewModelTest {
         assertFalse(sut.uiState.value.canEnter)
     }
 
-    @Test fun `order number sentinel marks data failed`() = runTest {
+    @Test fun `order number failure marks data failed`() = runTest {
         coEvery { menu.getMenuListSync() } returns emptyList()
-        coEvery { firestore.getOrderNumber() } returns -1
+        coEvery { firestore.getOrderNumber() } throws RuntimeException("net")
         coEvery { pi.checkHealth() } returns true
         val sut = vm()
         advanceUntilIdle()
