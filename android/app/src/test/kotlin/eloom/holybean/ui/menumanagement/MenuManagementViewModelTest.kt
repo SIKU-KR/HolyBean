@@ -1,10 +1,11 @@
 package eloom.holybean.ui.menumanagement
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
+import com.google.firebase.crashlytics.FirebaseCrashlytics
 import eloom.holybean.data.model.MenuItem
 import eloom.holybean.data.repository.MenuRepository
+import eloom.holybean.util.MainDispatcherRule
 import io.mockk.*
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
@@ -22,26 +23,28 @@ class MenuManagementViewModelTest {
     @get:Rule
     val instantExecutorRule = InstantTaskExecutorRule()
 
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
+
     private lateinit var viewModel: MenuManagementViewModel
     private val menuRepository: MenuRepository = mockk(relaxed = true)
-    private val testDispatcher = UnconfinedTestDispatcher()
 
     @Before
     fun setUp() {
-        Dispatchers.setMain(testDispatcher)
+        mockkStatic(FirebaseCrashlytics::class)
+        every { FirebaseCrashlytics.getInstance() } returns mockk(relaxed = true)
         // Mock initial state
         every { menuRepository.getMenuList() } returns flowOf(emptyList())
-        viewModel = MenuManagementViewModel(menuRepository, testDispatcher)
+        viewModel = MenuManagementViewModel(menuRepository)
     }
 
     @After
     fun tearDown() {
-        Dispatchers.resetMain()
-        clearAllMocks()
+        unmockkAll()
     }
 
     @Test
-    fun `uiState should be initialized correctly`() = runTest(testDispatcher) {
+    fun `uiState should be initialized correctly`() = runTest {
         // Given & When
         val initialState = viewModel.uiState.first()
 
@@ -53,7 +56,7 @@ class MenuManagementViewModelTest {
     }
 
     @Test
-    fun `viewModel should load menu list from DB on init`() = runTest(testDispatcher) {
+    fun `viewModel should load menu list from DB on init`() = runTest {
         // Given
         val mockMenuList = listOf(
             MenuItem(1001, "Americano", 4000, 1001, true),
@@ -62,7 +65,7 @@ class MenuManagementViewModelTest {
         every { menuRepository.getMenuList() } returns flowOf(mockMenuList)
 
         // When - ViewModel loads menu on init
-        val testViewModel = MenuManagementViewModel(menuRepository, testDispatcher)
+        val testViewModel = MenuManagementViewModel(menuRepository)
 
         // Then
         val uiState = testViewModel.uiState.first()
@@ -70,14 +73,14 @@ class MenuManagementViewModelTest {
     }
 
     @Test
-    fun `onCategorySelected should filter menu items correctly`() = runTest(testDispatcher) {
+    fun `onCategorySelected should filter menu items correctly`() = runTest {
         // Given
         val mockMenuList = listOf(
             MenuItem(1001, "Americano", 4000, 1001, true),
             MenuItem(2001, "Green Tea", 3000, 2001, true)
         )
         every { menuRepository.getMenuList() } returns flowOf(mockMenuList)
-        val testViewModel = MenuManagementViewModel(menuRepository, testDispatcher)
+        val testViewModel = MenuManagementViewModel(menuRepository)
 
         // When
         testViewModel.onCategorySelected(0) // Category 1 (ICE커피)
@@ -90,7 +93,7 @@ class MenuManagementViewModelTest {
     }
 
     @Test
-    fun `addMenu should emit success event and add menu on valid input`() = runTest(testDispatcher) {
+    fun `addMenu should emit success event and add menu on valid input`() = runTest {
         // Given
         val name = "New Coffee"
         val id = 1001
@@ -102,7 +105,7 @@ class MenuManagementViewModelTest {
         every { menuRepository.getMenuList() } returns flowOf(emptyList())
 
         val events = mutableListOf<MenuManagementViewModel.UiEvent>()
-        val collectJob = launch { viewModel.uiEvent.collect { events.add(it) } }
+        val collectJob = launch(mainDispatcherRule.dispatcher) { viewModel.uiEvent.collect { events.add(it) } }
 
         // When
         viewModel.addMenu(id, name, price, placement)
@@ -118,7 +121,7 @@ class MenuManagementViewModelTest {
     }
 
     @Test
-    fun `addMenu should emit toast event on invalid name`() = runTest(testDispatcher) {
+    fun `addMenu should emit toast event on invalid name`() = runTest {
         // Given
         val name = "Existing Coffee"
         val id = 1001
@@ -128,7 +131,7 @@ class MenuManagementViewModelTest {
         coEvery { menuRepository.isValidMenuName(name) } returns false
 
         val events = mutableListOf<MenuManagementViewModel.UiEvent>()
-        val collectJob = launch { viewModel.uiEvent.collect { events.add(it) } }
+        val collectJob = launch(mainDispatcherRule.dispatcher) { viewModel.uiEvent.collect { events.add(it) } }
 
         // When
         viewModel.addMenu(id, name, price, placement)
@@ -143,14 +146,14 @@ class MenuManagementViewModelTest {
     }
 
     @Test
-    fun `updateMenu should emit success event and update menu`() = runTest(testDispatcher) {
+    fun `updateMenu should emit success event and update menu`() = runTest {
         // Given
         val menuItemToUpdate = MenuItem(1001, "Americano", 4500, 1001, true)
         coEvery { menuRepository.updateSpecificMenu(any()) } just runs
         every { menuRepository.getMenuList() } returns flowOf(listOf(menuItemToUpdate))
 
         val events = mutableListOf<MenuManagementViewModel.UiEvent>()
-        val collectJob = launch { viewModel.uiEvent.collect { events.add(it) } }
+        val collectJob = launch(mainDispatcherRule.dispatcher) { viewModel.uiEvent.collect { events.add(it) } }
 
         // When
         viewModel.updateMenu(menuItemToUpdate, "Americano", 4500)
@@ -166,15 +169,15 @@ class MenuManagementViewModelTest {
     }
 
     @Test
-    fun `toggleMenuInUse should change menu status`() = runTest(testDispatcher) {
+    fun `toggleMenuInUse should change menu status`() = runTest {
         // Given
         val menuItem = MenuItem(1001, "Americano", 4500, 1001, true)
         coEvery { menuRepository.updateSpecificMenu(any()) } just runs
         every { menuRepository.getMenuList() } returns flowOf(listOf(menuItem))
-        val testViewModel = MenuManagementViewModel(menuRepository, testDispatcher)
+        val testViewModel = MenuManagementViewModel(menuRepository)
 
         val events = mutableListOf<MenuManagementViewModel.UiEvent>()
-        val collectJob = launch { testViewModel.uiEvent.collect { events.add(it) } }
+        val collectJob = launch(mainDispatcherRule.dispatcher) { testViewModel.uiEvent.collect { events.add(it) } }
 
         // When
         testViewModel.toggleMenuInUse(menuItem)
@@ -191,12 +194,12 @@ class MenuManagementViewModelTest {
     }
 
     @Test
-    fun `toggleMenuInUse should emit new uiState reflecting the change`() = runTest(testDispatcher) {
+    fun `toggleMenuInUse should emit new uiState reflecting the change`() = runTest {
         // Given - one in-use item in category 1, getMenuList is a one-shot flow that never re-emits
         val menuItem = MenuItem(1001, "Americano", 4500, 1001, true)
         coEvery { menuRepository.updateSpecificMenu(any()) } just runs
         every { menuRepository.getMenuList() } returns flowOf(listOf(menuItem))
-        val testViewModel = MenuManagementViewModel(menuRepository, testDispatcher)
+        val testViewModel = MenuManagementViewModel(menuRepository)
 
         // sanity: item visible in the filtered (category 1) list and currently in use
         assertTrue(testViewModel.uiState.first().filteredMenuItems.first().inuse)
@@ -213,12 +216,12 @@ class MenuManagementViewModelTest {
     }
 
     @Test
-    fun `updateMenu should emit new uiState reflecting name and price`() = runTest(testDispatcher) {
+    fun `updateMenu should emit new uiState reflecting name and price`() = runTest {
         // Given
         val menuItem = MenuItem(1001, "Americano", 4000, 1001, true)
         coEvery { menuRepository.updateSpecificMenu(any()) } just runs
         every { menuRepository.getMenuList() } returns flowOf(listOf(menuItem))
-        val testViewModel = MenuManagementViewModel(menuRepository, testDispatcher)
+        val testViewModel = MenuManagementViewModel(menuRepository)
 
         // When
         testViewModel.updateMenu(menuItem, "Cafe Latte", 5000)
@@ -232,7 +235,7 @@ class MenuManagementViewModelTest {
     }
 
     @Test
-    fun `moveItem should reorder menu items correctly`() = runTest(testDispatcher) {
+    fun `moveItem should reorder menu items correctly`() = runTest {
         // Given
         val mockMenuList = listOf(
             MenuItem(1001, "Americano", 4000, 1001, true),
@@ -240,7 +243,7 @@ class MenuManagementViewModelTest {
             MenuItem(1003, "Cappuccino", 4700, 1003, true)
         )
         every { menuRepository.getMenuList() } returns flowOf(mockMenuList)
-        val testViewModel = MenuManagementViewModel(menuRepository, testDispatcher)
+        val testViewModel = MenuManagementViewModel(menuRepository)
 
         // When
         testViewModel.moveItem(0, 2) // Move first item to third position
@@ -253,17 +256,17 @@ class MenuManagementViewModelTest {
     }
 
     @Test
-    fun `saveMenuOrder should save menu orders and emit success message`() = runTest(testDispatcher) {
+    fun `saveMenuOrder should save menu orders and emit success message`() = runTest {
         // Given
         val mockMenuList = listOf(
             MenuItem(1001, "Americano", 4000, 1001, true)
         )
         every { menuRepository.getMenuList() } returns flowOf(mockMenuList)
         coEvery { menuRepository.saveMenuOrders(any()) } just runs
-        val testViewModel = MenuManagementViewModel(menuRepository, testDispatcher)
+        val testViewModel = MenuManagementViewModel(menuRepository)
 
         val events = mutableListOf<MenuManagementViewModel.UiEvent>()
-        val collectJob = launch { testViewModel.uiEvent.collect { events.add(it) } }
+        val collectJob = launch(mainDispatcherRule.dispatcher) { testViewModel.uiEvent.collect { events.add(it) } }
 
         // When
         testViewModel.saveMenuOrder()

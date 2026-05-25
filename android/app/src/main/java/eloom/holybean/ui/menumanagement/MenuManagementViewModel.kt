@@ -5,17 +5,14 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import eloom.holybean.data.model.MenuItem
 import eloom.holybean.data.repository.MenuRepository
-import kotlinx.coroutines.CoroutineDispatcher
+import eloom.holybean.util.launchSafely
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
 import javax.inject.Inject
-import javax.inject.Named
 
 @HiltViewModel
 class MenuManagementViewModel @Inject constructor(
     private val menuRepository: MenuRepository,
-    @Named("IO") private val dispatcher: CoroutineDispatcher
 ) : ViewModel() {
 
     data class UiState(
@@ -53,21 +50,15 @@ class MenuManagementViewModel @Inject constructor(
     }
 
     private fun loadMenuList() {
-        viewModelScope.launch(dispatcher) {
+        viewModelScope.launchSafely(onError = { e ->
+            _uiState.update { it.copy(isLoading = false) }
+            _uiEvent.tryEmit(UiEvent.ShowToast("Error loading menu: ${e.message}"))
+        }) {
             _uiState.update { it.copy(isLoading = true) }
             menuRepository.getMenuList()
                 .map { list -> list.sortedBy { it.order } }
-                .catch { e ->
-                    _uiEvent.tryEmit(UiEvent.ShowToast("Error loading menu: ${e.message}"))
-                    emit(emptyList())
-                }
                 .collect { menuList ->
-                    _uiState.update {
-                        it.copy(
-                            allMenuItems = menuList,
-                            isLoading = false
-                        )
-                    }
+                    _uiState.update { it.copy(allMenuItems = menuList, isLoading = false) }
                     filterMenuByCategory(_uiState.value.selectedCategoryIndex)
                 }
         }
@@ -113,7 +104,9 @@ class MenuManagementViewModel @Inject constructor(
     }
 
     fun saveMenuOrder() {
-        viewModelScope.launch(dispatcher) {
+        viewModelScope.launchSafely(onError = { e ->
+            _uiEvent.tryEmit(UiEvent.ShowToast("저장 중 오류: ${e.message}"))
+        }) {
             val category = _uiState.value.selectedCategoryIndex
             val itemsToSave = _uiState.value.allMenuItems.filter { it.id / 1000 == category }
             menuRepository.saveMenuOrders(itemsToSave)
@@ -133,7 +126,9 @@ class MenuManagementViewModel @Inject constructor(
     }
 
     fun addMenu(id: Int, name: String, price: Int, placement: Int) {
-        viewModelScope.launch(dispatcher) {
+        viewModelScope.launchSafely(onError = { e ->
+            _uiEvent.tryEmit(UiEvent.ShowToast("메뉴 추가 중 오류: ${e.message}"))
+        }) {
             val isNameValid = menuRepository.isValidMenuName(name)
             if (!isNameValid) {
                 _uiEvent.tryEmit(UiEvent.ShowToast("존재하는 메뉴입니다."))
@@ -146,7 +141,9 @@ class MenuManagementViewModel @Inject constructor(
     }
 
     fun updateMenu(item: MenuItem, newName: String, newPrice: Int) {
-        viewModelScope.launch(dispatcher) {
+        viewModelScope.launchSafely(onError = { e ->
+            _uiEvent.tryEmit(UiEvent.ShowToast("메뉴 수정 중 오류: ${e.message}"))
+        }) {
             val updated = item.copy(name = newName, price = newPrice)
             // 낙관적 갱신: Firestore 스냅샷 재방출을 기다리지 않고 즉시 새 상태를 방출해 Compose 가 재구성되도록 한다.
             replaceItemInState(updated)
@@ -156,7 +153,9 @@ class MenuManagementViewModel @Inject constructor(
     }
 
     fun toggleMenuInUse(item: MenuItem) {
-        viewModelScope.launch(dispatcher) {
+        viewModelScope.launchSafely(onError = { e ->
+            _uiEvent.tryEmit(UiEvent.ShowToast("메뉴 상태 변경 중 오류: ${e.message}"))
+        }) {
             val updated = item.copy(inuse = !item.inuse)
             // 낙관적 갱신: Firestore 스냅샷 재방출을 기다리지 않고 즉시 새 상태를 방출해 Compose 가 재구성되도록 한다.
             replaceItemInState(updated)
