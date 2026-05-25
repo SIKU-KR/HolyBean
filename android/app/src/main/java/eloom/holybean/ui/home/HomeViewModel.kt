@@ -13,24 +13,19 @@ import eloom.holybean.printer.PiPrintClient
 import eloom.holybean.printer.network.PrintFailureReason
 import eloom.holybean.printer.network.PrintServerException
 import eloom.holybean.printer.polymorphism.HomePrinter
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.TimeoutCancellationException
+import eloom.holybean.util.launchSafely
 import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
-import javax.inject.Named
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val firestoreRepository: FirestoreRepository,
     private val menuRepository: MenuRepository,
-    @Named("IO") private val ioDispatcher: CoroutineDispatcher,
     private val piPrintClient: PiPrintClient,
     private val homePrinter: HomePrinter,
 ) : ViewModel() {
@@ -88,7 +83,7 @@ class HomeViewModel @Inject constructor(
 
     init {
         // Load initial data — 스플래시가 채운 캐시를 우선 사용하고, 없으면 네트워크 페치로 폴백
-        viewModelScope.launch(ioDispatcher) {
+        viewModelScope.launchSafely(onError = {}) {
             val menus = menuRepository.getCachedMenu() ?: menuRepository.getMenuListSync()
             _uiState.update { it.copy(
                 allMenuItems = menus,
@@ -99,14 +94,14 @@ class HomeViewModel @Inject constructor(
     }
 
     fun refreshOrderNumber() {
-        viewModelScope.launch(ioDispatcher) {
+        viewModelScope.launchSafely(onError = {}) {
             val id = firestoreRepository.getOrderNumber()
             _uiState.update { it.copy(orderId = id) }
         }
     }
 
     fun onCategorySelected(index: Int) {
-        viewModelScope.launch(ioDispatcher) {
+        viewModelScope.launchSafely(onError = {}) {
             val filtered = if (index == 0) {
                 _uiState.value.allMenuItems
             } else {
@@ -120,11 +115,11 @@ class HomeViewModel @Inject constructor(
     }
 
     fun addToBasket(id: Int) {
-        viewModelScope.launch(ioDispatcher) {
+        viewModelScope.launchSafely(onError = {}) {
             val currentBasket = _uiState.value.basketItems.toMutableList()
             val existing = currentBasket.find { it.id == id }
             if (existing == null) {
-                val target = _uiState.value.allMenuItems.find { it.id == id } ?: return@launch
+                val target = _uiState.value.allMenuItems.find { it.id == id } ?: return@launchSafely
                 currentBasket.add(CartItem(id, target.name, target.price, 1, target.price))
             } else {
                 val updated = existing.copy(count = existing.count + 1)
@@ -141,9 +136,9 @@ class HomeViewModel @Inject constructor(
     }
 
     fun deleteFromBasket(id: Int) {
-        viewModelScope.launch(ioDispatcher) {
+        viewModelScope.launchSafely(onError = {}) {
             val currentBasket = _uiState.value.basketItems.toMutableList()
-            val item = currentBasket.find { it.id == id } ?: return@launch
+            val item = currentBasket.find { it.id == id } ?: return@launchSafely
             if (item.count <= 1) {
                 currentBasket.remove(item)
             } else {
@@ -162,12 +157,10 @@ class HomeViewModel @Inject constructor(
 
     fun addCoupon(amount: Int) {
         if (amount <= 0) {
-            viewModelScope.launch(ioDispatcher) {
-                _uiEvent.emit(UiEvent.ShowToast("올바른 금액이 아닙니다"))
-            }
+            _uiEvent.tryEmit(UiEvent.ShowToast("올바른 금액이 아닙니다"))
             return
         }
-        viewModelScope.launch(ioDispatcher) {
+        viewModelScope.launchSafely(onError = {}) {
             val currentBasket = _uiState.value.basketItems.toMutableList()
             currentBasket.add(CartItem(999, "쿠폰", amount, 1, amount))
             val total = currentBasket.sumOf { it.count * it.price }
@@ -185,9 +178,7 @@ class HomeViewModel @Inject constructor(
 
     fun onOrderConfirmed(data: Order, takeOption: String) {
         if (data.orderNum <= 0) {
-            viewModelScope.launch(ioDispatcher) {
-                _uiEvent.emit(UiEvent.ShowToast("주문번호를 불러오지 못했습니다. 다시 시도해 주세요."))
-            }
+            _uiEvent.tryEmit(UiEvent.ShowToast("주문번호를 불러오지 못했습니다. 다시 시도해 주세요."))
             return
         }
         if (_uiState.value.isSubmitting) return
@@ -210,7 +201,7 @@ class HomeViewModel @Inject constructor(
         if (!orderSaved) return
         if (_uiState.value.isSubmitting) return
         _uiState.update { it.copy(isSubmitting = true) }
-        viewModelScope.launch(ioDispatcher) {
+        viewModelScope.launchSafely(onError = {}) {
             try {
                 completeAndNavigate()
             } finally {
@@ -223,13 +214,25 @@ class HomeViewModel @Inject constructor(
     private suspend fun completeAndNavigate() {
         val nextOrderId = firestoreRepository.getOrderNumber()
         _uiState.update { it.copy(basketItems = emptyList(), totalPrice = 0, orderId = nextOrderId, submitError = null) }
-        _uiEvent.emit(UiEvent.NavigateHome)
+        _uiEvent.tryEmit(UiEvent.NavigateHome)
     }
 
     // 저장(서버 ack 대기)과 인쇄를 병렬 실행하고 둘 다 성공해야 홈으로 전환한다.
     // 저장이 한 번 성공하면 orderSaved=true 가 되어, 재시도 시 중복 저장(집계 이중 계상)을 막는다.
     private fun runSubmission(data: Order, takeOption: String) {
-        viewModelScope.launch(ioDispatcher) {
+        viewModelScope.launchSafely(onError = { e ->
+            when (e) {
+                is PrintServerException -> {
+                    _uiState.update { it.copy(submitError = SubmitError.PrintFailed(e.reason, ++submitSeq)) }
+                    FirebaseCrashlytics.getInstance().apply {
+                        setCustomKey("orderNum", data.orderNum)
+                        setCustomKey("print_reason", e.reason.name)
+                    }
+                }
+                else -> _uiState.update { it.copy(submitError = SubmitError.SaveFailed(++submitSeq)) }
+                // DataException.Timeout 등 저장 실패는 모두 SaveFailed
+            }
+        }) {
             try {
                 coroutineScope {
                     // 이미 출력된 영수증을 재시도 때 다시 찍지 않도록 printDone 으로 가드.
@@ -242,22 +245,6 @@ class HomeViewModel @Inject constructor(
                     printDeferred.await()
                 }
                 completeAndNavigate()
-            } catch (e: PrintServerException) {
-                _uiState.update { it.copy(submitError = SubmitError.PrintFailed(e.reason, ++submitSeq)) }
-                FirebaseCrashlytics.getInstance().apply {
-                    setCustomKey("orderNum", data.orderNum)
-                    setCustomKey("print_reason", e.reason.name)
-                    recordException(e)
-                }
-            } catch (e: TimeoutCancellationException) {
-                // 서버 ack 타임아웃(오프라인 등) → 저장 실패로 처리
-                _uiState.update { it.copy(submitError = SubmitError.SaveFailed(++submitSeq)) }
-                FirebaseCrashlytics.getInstance().recordException(e)
-            } catch (e: CancellationException) {
-                throw e   // ViewModel teardown 등 정상 취소는 삼키지 않는다
-            } catch (e: Exception) {
-                _uiState.update { it.copy(submitError = SubmitError.SaveFailed(++submitSeq)) }
-                FirebaseCrashlytics.getInstance().recordException(e)
             } finally {
                 _uiState.update { it.copy(isSubmitting = false) }
             }

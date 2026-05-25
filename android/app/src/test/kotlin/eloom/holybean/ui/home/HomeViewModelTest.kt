@@ -10,6 +10,7 @@ import eloom.holybean.data.repository.MenuRepository
 import eloom.holybean.printer.PiPrintClient
 import eloom.holybean.printer.network.PrintCommandDto
 import eloom.holybean.printer.polymorphism.HomePrinter
+import eloom.holybean.util.MainDispatcherRule
 import io.mockk.Runs
 import io.mockk.clearAllMocks
 import io.mockk.coEvery
@@ -19,6 +20,7 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -26,6 +28,7 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -39,12 +42,16 @@ class HomeViewModelTest {
     @get:Rule
     val instantExecutorRule = InstantTaskExecutorRule()
 
+    private val testDispatcher = UnconfinedTestDispatcher()
+
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule(testDispatcher)
+
     private lateinit var homeViewModel: HomeViewModel
     private val firestoreRepository: FirestoreRepository = mockk(relaxed = true)
     private val menuRepository: MenuRepository = mockk(relaxed = true)
     private val homePrinter: HomePrinter = mockk(relaxed = true)
     private val piPrintClient: PiPrintClient = mockk(relaxed = true)
-    private val testDispatcher = UnconfinedTestDispatcher()
 
     @Before
     fun setUp() {
@@ -57,7 +64,6 @@ class HomeViewModelTest {
         homeViewModel = HomeViewModel(
             firestoreRepository,
             menuRepository,
-            testDispatcher,
             piPrintClient,
             homePrinter,
         )
@@ -161,7 +167,6 @@ class HomeViewModelTest {
         homeViewModel = HomeViewModel(
             firestoreRepository,
             menuRepository,
-            testDispatcher,
             piPrintClient,
             homePrinter,
         )
@@ -196,7 +201,6 @@ class HomeViewModelTest {
         homeViewModel = HomeViewModel(
             firestoreRepository,
             menuRepository,
-            testDispatcher,
             piPrintClient,
             homePrinter,
         )
@@ -210,8 +214,9 @@ class HomeViewModelTest {
     @Test
     fun `isSubmitting is true after confirm and false after completion`() = runTest {
         val std = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(std)
         val vm = HomeViewModel(
-            firestoreRepository, menuRepository, std, piPrintClient, homePrinter,
+            firestoreRepository, menuRepository, piPrintClient, homePrinter,
         )
         advanceUntilIdle() // init 소비
         coEvery { firestoreRepository.postOrder(any()) } just Runs
@@ -226,8 +231,9 @@ class HomeViewModelTest {
     @Test
     fun `second concurrent onOrderConfirmed is blocked while submitting`() = runTest {
         val std = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(std)
         val vm = HomeViewModel(
-            firestoreRepository, menuRepository, std, piPrintClient, homePrinter,
+            firestoreRepository, menuRepository, piPrintClient, homePrinter,
         )
         advanceUntilIdle()
         coEvery { firestoreRepository.postOrder(any()) } just Runs
@@ -401,10 +407,8 @@ class HomeViewModelTest {
     @Test
     fun `postOrder timeout is reported as SaveFailed and does not navigate`() = runTest(testDispatcher) {
         val order = createTestOrder()
-        // 실제 타임아웃을 유발해 TimeoutCancellationException 경로를 검증한다(가상 시계).
-        coEvery { firestoreRepository.postOrder(any()) } coAnswers {
-            kotlinx.coroutines.withTimeout(1) { kotlinx.coroutines.delay(100) }
-        }
+        // postOrder 는 ack 타임아웃을 DataException.Timeout 으로 변환해 던진다 → SaveFailed 로 처리되어야 한다.
+        coEvery { firestoreRepository.postOrder(any()) } throws eloom.holybean.exception.DataException.Timeout()
         val events = mutableListOf<HomeViewModel.UiEvent>()
         val job: Job = launch { homeViewModel.uiEvent.collect { events.add(it) } }
 
