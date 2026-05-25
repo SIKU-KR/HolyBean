@@ -7,6 +7,7 @@ import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -23,7 +24,7 @@ class MenuRepositoryCacheTest {
         every { collection.document(any()) } returns docRef
         every { docRef.get() } returns Tasks.forResult(snap)
         every { snap.get("items") } returns items
-        return MenuRepository(db)
+        return MenuRepository(db, UnconfinedTestDispatcher())
     }
 
     @Test fun `getCachedMenu is null before any load`() {
