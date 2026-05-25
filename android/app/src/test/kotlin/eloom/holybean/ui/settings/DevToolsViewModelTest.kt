@@ -1,27 +1,49 @@
 package eloom.holybean.ui.settings
 
+import com.google.firebase.crashlytics.FirebaseCrashlytics
 import eloom.holybean.data.repository.FirestoreRepository
 import eloom.holybean.diag.NetworkStatus
 import eloom.holybean.diag.NetworkStatusProvider
 import eloom.holybean.printer.PiPrintClient
+import eloom.holybean.util.MainDispatcherRule
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.unmockkAll
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 
+@ExperimentalCoroutinesApi
 class DevToolsViewModelTest {
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
+
     private val pi: PiPrintClient = mockk(relaxed = true)
     private val firestore: FirestoreRepository = mockk(relaxed = true)
     private val network: NetworkStatusProvider = mockk(relaxed = true)
 
-    private fun vm() = DevToolsViewModel(pi, firestore, network, UnconfinedTestDispatcher())
+    @Before
+    fun setUp() {
+        mockkStatic(FirebaseCrashlytics::class)
+        every { FirebaseCrashlytics.getInstance() } returns mockk(relaxed = true)
+    }
+
+    @After
+    fun tearDown() {
+        unmockkAll()
+    }
+
+    private fun vm() = DevToolsViewModel(pi, firestore, network)
 
     @Test fun `refresh populates printer network and firestore status`() = runTest {
         coEvery { pi.checkHealth() } returns true
@@ -62,7 +84,7 @@ class DevToolsViewModelTest {
         coEvery { pi.printTestReceipt() } throws RuntimeException("boom")
         val vm = vm()
         val events = mutableListOf<DevToolsViewModel.DevToolsUiEvent>()
-        val collector = launch(UnconfinedTestDispatcher(testScheduler)) {
+        val collector = launch(mainDispatcherRule.dispatcher) {
             vm.uiEvent.collect { events.add(it) }
         }
         vm.testPrint()

@@ -7,7 +7,7 @@ import eloom.holybean.BuildConfig
 import eloom.holybean.data.repository.FirestoreRepository
 import eloom.holybean.diag.NetworkStatusProvider
 import eloom.holybean.printer.PiPrintClient
-import kotlinx.coroutines.CoroutineDispatcher
+import eloom.holybean.util.launchSafely
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,16 +16,13 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 import javax.inject.Inject
-import javax.inject.Named
 
 @HiltViewModel
 class DevToolsViewModel @Inject constructor(
     private val piPrintClient: PiPrintClient,
     private val firestoreRepository: FirestoreRepository,
     private val networkStatusProvider: NetworkStatusProvider,
-    @Named("IO") private val ioDispatcher: CoroutineDispatcher,
 ) : ViewModel() {
     data class State(
         val printerOk: Boolean? = null,
@@ -54,7 +51,9 @@ class DevToolsViewModel @Inject constructor(
     }
 
     fun refresh() {
-        viewModelScope.launch(ioDispatcher) {
+        viewModelScope.launchSafely(onError = {
+            _uiEvent.tryEmit(DevToolsUiEvent.ShowToast("진단 중 오류가 발생했습니다"))
+        }) {
             val net = networkStatusProvider.current()
             _uiState.update { it.copy(networkOk = net.connected, networkInfo = net.info) }
 
@@ -69,10 +68,11 @@ class DevToolsViewModel @Inject constructor(
     }
 
     fun testPrint() {
-        viewModelScope.launch(ioDispatcher) {
-            runCatching { piPrintClient.printTestReceipt() }
-                .onSuccess { _uiEvent.tryEmit(DevToolsUiEvent.ShowToast("테스트 영수증을 출력했습니다")) }
-                .onFailure { _uiEvent.tryEmit(DevToolsUiEvent.ShowToast("테스트 출력 실패: ${it.message}")) }
+        viewModelScope.launchSafely(onError = { e ->
+            _uiEvent.tryEmit(DevToolsUiEvent.ShowToast("테스트 출력 실패: ${e.message}"))
+        }) {
+            piPrintClient.printTestReceipt()
+            _uiEvent.tryEmit(DevToolsUiEvent.ShowToast("테스트 영수증을 출력했습니다"))
         }
     }
 }
