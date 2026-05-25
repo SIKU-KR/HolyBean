@@ -9,21 +9,18 @@ import eloom.holybean.data.repository.FirestoreRepository
 import eloom.holybean.printer.PiPrintClient
 import eloom.holybean.di.AppScope
 import eloom.holybean.printer.polymorphism.ReportPrinter
-import kotlinx.coroutines.CoroutineDispatcher
+import eloom.holybean.util.launchSafely
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.*
 import javax.inject.Inject
-import javax.inject.Named
 
 @HiltViewModel
 class ReportViewModel @Inject constructor(
     private val firestoreRepository: FirestoreRepository,
-    @Named("IO") private val ioDispatcher: CoroutineDispatcher,
     @AppScope private val applicationScope: CoroutineScope,
     private val piPrintClient: PiPrintClient,
     private val reportPrinter: ReportPrinter,
@@ -56,26 +53,18 @@ class ReportViewModel @Inject constructor(
     private val dateFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd", Locale.ROOT)
 
     fun loadReportData(startDate: String, endDate: String) {
-        viewModelScope.launch(ioDispatcher) {
-            if (!isValidDateRange(startDate, endDate)) {
-                _uiEvent.tryEmit(ReportUiEvent.ShowError("잘못된 날짜 범위입니다"))
-                return@launch
-            }
+        if (!isValidDateRange(startDate, endDate)) {
+            _uiEvent.tryEmit(ReportUiEvent.ShowError("잘못된 날짜 범위입니다"))
+            return
+        }
 
-            try {
-                _uiState.update { it.copy(isLoading = true, reportTitle = "$startDate ~ $endDate") }
-                val report = firestoreRepository.getReport(startDate, endDate)
-                _uiState.update {
-                    it.copy(
-                        reportDetailData = report.menuSales,
-                        reportData = report.paymentSales,
-                        isLoading = false
-                    )
-                }
-            } catch (e: Exception) {
-                _uiState.update { it.copy(isLoading = false) }
-                _uiEvent.tryEmit(ReportUiEvent.ShowError("리포트를 불러오는데 실패했습니다: ${e.localizedMessage}"))
-            }
+        viewModelScope.launchSafely(onError = { e ->
+            _uiState.update { it.copy(isLoading = false) }
+            _uiEvent.tryEmit(ReportUiEvent.ShowError("리포트를 불러오는데 실패했습니다: ${e.localizedMessage}"))
+        }) {
+            _uiState.update { it.copy(isLoading = true, reportTitle = "$startDate ~ $endDate") }
+            val report = firestoreRepository.getReport(startDate, endDate)
+            _uiState.update { it.copy(reportDetailData = report.menuSales, reportData = report.paymentSales, isLoading = false) }
         }
     }
 
@@ -86,26 +75,17 @@ class ReportViewModel @Inject constructor(
         val title = currentState.reportTitle
 
         if (summary.isEmpty() || details.isEmpty() || title.isEmpty()) {
-            viewModelScope.launch(ioDispatcher) {
-                _uiEvent.tryEmit(ReportUiEvent.ShowError("인쇄할 데이터가 없습니다"))
-            }
+            _uiEvent.tryEmit(ReportUiEvent.ShowError("인쇄할 데이터가 없습니다"))
             return
         }
 
-        applicationScope.launch {
-            val result = runCatching {
-                val dateParts = title.split(" ~ ")
-                val printerDTO = PrinterDTO(dateParts[0], dateParts[1], summary, details)
-                val commands = reportPrinter.makeCommands(printerDTO)
-                piPrintClient.print(commands)
-            }
-            result
-                .onSuccess {
-                    _uiEvent.tryEmit(ReportUiEvent.ShowToast("리포트 인쇄가 완료되었습니다"))
-                }
-                .onFailure { error ->
-                    _uiEvent.tryEmit(ReportUiEvent.ShowError("인쇄 실패 : ${error.localizedMessage}"))
-                }
+        applicationScope.launchSafely(onError = { e ->
+            _uiEvent.tryEmit(ReportUiEvent.ShowError("인쇄 실패 : ${e.localizedMessage}"))
+        }) {
+            val dateParts = title.split(" ~ ")
+            val printerDTO = PrinterDTO(dateParts[0], dateParts[1], summary, details)
+            piPrintClient.print(reportPrinter.makeCommands(printerDTO))
+            _uiEvent.tryEmit(ReportUiEvent.ShowToast("리포트 인쇄가 완료되었습니다"))
         }
     }
 

@@ -1,15 +1,16 @@
 package eloom.holybean.ui.report
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
+import com.google.firebase.crashlytics.FirebaseCrashlytics
 import eloom.holybean.data.model.ReportDetailItem
 import eloom.holybean.data.model.SalesReport
 import eloom.holybean.data.repository.FirestoreRepository
 import eloom.holybean.printer.PiPrintClient
 import eloom.holybean.printer.network.PrintCommandDto
 import eloom.holybean.printer.polymorphism.ReportPrinter
+import eloom.holybean.util.MainDispatcherRule
 import io.mockk.*
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
@@ -27,20 +28,22 @@ class ReportViewModelTest {
     @get:Rule
     val instantExecutorRule = InstantTaskExecutorRule()
 
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
+
     private lateinit var viewModel: ReportViewModel
     private val firestoreRepository: FirestoreRepository = mockk()
     private val reportPrinter: ReportPrinter = mockk(relaxed = true)
     private val piPrintClient: PiPrintClient = mockk(relaxed = true)
-    private val testDispatcher = UnconfinedTestDispatcher()
 
     @Before
     fun setUp() {
-        Dispatchers.setMain(testDispatcher)
+        mockkStatic(FirebaseCrashlytics::class)
+        every { FirebaseCrashlytics.getInstance() } returns mockk(relaxed = true)
         coEvery { reportPrinter.makeCommands(any()) } returns emptyList()
         viewModel = ReportViewModel(
             firestoreRepository,
-            testDispatcher,
-            CoroutineScope(SupervisorJob() + testDispatcher),
+            CoroutineScope(SupervisorJob() + mainDispatcherRule.dispatcher),
             piPrintClient,
             reportPrinter,
         )
@@ -48,8 +51,7 @@ class ReportViewModelTest {
 
     @After
     fun tearDown() {
-        Dispatchers.resetMain()
-        clearAllMocks()
+        unmockkAll()
     }
 
     @Test
@@ -102,7 +104,7 @@ class ReportViewModelTest {
 
         // Collect events before triggering the action
         val events = mutableListOf<ReportViewModel.ReportUiEvent>()
-        val collectJob = launch(testDispatcher) {
+        val collectJob = launch(mainDispatcherRule.dispatcher) {
             viewModel.uiEvent.collect { events.add(it) }
         }
 
@@ -131,7 +133,7 @@ class ReportViewModelTest {
 
         // Collect events before triggering the action
         val events = mutableListOf<ReportViewModel.ReportUiEvent>()
-        val collectJob = launch(testDispatcher) {
+        val collectJob = launch(mainDispatcherRule.dispatcher) {
             viewModel.uiEvent.collect { events.add(it) }
         }
 
@@ -164,7 +166,7 @@ class ReportViewModelTest {
 
         // Collect events before triggering the action
         val events = mutableListOf<ReportViewModel.ReportUiEvent>()
-        val collectJob = launch(testDispatcher) {
+        val collectJob = launch(mainDispatcherRule.dispatcher) {
             viewModel.uiEvent.collect { events.add(it) }
         }
 
@@ -189,7 +191,7 @@ class ReportViewModelTest {
 
         // Collect events before triggering the action
         val events = mutableListOf<ReportViewModel.ReportUiEvent>()
-        val collectJob = launch(testDispatcher) {
+        val collectJob = launch(mainDispatcherRule.dispatcher) {
             viewModel.uiEvent.collect { events.add(it) }
         }
 
