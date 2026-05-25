@@ -1,5 +1,6 @@
 package eloom.holybean.printer
 
+import eloom.holybean.di.PrinterDispatcher
 import eloom.holybean.printer.network.PrintCommandDto
 import eloom.holybean.printer.network.PrintFailureReason
 import eloom.holybean.printer.network.PrintRequestDto
@@ -11,7 +12,6 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
-import javax.inject.Named
 import javax.inject.Singleton
 
 /**
@@ -22,7 +22,7 @@ import javax.inject.Singleton
 @Singleton
 class PiPrintClient @Inject constructor(
     private val api: PrintServerApi,
-    @Named("Printer") private val printerDispatcher: CoroutineDispatcher,
+    @PrinterDispatcher private val printerDispatcher: CoroutineDispatcher,
 ) {
     private val mutex = Mutex()
     private val retry = BackoffRetry(
