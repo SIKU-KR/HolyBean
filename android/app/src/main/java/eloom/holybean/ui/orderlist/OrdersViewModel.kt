@@ -11,20 +11,17 @@ import eloom.holybean.printer.PiPrintClient
 import eloom.holybean.printer.polymorphism.OrdersPrinter
 import eloom.holybean.di.AppScope
 import eloom.holybean.printer.polymorphism.ReportPrinter
-import kotlinx.coroutines.CoroutineDispatcher
+import eloom.holybean.util.launchSafely
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 import javax.inject.Inject
-import javax.inject.Named
 
 @HiltViewModel
 class OrdersViewModel @Inject constructor(
     private val firestoreRepository: FirestoreRepository,
-    @Named("IO") private val ioDispatcher: CoroutineDispatcher,
     @AppScope private val applicationScope: CoroutineScope,
     private val piPrintClient: PiPrintClient,
     private val ordersPrinter: OrdersPrinter,
@@ -84,34 +81,18 @@ class OrdersViewModel @Inject constructor(
     }
 
     fun loadOrdersOfDay() {
-        viewModelScope.launch(ioDispatcher) {
-            try {
-                _uiState.update { it.copy(isLoading = true) }
-                val ordersList = firestoreRepository.getOrdersOfDay()
-                _uiState.update {
-                    it.copy(
-                        ordersList = ordersList,
-                        isLoading = false
-                    )
-                }
-
-                // Auto-select first order if available
-                if (ordersList.isNotEmpty()) {
-                    val firstOrder = ordersList.first()
-                    selectOrder(firstOrder.orderId, firstOrder.totalAmount)
-                } else {
-                    // No orders (e.g. last order deleted): clear stale selection/detail
-                    _uiState.update {
-                        it.copy(
-                            selectedOrderNumber = 0,
-                            selectedOrderTotal = 0,
-                            orderDetails = emptyList()
-                        )
-                    }
-                }
-            } catch (e: Exception) {
-                _uiState.update { it.copy(isLoading = false) }
-                _uiEvent.tryEmit(OrdersUiEvent.ShowToast("주문 목록을 불러오는 중 오류가 발생했습니다: ${e.message}"))
+        viewModelScope.launchSafely(onError = { e ->
+            _uiState.update { it.copy(isLoading = false) }
+            _uiEvent.tryEmit(OrdersUiEvent.ShowToast("주문 목록을 불러오는 중 오류가 발생했습니다: ${e.message}"))
+        }) {
+            _uiState.update { it.copy(isLoading = true) }
+            val ordersList = firestoreRepository.getOrdersOfDay()
+            _uiState.update { it.copy(ordersList = ordersList, isLoading = false) }
+            if (ordersList.isNotEmpty()) {
+                val first = ordersList.first()
+                selectOrder(first.orderId, first.totalAmount)
+            } else {
+                _uiState.update { it.copy(selectedOrderNumber = 0, selectedOrderTotal = 0, orderDetails = emptyList()) }
             }
         }
     }
@@ -130,36 +111,28 @@ class OrdersViewModel @Inject constructor(
     fun reprint() {
         val currentState = _uiState.value
         if (currentState.orderDetails.isEmpty()) {
-            viewModelScope.launch(ioDispatcher) {
-                _uiEvent.tryEmit(OrdersUiEvent.ShowToast("주문 조회 후 클릭해주세요"))
-            }
+            _uiEvent.tryEmit(OrdersUiEvent.ShowToast("주문 조회 후 클릭해주세요"))
             return
         }
 
         val commands = ordersPrinter.makeCommands(currentState.selectedOrderNumber, currentState.orderDetails.toList())
-
-        // Printer I/O - Application Scope에서 실행 (ViewModel 생명주기와 독립)
-        applicationScope.launch {
-            val result = runCatching {
-                piPrintClient.print(commands)
-            }
-            result.onFailure { error ->
-                _uiEvent.tryEmit(OrdersUiEvent.ShowToast("Printer error: ${error.message}"))
-            }
+        // Printer I/O - ViewModel 생명주기와 독립(사용자가 화면 떠나도 인쇄 완료)
+        applicationScope.launchSafely(onError = { e ->
+            _uiEvent.tryEmit(OrdersUiEvent.ShowToast("Printer error: ${e.message}"))
+        }) {
+            piPrintClient.print(commands)
         }
     }
 
     fun fetchOrderDetail(orderNumber: Int) {
-        viewModelScope.launch(ioDispatcher) {
-            try {
-                val fetchedBasketList = firestoreRepository.getOrderDetail(getCurrentDate(), orderNumber)
-                if (fetchedBasketList.isEmpty()) {
-                    _uiEvent.tryEmit(OrdersUiEvent.ShowToast("주문 내역이 없습니다."))
-                } else {
-                    _uiState.update { it.copy(orderDetails = fetchedBasketList) }
-                }
-            } catch (e: Exception) {
-                _uiEvent.tryEmit(OrdersUiEvent.ShowToast("주문 조회 중 오류가 발생했습니다: ${e.message}"))
+        viewModelScope.launchSafely(onError = { e ->
+            _uiEvent.tryEmit(OrdersUiEvent.ShowToast("주문 조회 중 오류가 발생했습니다: ${e.message}"))
+        }) {
+            val fetched = firestoreRepository.getOrderDetail(getCurrentDate(), orderNumber)
+            if (fetched.isEmpty()) {
+                _uiEvent.tryEmit(OrdersUiEvent.ShowToast("주문 내역이 없습니다."))
+            } else {
+                _uiState.update { it.copy(orderDetails = fetched) }
             }
         }
     }
@@ -167,63 +140,50 @@ class OrdersViewModel @Inject constructor(
     fun deleteOrder() {
         val currentState = _uiState.value
         if (currentState.orderDetails.isEmpty()) {
-            viewModelScope.launch(ioDispatcher) {
-                _uiEvent.tryEmit(OrdersUiEvent.ShowToast("주문 조회 후 클릭해주세요"))
-            }
+            _uiEvent.tryEmit(OrdersUiEvent.ShowToast("주문 조회 후 클릭해주세요"))
             return
         }
 
-        viewModelScope.launch(ioDispatcher) {
-            try {
-                _uiState.update { it.copy(deleteStatus = DeleteStatus.Loading) }
-                val result = firestoreRepository.deleteOrder(getCurrentDate(), currentState.selectedOrderNumber)
-
-                if (result) {
-                    _uiState.update { it.copy(deleteStatus = DeleteStatus.Success) }
-                    _uiEvent.tryEmit(OrdersUiEvent.ShowToast("주문이 성공적으로 삭제되었습니다."))
-                    _uiEvent.tryEmit(OrdersUiEvent.RefreshOrders)
-                    loadTodaySummary()
-                } else {
-                    _uiState.update { it.copy(deleteStatus = DeleteStatus.Error("주문 삭제에 실패했습니다.")) }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                _uiState.update { it.copy(deleteStatus = DeleteStatus.Error("오류가 발생했습니다. 다시 시도해주세요.")) }
+        viewModelScope.launchSafely(onError = { e ->
+            _uiState.update { it.copy(deleteStatus = DeleteStatus.Error("오류가 발생했습니다. 다시 시도해주세요.")) }
+        }) {
+            _uiState.update { it.copy(deleteStatus = DeleteStatus.Loading) }
+            val deleted = firestoreRepository.deleteOrder(getCurrentDate(), currentState.selectedOrderNumber)
+            if (deleted) {
+                _uiState.update { it.copy(deleteStatus = DeleteStatus.Success) }
+                _uiEvent.tryEmit(OrdersUiEvent.ShowToast("주문이 성공적으로 삭제되었습니다."))
+                _uiEvent.tryEmit(OrdersUiEvent.RefreshOrders)
+                loadTodaySummary()
+            } else {
+                _uiState.update { it.copy(deleteStatus = DeleteStatus.Error("주문 삭제에 실패했습니다.")) }
             }
         }
     }
 
     fun loadTodaySummary() {
-        viewModelScope.launch(ioDispatcher) {
-            runCatching {
-                val today = getCurrentDate()
-                val report = firestoreRepository.getReport(today, today)
-                val orders = firestoreRepository.getOrdersOfDay()
-                TodaySummary(
-                    totalSales = report.paymentSales["총합"] ?: 0,
-                    orderCount = orders.size,
-                    drinkCount = report.menuSales.filter { it.name != "쿠폰" }.sumOf { it.quantity },
-                )
-            }.onSuccess { summary ->
-                _uiState.update { it.copy(todaySummary = summary) }
-            }.onFailure {
-                _uiEvent.tryEmit(OrdersUiEvent.ShowToast("매출 요약을 불러오지 못했습니다: ${it.message}"))
-            }
+        viewModelScope.launchSafely(onError = { e ->
+            _uiEvent.tryEmit(OrdersUiEvent.ShowToast("매출 요약을 불러오지 못했습니다: ${e.message}"))
+        }) {
+            val today = getCurrentDate()
+            val report = firestoreRepository.getReport(today, today)
+            val orders = firestoreRepository.getOrdersOfDay()
+            _uiState.update { it.copy(todaySummary = TodaySummary(
+                totalSales = report.paymentSales["총합"] ?: 0,
+                orderCount = orders.size,
+                drinkCount = report.menuSales.filter { it.name != "쿠폰" }.sumOf { it.quantity },
+            )) }
         }
     }
 
     fun printTodayReport() {
-        applicationScope.launch {
-            runCatching {
-                val today = getCurrentDate()
-                val report = firestoreRepository.getReport(today, today)
-                val dto = PrinterDTO(today, today, report.paymentSales, report.menuSales)
-                piPrintClient.print(reportPrinter.makeCommands(dto))
-            }.onFailure {
-                _uiEvent.tryEmit(OrdersUiEvent.ShowToast("보고서 출력 실패: ${it.message}"))
-            }.onSuccess {
-                _uiEvent.tryEmit(OrdersUiEvent.ShowToast("보고서 출력 완료"))
-            }
+        applicationScope.launchSafely(onError = { e ->
+            _uiEvent.tryEmit(OrdersUiEvent.ShowToast("보고서 출력 실패: ${e.message}"))
+        }) {
+            val today = getCurrentDate()
+            val report = firestoreRepository.getReport(today, today)
+            val dto = PrinterDTO(today, today, report.paymentSales, report.menuSales)
+            piPrintClient.print(reportPrinter.makeCommands(dto))
+            _uiEvent.tryEmit(OrdersUiEvent.ShowToast("보고서 출력 완료"))
         }
     }
 

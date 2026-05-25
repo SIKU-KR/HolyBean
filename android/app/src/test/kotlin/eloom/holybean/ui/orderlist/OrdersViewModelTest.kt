@@ -1,6 +1,7 @@
 package eloom.holybean.ui.orderlist
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
+import com.google.firebase.crashlytics.FirebaseCrashlytics
 import eloom.holybean.data.model.OrderItem
 import eloom.holybean.data.model.OrdersDetailItem
 import eloom.holybean.data.model.ReportDetailItem
@@ -10,9 +11,9 @@ import eloom.holybean.printer.PiPrintClient
 import eloom.holybean.printer.network.PrintCommandDto
 import eloom.holybean.printer.polymorphism.OrdersPrinter
 import eloom.holybean.printer.polymorphism.ReportPrinter
+import eloom.holybean.util.MainDispatcherRule
 import io.mockk.*
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
@@ -32,9 +33,11 @@ class OrdersViewModelTest {
     @get:Rule
     val instantExecutorRule = InstantTaskExecutorRule()
 
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
+
     private lateinit var viewModel: OrdersViewModel
     private val firestoreRepository: FirestoreRepository = mockk()
-    private val testDispatcher = UnconfinedTestDispatcher()
     private lateinit var ordersPrinter: OrdersPrinter
     private lateinit var piPrintClient: PiPrintClient
     private lateinit var reportPrinter: ReportPrinter
@@ -49,8 +52,7 @@ class OrdersViewModelTest {
             SalesReport(emptyList(), mapOf("총합" to 0))
         return OrdersViewModel(
             firestoreRepository,
-            testDispatcher,
-            CoroutineScope(SupervisorJob() + testDispatcher),
+            CoroutineScope(SupervisorJob() + mainDispatcherRule.dispatcher),
             client,
             printer,
             report,
@@ -59,7 +61,8 @@ class OrdersViewModelTest {
 
     @Before
     fun setUp() {
-        Dispatchers.setMain(testDispatcher)
+        mockkStatic(FirebaseCrashlytics::class)
+        every { FirebaseCrashlytics.getInstance() } returns mockk(relaxed = true)
         // Mock the initial loadOrdersOfDay / loadTodaySummary calls to prevent automatic execution
         coEvery { firestoreRepository.getOrdersOfDay() } returns arrayListOf()
         coEvery { firestoreRepository.getReport(any(), any()) } returns
@@ -69,8 +72,7 @@ class OrdersViewModelTest {
         reportPrinter = mockk(relaxed = true)
         viewModel = OrdersViewModel(
             firestoreRepository,
-            testDispatcher,
-            CoroutineScope(SupervisorJob() + testDispatcher),
+            CoroutineScope(SupervisorJob() + mainDispatcherRule.dispatcher),
             piPrintClient,
             ordersPrinter,
             reportPrinter,
@@ -79,8 +81,7 @@ class OrdersViewModelTest {
 
     @After
     fun tearDown() {
-        Dispatchers.resetMain()
-        clearAllMocks()
+        unmockkAll()
     }
 
     @Test
@@ -178,7 +179,7 @@ class OrdersViewModelTest {
         val events = mutableListOf<OrdersViewModel.OrdersUiEvent>()
         // Subscribe eagerly so the collector is registered before the action emits
         // (replay = 0: late subscribers do not receive buffered events).
-        val collectJob = launch(UnconfinedTestDispatcher(testScheduler)) {
+        val collectJob = launch(mainDispatcherRule.dispatcher) {
             testViewModel.uiEvent.collect { events.add(it) }
         }
 
@@ -211,7 +212,7 @@ class OrdersViewModelTest {
         val events = mutableListOf<OrdersViewModel.OrdersUiEvent>()
         // Subscribe eagerly so the collector is registered before the action emits
         // (replay = 0: late subscribers do not receive buffered events).
-        val collectJob = launch(UnconfinedTestDispatcher(testScheduler)) {
+        val collectJob = launch(mainDispatcherRule.dispatcher) {
             testViewModel.uiEvent.collect { events.add(it) }
         }
 
@@ -260,7 +261,7 @@ class OrdersViewModelTest {
         val events = mutableListOf<OrdersViewModel.OrdersUiEvent>()
         // Subscribe eagerly so the collector is registered before the action emits
         // (replay = 0: late subscribers do not receive buffered events).
-        val collectJob = launch(UnconfinedTestDispatcher(testScheduler)) {
+        val collectJob = launch(mainDispatcherRule.dispatcher) {
             testViewModel.uiEvent.collect { events.add(it) }
         }
 
@@ -300,7 +301,7 @@ class OrdersViewModelTest {
         val events = mutableListOf<OrdersViewModel.OrdersUiEvent>()
         // Subscribe eagerly so the collector is registered before the action emits
         // (replay = 0: late subscribers do not receive buffered events).
-        val collectJob = launch(UnconfinedTestDispatcher(testScheduler)) {
+        val collectJob = launch(mainDispatcherRule.dispatcher) {
             testViewModel.uiEvent.collect { events.add(it) }
         }
 
@@ -330,7 +331,7 @@ class OrdersViewModelTest {
         val events = mutableListOf<OrdersViewModel.OrdersUiEvent>()
         // Subscribe eagerly so the collector is registered before the action emits
         // (replay = 0: late subscribers do not receive buffered events).
-        val collectJob = launch(UnconfinedTestDispatcher(testScheduler)) {
+        val collectJob = launch(mainDispatcherRule.dispatcher) {
             testViewModel.uiEvent.collect { events.add(it) }
         }
 
