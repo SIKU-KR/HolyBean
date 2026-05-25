@@ -15,14 +15,26 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object CoroutineModule {
 
-    @Provides @Singleton @Named("IO")
+    @Provides @Singleton @IoDispatcher
     fun provideIODispatcher(): CoroutineDispatcher = Dispatchers.IO
 
-    @Provides @Singleton @Named("Printer")
+    @Provides @Singleton @PrinterDispatcher
     fun providePrinterDispatcher(): CoroutineDispatcher = Dispatchers.IO.limitedParallelism(2)
 
-    @Provides @Singleton @Named("ApplicationScope")
+    @Provides @Singleton @AppScope
     fun provideApplicationScope(
-        @Named("Printer") printerDispatcher: CoroutineDispatcher
+        @PrinterDispatcher printerDispatcher: CoroutineDispatcher
     ): CoroutineScope = CoroutineScope(SupervisorJob() + printerDispatcher)
+
+    // Bridge bindings: keep @Named("IO"), @Named("Printer"), @Named("ApplicationScope") until
+    // all injection sites are migrated to typed qualifiers (@IoDispatcher, @PrinterDispatcher,
+    // @AppScope). Remove these once every ViewModel is updated.
+    @Provides @Singleton @Named("IO")
+    fun provideNamedIODispatcher(@IoDispatcher d: CoroutineDispatcher): CoroutineDispatcher = d
+
+    @Provides @Singleton @Named("Printer")
+    fun provideNamedPrinterDispatcher(@PrinterDispatcher d: CoroutineDispatcher): CoroutineDispatcher = d
+
+    @Provides @Singleton @Named("ApplicationScope")
+    fun provideNamedApplicationScope(@AppScope s: CoroutineScope): CoroutineScope = s
 }

@@ -7,6 +7,7 @@ import eloom.holybean.data.model.PrinterDTO
 import eloom.holybean.data.model.ReportDetailItem
 import eloom.holybean.data.repository.FirestoreRepository
 import eloom.holybean.printer.PiPrintClient
+import eloom.holybean.di.AppScope
 import eloom.holybean.printer.polymorphism.ReportPrinter
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -23,7 +24,7 @@ import javax.inject.Named
 class ReportViewModel @Inject constructor(
     private val firestoreRepository: FirestoreRepository,
     @Named("IO") private val ioDispatcher: CoroutineDispatcher,
-    @Named("ApplicationScope") private val applicationScope: CoroutineScope,
+    @AppScope private val applicationScope: CoroutineScope,
     private val piPrintClient: PiPrintClient,
     private val reportPrinter: ReportPrinter,
 ) : ViewModel() {
