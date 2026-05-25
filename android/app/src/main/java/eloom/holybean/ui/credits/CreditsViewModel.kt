@@ -6,17 +6,14 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import eloom.holybean.data.model.CreditItem
 import eloom.holybean.data.model.OrdersDetailItem
 import eloom.holybean.data.repository.FirestoreRepository
-import kotlinx.coroutines.CoroutineDispatcher
+import eloom.holybean.util.launchSafely
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
 import javax.inject.Inject
-import javax.inject.Named
 
 @HiltViewModel
 class CreditsViewModel @Inject constructor(
     private val firestoreRepository: FirestoreRepository,
-    @Named("IO") private val dispatcher: CoroutineDispatcher
 ) : ViewModel() {
 
     data class CreditsUiState(
@@ -50,20 +47,13 @@ class CreditsViewModel @Inject constructor(
     }
 
     fun loadCredits() {
-        viewModelScope.launch(dispatcher) {
-            try {
-                _uiState.update { it.copy(isLoading = true) }
-                val creditsList = firestoreRepository.getCreditsList()
-                _uiState.update {
-                    it.copy(
-                        creditsList = creditsList,
-                        isLoading = false
-                    )
-                }
-            } catch (e: Exception) {
-                _uiState.update { it.copy(isLoading = false) }
-                _uiEvent.tryEmit(CreditsUiEvent.ShowToast("외상 목록을 불러오는 중 오류가 발생했습니다: ${e.message}"))
-            }
+        viewModelScope.launchSafely(onError = { e ->
+            _uiState.update { it.copy(isLoading = false) }
+            _uiEvent.tryEmit(CreditsUiEvent.ShowToast("외상 목록을 불러오는 중 오류가 발생했습니다: ${e.message}"))
+        }) {
+            _uiState.update { it.copy(isLoading = true) }
+            val creditsList = firestoreRepository.getCreditsList()
+            _uiState.update { it.copy(creditsList = creditsList, isLoading = false) }
         }
     }
 
@@ -81,25 +71,18 @@ class CreditsViewModel @Inject constructor(
     fun fetchOrderDetail() {
         val currentState = _uiState.value
         if (currentState.selectedOrderNumber == 0) {
-            viewModelScope.launch(dispatcher) {
-                _uiEvent.tryEmit(CreditsUiEvent.ShowToast("주문을 선택해주세요"))
-            }
+            _uiEvent.tryEmit(CreditsUiEvent.ShowToast("주문을 선택해주세요"))
             return
         }
 
-        viewModelScope.launch(dispatcher) {
-            try {
-                val fetchedBasketList = firestoreRepository.getOrderDetail(
-                    currentState.selectedOrderDate,
-                    currentState.selectedOrderNumber
-                )
-                if (fetchedBasketList.isEmpty()) {
-                    _uiEvent.tryEmit(CreditsUiEvent.ShowToast("주문 내역이 없습니다."))
-                } else {
-                    _uiState.update { it.copy(orderDetails = fetchedBasketList) }
-                }
-            } catch (e: Exception) {
-                _uiEvent.tryEmit(CreditsUiEvent.ShowToast("주문 조회 중 오류가 발생했습니다: ${e.message}"))
+        viewModelScope.launchSafely(onError = { e ->
+            _uiEvent.tryEmit(CreditsUiEvent.ShowToast("주문 조회 중 오류가 발생했습니다: ${e.message}"))
+        }) {
+            val fetched = firestoreRepository.getOrderDetail(currentState.selectedOrderDate, currentState.selectedOrderNumber)
+            if (fetched.isEmpty()) {
+                _uiEvent.tryEmit(CreditsUiEvent.ShowToast("주문 내역이 없습니다."))
+            } else {
+                _uiState.update { it.copy(orderDetails = fetched) }
             }
         }
     }
@@ -107,20 +90,16 @@ class CreditsViewModel @Inject constructor(
     fun handleDeleteButton() {
         val currentState = _uiState.value
         if (currentState.selectedOrderNumber == 0) {
-            viewModelScope.launch(dispatcher) {
-                _uiEvent.tryEmit(CreditsUiEvent.ShowToast("주문을 선택해주세요"))
-            }
+            _uiEvent.tryEmit(CreditsUiEvent.ShowToast("주문을 선택해주세요"))
             return
         }
 
-        viewModelScope.launch(dispatcher) {
-            try {
-                firestoreRepository.setCreditOrderPaid(currentState.selectedOrderDate, currentState.selectedOrderNumber)
-                _uiEvent.tryEmit(CreditsUiEvent.ShowToast("외상이 성공적으로 처리되었습니다."))
-                _uiEvent.tryEmit(CreditsUiEvent.RefreshCredits)
-            } catch (e: Exception) {
-                _uiEvent.tryEmit(CreditsUiEvent.ShowToast("외상 처리 중 오류가 발생했습니다: ${e.message}"))
-            }
+        viewModelScope.launchSafely(onError = { e ->
+            _uiEvent.tryEmit(CreditsUiEvent.ShowToast("외상 처리 중 오류가 발생했습니다: ${e.message}"))
+        }) {
+            firestoreRepository.setCreditOrderPaid(currentState.selectedOrderDate, currentState.selectedOrderNumber)
+            _uiEvent.tryEmit(CreditsUiEvent.ShowToast("외상이 성공적으로 처리되었습니다."))
+            _uiEvent.tryEmit(CreditsUiEvent.RefreshCredits)
         }
     }
 }
