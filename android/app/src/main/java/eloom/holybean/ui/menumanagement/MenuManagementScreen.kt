@@ -29,7 +29,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -46,7 +45,6 @@ import eloom.holybean.ui.components.layout.ScreenContainer
 import eloom.holybean.ui.components.layout.ScreenHeader
 import eloom.holybean.ui.home.MenuCategories
 import eloom.holybean.ui.theme.Dimens
-import kotlinx.coroutines.launch
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
@@ -69,7 +67,6 @@ fun MenuManagementRoute(
 
     val state by vm.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
 
     // 다이얼로그 상태: null = 닫힘, editingItem == null 이면 추가 모드, 아니면 수정 모드.
     var dialogOpen by remember { mutableStateOf(false) }
@@ -172,11 +169,7 @@ fun MenuManagementRoute(
             initialPrice = current?.price?.toString() ?: "",
             onConfirm = { name, price ->
                 if (current == null) {
-                    scope.launch {
-                        val id = vm.getNextAvailableId()
-                        val placement = vm.getNextAvailablePlacement()
-                        vm.addMenu(id, name, price, placement)
-                    }
+                    vm.addMenu(name, price)   // id/placement 채번 포함, VM 내부 launchSafely 에서 안전 처리
                 } else {
                     vm.updateMenu(current, name, price)
                 }

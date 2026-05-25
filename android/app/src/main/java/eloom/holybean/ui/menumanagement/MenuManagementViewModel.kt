@@ -125,18 +125,20 @@ class MenuManagementViewModel @Inject constructor(
         return menuRepository.getNextAvailablePlacementForCategory(category)
     }
 
-    fun addMenu(id: Int, name: String, price: Int, placement: Int) {
+    fun addMenu(name: String, price: Int) {
         viewModelScope.launchSafely(onError = { e ->
             _uiEvent.tryEmit(UiEvent.ShowToast("메뉴 추가 중 오류: ${e.message}"))
         }) {
-            val isNameValid = menuRepository.isValidMenuName(name)
-            if (!isNameValid) {
+            if (!menuRepository.isValidMenuName(name)) {
                 _uiEvent.tryEmit(UiEvent.ShowToast("존재하는 메뉴입니다."))
-            } else {
-                val item = MenuItem(id, name, price, placement, true)
-                menuRepository.addMenu(item)
-                _uiEvent.tryEmit(UiEvent.ShowToast("메뉴가 추가되었습니다."))
+                return@launchSafely
             }
+            // id/placement 채번도 launchSafely 안에서 수행해, 실패가 단일 에러 경로로 처리되게 한다.
+            val category = _uiState.value.selectedCategoryIndex
+            val id = menuRepository.getNextAvailableIdForCategory(category)
+            val placement = menuRepository.getNextAvailablePlacementForCategory(category)
+            menuRepository.addMenu(MenuItem(id, name, price, placement, true))
+            _uiEvent.tryEmit(UiEvent.ShowToast("메뉴가 추가되었습니다."))
         }
     }
 

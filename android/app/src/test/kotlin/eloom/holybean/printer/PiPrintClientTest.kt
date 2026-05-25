@@ -7,6 +7,7 @@ import eloom.holybean.printer.network.PrintServerException
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -79,5 +80,25 @@ class PiPrintClientTest {
         coEvery { api.print(any()) } throws IOException("connection refused")
         val ex = runCatching { client.print(emptyList()) }.exceptionOrNull()
         assertEquals(PrintFailureReason.ServerUnreachable, (ex as PrintServerException).reason)
+    }
+
+    @Test
+    fun `checkHealth returns false on api failure (best-effort)`() = runTest {
+        val client = PiPrintClient(api, StandardTestDispatcher(testScheduler))
+        coEvery { api.health() } throws IOException("down")
+        assertEquals(false, client.checkHealth())
+    }
+
+    @Test
+    fun `checkHealth rethrows CancellationException instead of returning false`() = runTest {
+        val client = PiPrintClient(api, StandardTestDispatcher(testScheduler))
+        coEvery { api.health() } throws CancellationException("cancelled")
+        var thrown: Throwable? = null
+        try {
+            client.checkHealth()
+        } catch (e: CancellationException) {
+            thrown = e
+        }
+        assertTrue("checkHealth must rethrow CancellationException", thrown is CancellationException)
     }
 }

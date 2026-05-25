@@ -59,9 +59,15 @@ class PiPrintClient @Inject constructor(
         }
     }
 
-    /** /health 핑. 예외/실패는 false. */
+    /** /health 핑. 실패는 false(best-effort). 단, 취소는 삼키지 않고 재전파한다. */
     suspend fun checkHealth(): Boolean = withContext(printerDispatcher) {
-        runCatching { api.health().isSuccessful }.getOrDefault(false)
+        try {
+            api.health().isSuccessful
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            false
+        }
     }
 
     /** 진단용 테스트 영수증 1장 출력. */

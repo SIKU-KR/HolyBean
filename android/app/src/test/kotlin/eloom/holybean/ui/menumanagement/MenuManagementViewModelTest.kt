@@ -96,9 +96,7 @@ class MenuManagementViewModelTest {
     fun `addMenu should emit success event and add menu on valid input`() = runTest {
         // Given
         val name = "New Coffee"
-        val id = 1001
         val price = 5000
-        val placement = 1001
 
         coEvery { menuRepository.isValidMenuName(name) } returns true
         coEvery { menuRepository.addMenu(any()) } just runs
@@ -108,7 +106,7 @@ class MenuManagementViewModelTest {
         val collectJob = launch(mainDispatcherRule.dispatcher) { viewModel.uiEvent.collect { events.add(it) } }
 
         // When
-        viewModel.addMenu(id, name, price, placement)
+        viewModel.addMenu(name, price)
         advanceUntilIdle()
 
         // Then
@@ -124,9 +122,7 @@ class MenuManagementViewModelTest {
     fun `addMenu should emit toast event on invalid name`() = runTest {
         // Given
         val name = "Existing Coffee"
-        val id = 1001
         val price = 5000
-        val placement = 1001
 
         coEvery { menuRepository.isValidMenuName(name) } returns false
 
@@ -134,7 +130,7 @@ class MenuManagementViewModelTest {
         val collectJob = launch(mainDispatcherRule.dispatcher) { viewModel.uiEvent.collect { events.add(it) } }
 
         // When
-        viewModel.addMenu(id, name, price, placement)
+        viewModel.addMenu(name, price)
         advanceUntilIdle()
 
         // Then
