@@ -47,14 +47,13 @@ _uiEvent.emit(UiEvent.NavigateHome)
 
 `postOrder`는 **멱등이 아니다**: 정산(`CREDIT_SETTLED`) 주문은 `applyRollupDelta(sign = 1)`로 집계를 증분하므로(FirestoreRepository.kt:169-170) 같은 주문을 두 번 저장하면 매출 집계가 이중 계상된다.
 
-→ ViewModel에 `orderSaved: Boolean` 플래그를 두어, 저장이 한 번 성공한 뒤의 재시도는 **인쇄만** 재실행한다. 새 주문(`onOrderConfirmed`) 진입 시 `orderSaved = false`로 리셋한다.
+인쇄(`printReceipt`)도 멱등이 아니다(영수증 이중 출력). 따라서 저장·인쇄 각각의 완료 여부를 `orderSaved`/`printDone` 두 플래그로 추적해, 재시도는 **아직 끝나지 않은 단계만** 재실행한다. 새 주문(`onOrderConfirmed`) 진입 시 두 플래그를 모두 `false`로 리셋하고, 재시도(`retrySubmission`)는 리셋하지 않는다.
 
 | 시나리오 | 재시도 동작 |
 |---|---|
-| 저장 실패 (commit/timeout) | 저장 + 인쇄 모두 재실행 |
+| 저장 실패 + 인쇄 실패 | 저장 + 인쇄 모두 재실행 |
+| 저장 실패 + 인쇄 성공 (예: ack 타임아웃) | 저장만 재실행 (인쇄 스킵) |
 | 저장 성공 + 인쇄 실패 | 인쇄만 재실행 (저장 스킵) |
-
-> 알려진 경미한 트레이드오프: 저장은 실패했으나 인쇄는 물리적으로 완료된 드문 경우, 재시도 시 영수증이 한 번 더 출력될 수 있다. 저장 실패(Firestore commit 실패/타임아웃)는 드물어 허용한다.
 
 ### 3. `postOrder`를 서버 확정 대기로 변경
 
