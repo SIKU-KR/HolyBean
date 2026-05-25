@@ -41,10 +41,6 @@ class HomeViewModel @Inject constructor(
         data class PrintFailed(val reason: PrintFailureReason, override val seq: Long) : SubmitError()
     }
 
-    // TODO(Task 4): remove — kept temporarily so HomeScreen.kt compiles until print-failure UI is migrated
-    @Deprecated("Replaced by submitError; remove in Task 4")
-    data class PrintFailure(val orderNum: Int, val reason: PrintFailureReason, val seq: Long = 0L)
-
     data class UiState(
         val allMenuItems: List<MenuItem> = emptyList(),
         val filteredMenuItems: List<MenuItem> = emptyList(),
@@ -56,10 +52,6 @@ class HomeViewModel @Inject constructor(
         val submitError: SubmitError? = null,
         val isSubmitting: Boolean = false,
     ) {
-        // TODO(Task 4): remove — kept temporarily so HomeScreen.kt compiles until print-failure UI is migrated
-        @Suppress("DEPRECATION")
-        @Deprecated("Replaced by submitError; remove in Task 4")
-        val printFailure: PrintFailure? get() = null
         companion object {
             private fun currentDateString(): String {
                 val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
@@ -208,18 +200,6 @@ class HomeViewModel @Inject constructor(
         _uiState.update { it.copy(isSubmitting = true, submitError = null) }
         runSubmission(data, takeOption)
     }
-
-    fun dismissSubmitError() {
-        _uiState.update { it.copy(submitError = null) }
-    }
-
-    // TODO(Task 4): remove — kept temporarily so HomeScreen.kt compiles until print-failure UI is migrated
-    @Deprecated("Replaced by retrySubmission; remove in Task 4")
-    fun reprintLastOrder() { /* no-op until HomeScreen is updated in Task 4 */ }
-
-    // TODO(Task 4): remove — kept temporarily so HomeScreen.kt compiles until print-failure UI is migrated
-    @Deprecated("Replaced by dismissSubmitError; remove in Task 4")
-    fun dismissPrintFailure() { dismissSubmitError() }
 
     // 인쇄만 실패한(저장은 끝난) 주문을 영수증 없이 정상 완료 처리하고 홈으로 복귀한다.
     fun skipPrintAndComplete() {
