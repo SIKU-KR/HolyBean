@@ -22,8 +22,8 @@ const rollups = {
     },
   },
   "2026-05-26": {
-    total: 98000,
-    paymentSales: { cash: 98000 },
+    total: 98500,
+    paymentSales: { cash: 98500 },
     menuSales: {
       "아메리카노": { quantity: 21, sales: 63000 },
       "카페라떼": { quantity: 7, sales: 24500 },
@@ -32,8 +32,8 @@ const rollups = {
     },
   },
   "2026-05-27": {
-    total: 142000,
-    paymentSales: { cash: 100000, card: 42000 },
+    total: 168500,
+    paymentSales: { cash: 126500, card: 42000 },
     menuSales: {
       "아메리카노": { quantity: 32, sales: 96000 },
       "카페라떼": { quantity: 11, sales: 38500 },
