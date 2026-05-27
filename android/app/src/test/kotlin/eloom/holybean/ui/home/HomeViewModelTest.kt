@@ -192,6 +192,71 @@ class HomeViewModelTest {
     }
 
     @Test
+    fun `init excludes inactive menus from displayed list`() = runTest(testDispatcher) {
+        // Given - 캐시에 활성/비활성 메뉴가 섞여 있다
+        val active = eloom.holybean.data.model.MenuItem(1001, "아메리카노", 4000, 1, true)
+        val inactive = eloom.holybean.data.model.MenuItem(1002, "라떼", 4500, 2, false)
+        io.mockk.every { menuRepository.getCachedMenu() } returns listOf(active, inactive)
+
+        // When - ViewModel 재구성(init 재실행)
+        homeViewModel = HomeViewModel(
+            firestoreRepository,
+            menuRepository,
+            piPrintClient,
+            homePrinter,
+        )
+        advanceUntilIdle()
+
+        // Then - 비활성 메뉴는 전체/필터 목록 모두에서 제외된다
+        assertEquals(listOf(active), homeViewModel.uiState.value.allMenuItems)
+        assertEquals(listOf(active), homeViewModel.uiState.value.filteredMenuItems)
+    }
+
+    @Test
+    fun `category selection never surfaces inactive menus`() = runTest(testDispatcher) {
+        // Given - 같은 카테고리(id/1000 == 1)에 활성/비활성 메뉴가 섞여 있다
+        val active = eloom.holybean.data.model.MenuItem(1001, "아메리카노", 4000, 1, true)
+        val inactive = eloom.holybean.data.model.MenuItem(1002, "라떼", 4500, 2, false)
+        io.mockk.every { menuRepository.getCachedMenu() } returns listOf(active, inactive)
+        homeViewModel = HomeViewModel(
+            firestoreRepository,
+            menuRepository,
+            piPrintClient,
+            homePrinter,
+        )
+        advanceUntilIdle()
+
+        // When - 해당 카테고리 선택
+        homeViewModel.onCategorySelected(1)
+        advanceUntilIdle()
+
+        // Then - 비활성 메뉴는 노출되지 않는다
+        assertEquals(listOf(active), homeViewModel.uiState.value.filteredMenuItems)
+    }
+
+    @Test
+    fun `displayed menus are ordered by placement, not id`() = runTest(testDispatcher) {
+        // Given - 레포지토리는 id 순으로 주지만 placement(order)는 id 역순이다
+        val first = eloom.holybean.data.model.MenuItem(1001, "아메리카노", 4000, 3, true)
+        val second = eloom.holybean.data.model.MenuItem(1002, "라떼", 4500, 2, true)
+        val third = eloom.holybean.data.model.MenuItem(1003, "콜드브루", 5000, 1, true)
+        io.mockk.every { menuRepository.getCachedMenu() } returns listOf(first, second, third)
+
+        // When - ViewModel 재구성(init 재실행)
+        homeViewModel = HomeViewModel(
+            firestoreRepository,
+            menuRepository,
+            piPrintClient,
+            homePrinter,
+        )
+        advanceUntilIdle()
+
+        // Then - placement(order) 오름차순으로 정렬된다
+        assertEquals(listOf(third, second, first), homeViewModel.uiState.value.allMenuItems)
+        assertEquals(listOf(third, second, first), homeViewModel.uiState.value.filteredMenuItems)
+    }
+
+    @Test
     fun `init uses cached menu and skips network fetch when cache present`() = runTest(testDispatcher) {
         // Given - 캐시에 메뉴가 있다
         val cached = listOf(eloom.holybean.data.model.MenuItem(1001, "아메리카노", 4000, 1, true))

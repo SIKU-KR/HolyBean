@@ -84,7 +84,11 @@ class HomeViewModel @Inject constructor(
     init {
         // Load initial data — 스플래시가 채운 캐시를 우선 사용하고, 없으면 네트워크 페치로 폴백
         viewModelScope.launchSafely(onError = {}) {
-            val menus = menuRepository.getCachedMenu() ?: menuRepository.getMenuListSync()
+            // 비활성(inuse=false) 메뉴는 주문 화면에 노출하지 않는다 — 활성 메뉴만 취급한다.
+            // 레포지토리는 id 순으로 반환하므로, 메뉴 관리에서 지정한 placement(order) 순으로 다시 정렬한다.
+            val menus = (menuRepository.getCachedMenu() ?: menuRepository.getMenuListSync())
+                .filter { it.inuse }
+                .sortedBy { it.order }
             _uiState.update { it.copy(
                 allMenuItems = menus,
                 filteredMenuItems = menus
