@@ -34,7 +34,7 @@ export function exportAOA(date, rows, total) {
  *  빈 배열이면 헤더만 반환. 고객명 빈 값은 "-". 결제수단은 method를 "+"로 결합. */
 export function transactionAOA(orders) {
   const header = ["주문번호", "고객명", "주문내역", "총액", "결제수단"];
-  if (orders.length === 0) return [header];
+  if (!orders || orders.length === 0) return [header];
   const rows = orders.map((o) => [
     Number(o.orderNum) || 0,
     o.customerName ? o.customerName : "-",

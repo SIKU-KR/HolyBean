@@ -54,8 +54,9 @@ describe("formatDateLabel", () => {
 
 describe("paymentRows", () => {
   it("paymentSales를 금액 내림차순 {method, amount} 배열로 펴낸다", () => {
-    expect(paymentRows({ paymentSales: { "현금": 126500, "쿠폰": 42000 } })).toEqual([
+    expect(paymentRows({ paymentSales: { "쿠폰": 42000, "현금": 126500, "계좌이체": 50000 } })).toEqual([
       { method: "현금", amount: 126500 },
+      { method: "계좌이체", amount: 50000 },
       { method: "쿠폰", amount: 42000 },
     ]);
   });
