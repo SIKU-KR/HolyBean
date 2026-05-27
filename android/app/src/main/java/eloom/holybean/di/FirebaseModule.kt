@@ -8,6 +8,7 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import eloom.holybean.BuildConfig
 import javax.inject.Singleton
 
 @Module
@@ -18,6 +19,10 @@ object FirebaseModule {
     @Singleton
     fun provideFirestore(): FirebaseFirestore {
         val db = FirebaseFirestore.getInstance()
+        // useEmulator는 인스턴스를 처음 쓰기 전(=settings 설정 전)에 호출해야 한다.
+        if (BuildConfig.DEBUG) {
+            db.useEmulator("10.0.2.2", 8080)
+        }
         db.firestoreSettings = firestoreSettings {
             setLocalCacheSettings(persistentCacheSettings {})
         }
@@ -26,5 +31,11 @@ object FirebaseModule {
 
     @Provides
     @Singleton
-    fun provideFirebaseAuth(): FirebaseAuth = FirebaseAuth.getInstance()
+    fun provideFirebaseAuth(): FirebaseAuth {
+        val auth = FirebaseAuth.getInstance()
+        if (BuildConfig.DEBUG) {
+            auth.useEmulator("10.0.2.2", 9099)
+        }
+        return auth
+    }
 }
