@@ -8,11 +8,13 @@ export function salesRows(rollup) {
     .sort((a, b) => b.quantity - a.quantity);
 }
 
-/** rollup.paymentSales를 {method, amount} 배열로 펴서 금액 내림차순 정렬 */
+/** rollup.paymentSales를 {method, amount} 배열로 펴서 금액 내림차순 정렬.
+ *  금액 0 이하(삭제/취소로 0원이 된 수단)는 제외 — 잘못된 노출 방지. */
 export function paymentRows(rollup) {
   const paymentSales = (rollup && rollup.paymentSales) || {};
   return Object.entries(paymentSales)
     .map(([method, amount]) => ({ method, amount: Number(amount) || 0 }))
+    .filter((p) => p.amount > 0)
     .sort((a, b) => b.amount - a.amount);
 }
 

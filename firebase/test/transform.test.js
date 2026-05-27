@@ -64,6 +64,12 @@ describe("paymentRows", () => {
     expect(paymentRows({})).toEqual([]);
     expect(paymentRows(null)).toEqual([]);
   });
+  it("금액 0 이하 수단은 제외한다 (삭제된 주문으로 0원이 된 경우)", () => {
+    expect(paymentRows({ paymentSales: { "현금": 0 } })).toEqual([]);
+    expect(paymentRows({ paymentSales: { "현금": 0, "쿠폰": 5000 } })).toEqual([
+      { method: "쿠폰", amount: 5000 },
+    ]);
+  });
 });
 
 describe("transactionAOA", () => {
