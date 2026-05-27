@@ -19,8 +19,9 @@ onAuthStateChanged(auth, (user) => {
   if (user) {
     $("login").hidden = true;
     $("dash").hidden = false;
-    loadInitial();
+    if (!current) loadInitial();
   } else {
+    current = null;
     $("dash").hidden = true;
     $("message").hidden = true;
     $("login").hidden = false;
@@ -69,12 +70,20 @@ async function loadInitial() {
   }
 }
 
+let navigating = false;
 async function move(dir) {
-  if (!current) return;
-  const next = await fetchAdjacent(current.date, dir);
-  if (next) {
-    current = next;
-    await render();
+  if (!current || navigating) return;
+  navigating = true;
+  try {
+    const next = await fetchAdjacent(current.date, dir);
+    if (next) {
+      current = next;
+      await render();
+    }
+  } catch {
+    showMessage("데이터를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.");
+  } finally {
+    navigating = false;
   }
 }
 
@@ -85,25 +94,29 @@ async function render() {
   const rows = salesRows(data);
 
   $("dateLabel").textContent = formatDateLabel(date);
-  $("total").textContent = won(data.total ?? 0);
+  $("total").textContent = won(Number(data.total) || 0);
   $("cups").textContent = totalCups(rows);
 
   $("items").innerHTML = rows.length
     ? rows.map((r) =>
         `<div class="item"><span class="name">${escapeHtml(r.name)}</span>` +
-        `<span class="right"><span class="cnt tnum">${r.quantity}개</span>` +
-        `<span class="amt tnum">${won(r.sales)}원</span></span></div>`).join("")
+        `<span class="right"><span class="cnt tnum">${Number(r.quantity) || 0}개</span>` +
+        `<span class="amt tnum">${won(Number(r.sales) || 0)}원</span></span></div>`).join("")
     : `<div class="empty">이날 판매된 메뉴가 없어요.</div>`;
 
   $("exportBtn").disabled = rows.length === 0;
 
   // 화살표 활성/비활성 (양 옆 존재 여부)
-  const [prev, next] = await Promise.all([
-    fetchAdjacent(date, "prev"),
-    fetchAdjacent(date, "next"),
-  ]);
-  $("prev").disabled = !prev;
-  $("next").disabled = !next;
+  try {
+    const [prev, next] = await Promise.all([
+      fetchAdjacent(date, "prev"),
+      fetchAdjacent(date, "next"),
+    ]);
+    $("prev").disabled = !prev;
+    $("next").disabled = !next;
+  } catch {
+    // 경계 판별 실패 시 화살표는 그대로 둔다 (데이터는 이미 표시됨)
+  }
 }
 
 function showMessage(text) {
@@ -121,7 +134,7 @@ function escapeHtml(s) {
 $("exportBtn").addEventListener("click", () => {
   if (!current) return;
   const rows = salesRows(current.data);
-  const aoa = exportAOA(current.date, rows, current.data.total ?? 0);
+  const aoa = exportAOA(current.date, rows, Number(current.data.total) || 0);
   const ws = XLSX.utils.aoa_to_sheet(aoa);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, current.date);
