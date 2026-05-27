@@ -5,7 +5,7 @@ import {
   collection, query, orderBy, getDocs, documentId,
 } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 import { auth, db } from "./firebase-init.js";
-import { salesRows, totalCups, exportAOA, formatDateLabel } from "./transform.js";
+import { salesRows, totalCups, exportAOA, formatDateLabel, paymentRows, transactionAOA } from "./transform.js";
 
 const COLL = "reportRollups";
 const $ = (id) => document.getElementById(id);
@@ -76,6 +76,12 @@ function render() {
   $("dateLabel").textContent = formatDateLabel(date);
   $("total").textContent = won(Number(data.total) || 0);
   $("cups").textContent = totalCups(rows);
+
+  const pays = paymentRows(data);
+  $("payList").hidden = pays.length === 0;
+  $("payments").innerHTML = pays.map((p) =>
+    `<div class="item"><span class="name">${escapeHtml(p.method)}</span>` +
+    `<span class="right"><span class="cnt tnum">${won(p.amount)}원</span></span></div>`).join("");
 
   $("items").innerHTML = rows.length
     ? rows.map((r) =>
