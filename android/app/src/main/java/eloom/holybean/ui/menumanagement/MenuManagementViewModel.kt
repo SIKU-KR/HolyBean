@@ -18,7 +18,7 @@ class MenuManagementViewModel @Inject constructor(
     data class UiState(
         val allMenuItems: List<MenuItem> = emptyList(),
         val filteredMenuItems: List<MenuItem> = emptyList(),
-        val selectedCategoryIndex: Int = 1, // Default to "ICE커피"
+        val selectedCategoryIndex: Int = 1, // Default to "HOT커피"
         val isLoading: Boolean = false
     )
 

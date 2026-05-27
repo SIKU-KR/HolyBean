@@ -52,7 +52,7 @@ class MenuManagementViewModelTest {
         assertTrue(initialState.allMenuItems.isEmpty())
         assertTrue(initialState.filteredMenuItems.isEmpty())
         assertFalse(initialState.isLoading)
-        assertEquals(1, initialState.selectedCategoryIndex) // Default to "ICE커피"
+        assertEquals(1, initialState.selectedCategoryIndex) // Default to "HOT커피"
     }
 
     @Test
@@ -83,7 +83,7 @@ class MenuManagementViewModelTest {
         val testViewModel = MenuManagementViewModel(menuRepository)
 
         // When
-        testViewModel.onCategorySelected(0) // Category 1 (ICE커피)
+        testViewModel.onCategorySelected(0) // Category 1 (HOT커피)
 
         // Then
         val uiState = testViewModel.uiState.first()

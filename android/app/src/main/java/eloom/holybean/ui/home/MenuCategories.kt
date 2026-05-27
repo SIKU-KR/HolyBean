@@ -1,7 +1,7 @@
 package eloom.holybean.ui.home
 
 object MenuCategories {
-    val names = listOf("전체", "ICE커피", "HOT커피", "에이드/스무디", "티/음료", "베이커리")
+    val names = listOf("전체", "HOT커피", "ICE커피", "차", "음료", "기타")
 
     /** index 0 = 전체, 그 외 = id / 1000 == index. */
     fun filterIds(ids: List<Int>, index: Int): List<Int> =
