@@ -21,6 +21,7 @@ from migration.writes import (
 ORDERS_TABLE = "holybean"
 MENU_TABLE = "holybean-menu"
 AWS_REGION = "ap-northeast-2"
+FIREBASE_PROJECT = "holybean-e4201"
 
 # 이 필드들이 하나라도 없으면 내용 없는 깨진 스텁 주문으로 보고 건너뛴다.
 # (customerName 누락은 익명 주문으로 정상 처리 — to_order_doc에서 ""로 채움)
@@ -92,9 +93,21 @@ def verify(db, order_docs, open_credits):
     return ok
 
 
+def init_firestore(service_account, project):
+    """Firestore 클라이언트 초기화. service_account가 있으면 그 키로,
+    없으면 gcloud Application Default Credentials(ADC)로 인증한다."""
+    if service_account:
+        firebase_admin.initialize_app(credentials.Certificate(service_account))
+    else:
+        firebase_admin.initialize_app(options={"projectId": project})
+    return firestore.client()
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description="DynamoDB → Firestore 마이그레이션")
-    parser.add_argument("--service-account", required=True, help="Firebase service account JSON 경로")
+    parser.add_argument("--service-account", default=None,
+                        help="Firebase service account JSON 경로. 생략 시 gcloud ADC 사용")
+    parser.add_argument("--project", default=FIREBASE_PROJECT, help="Firebase 프로젝트 ID(ADC 사용 시)")
     parser.add_argument("--dry-run", action="store_true", help="기록 없이 변환 결과만 출력")
     parser.add_argument("--aws-region", default=AWS_REGION)
     args = parser.parse_args(argv)
@@ -114,8 +127,7 @@ def main(argv=None):
         print("\n[dry-run] 기록하지 않고 종료.")
         return 0
 
-    firebase_admin.initialize_app(credentials.Certificate(args.service_account))
-    db = firestore.client()
+    db = init_firestore(args.service_account, args.project)
 
     print("\norders 기록 중...")
     execute_writes(db, plan_order_writes(order_docs))
