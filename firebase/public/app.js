@@ -126,7 +126,8 @@ $("exportBtn").addEventListener("click", async () => {
   } catch {
     alert("엑셀 데이터를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.");
   } finally {
-    btn.disabled = rows.length === 0;
+    // 비동기 중 날짜 이동이 있었을 수 있으므로 현재 인덱스 기준으로 버튼 상태를 복원
+    btn.disabled = !days[idx] || salesRows(days[idx].data).length === 0;
   }
 });
 
