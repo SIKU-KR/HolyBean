@@ -26,7 +26,7 @@ android/app/google-services.json
 firebase/serviceAccount.json
 firebase/data/
 firebase/node_modules/
-firebase/firestore-debug.log
+firebase/*-debug.log
 firebase/menu-backup-*.json
 firebase/.firebase/
 firebase/public/firebase-config.js
