@@ -8,7 +8,8 @@
     "test:rules": "firebase emulators:exec --only firestore \"vitest run --config vitest.rules.config.ts\"",
     "etl": "tsx src/etl.ts",
     "verify": "tsx src/verify.ts",
-    "menu:import": "tsx src/importMenu.ts"
+    "menu:import": "tsx src/importMenu.ts",
+    "seed:dashboard": "node scripts/seedDashboard.mjs"
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^3.0.4",
