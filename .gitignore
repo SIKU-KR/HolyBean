@@ -28,6 +28,7 @@ firebase/data/
 firebase/node_modules/
 firebase/firestore-debug.log
 firebase/.firebase/
+firebase/public/firebase-config.js
 
 # Superpowers brainstorming companion
 .superpowers/
