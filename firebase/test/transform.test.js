@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { salesRows, totalCups, exportAOA, formatDateLabel } from "../public/transform.js";
+import { salesRows, totalCups, exportAOA, formatDateLabel, paymentRows, transactionAOA } from "../public/transform.js";
 
 const rollup = {
   total: 142000,
@@ -49,5 +49,18 @@ describe("formatDateLabel", () => {
   it("YYYY-MM-DD를 'M월 D일 (요일)'로 바꾼다", () => {
     // 2026-05-27은 수요일
     expect(formatDateLabel("2026-05-27")).toBe("5월 27일 (수)");
+  });
+});
+
+describe("paymentRows", () => {
+  it("paymentSales를 금액 내림차순 {method, amount} 배열로 펴낸다", () => {
+    expect(paymentRows({ paymentSales: { "현금": 126500, "쿠폰": 42000 } })).toEqual([
+      { method: "현금", amount: 126500 },
+      { method: "쿠폰", amount: 42000 },
+    ]);
+  });
+  it("paymentSales가 없으면 빈 배열", () => {
+    expect(paymentRows({})).toEqual([]);
+    expect(paymentRows(null)).toEqual([]);
   });
 });

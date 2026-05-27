@@ -8,6 +8,14 @@ export function salesRows(rollup) {
     .sort((a, b) => b.quantity - a.quantity);
 }
 
+/** rollup.paymentSales를 {method, amount} 배열로 펴서 금액 내림차순 정렬 */
+export function paymentRows(rollup) {
+  const paymentSales = (rollup && rollup.paymentSales) || {};
+  return Object.entries(paymentSales)
+    .map(([method, amount]) => ({ method, amount: Number(amount) || 0 }))
+    .sort((a, b) => b.amount - a.amount);
+}
+
 /** 판매 행 배열의 전체 잔 수 합 */
 export function totalCups(rows) {
   return rows.reduce((sum, r) => sum + r.quantity, 0);
