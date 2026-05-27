@@ -30,6 +30,22 @@ export function exportAOA(date, rows, total) {
   ];
 }
 
+/** orders 문서 배열(orderNum 오름차순 가정) → 거래내역 시트 AOA: 헤더 + 주문 행 + 합계 행.
+ *  빈 배열이면 헤더만 반환. 고객명 빈 값은 "-". 결제수단은 method를 "+"로 결합. */
+export function transactionAOA(orders) {
+  const header = ["주문번호", "고객명", "주문내역", "총액", "결제수단"];
+  if (orders.length === 0) return [header];
+  const rows = orders.map((o) => [
+    Number(o.orderNum) || 0,
+    o.customerName ? o.customerName : "-",
+    (o.items || []).map((it) => `${it.name} ${Number(it.quantity) || 0}개`).join(", "),
+    Number(o.totalAmount) || 0,
+    (o.payments || []).map((p) => p.method).join("+"),
+  ]);
+  const totalSum = rows.reduce((s, r) => s + r[3], 0);
+  return [header, ...rows, ["합계", "", "", totalSum, ""]];
+}
+
 /** "2026-05-27" -> "5월 27일 (수)" */
 export function formatDateLabel(date) {
   const [y, m, d] = date.split("-").map(Number);

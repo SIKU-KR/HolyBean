@@ -64,3 +64,31 @@ describe("paymentRows", () => {
     expect(paymentRows(null)).toEqual([]);
   });
 });
+
+describe("transactionAOA", () => {
+  const orders = [
+    {
+      orderNum: 3, customerName: "김철수", totalAmount: 5000, creditStatus: 1,
+      items: [{ name: "아인슈페너", quantity: 1 }],
+      payments: [{ method: "외상", amount: 5000 }],
+    },
+    {
+      orderNum: 5, customerName: "", totalAmount: 9000, creditStatus: 0,
+      items: [{ name: "아메리카노", quantity: 2 }, { name: "카페라떼", quantity: 1 }],
+      payments: [{ method: "현금", amount: 5000 }, { method: "쿠폰", amount: 4000 }],
+    },
+  ];
+  it("주문 한 건 = 한 행, 익명은 '-', 결제수단 결합, 합계 행을 만든다", () => {
+    expect(transactionAOA(orders)).toEqual([
+      ["주문번호", "고객명", "주문내역", "총액", "결제수단"],
+      [3, "김철수", "아인슈페너 1개", 5000, "외상"],
+      [5, "-", "아메리카노 2개, 카페라떼 1개", 9000, "현금+쿠폰"],
+      ["합계", "", "", 14000, ""],
+    ]);
+  });
+  it("빈 배열이면 헤더만 반환", () => {
+    expect(transactionAOA([])).toEqual([
+      ["주문번호", "고객명", "주문내역", "총액", "결제수단"],
+    ]);
+  });
+});
