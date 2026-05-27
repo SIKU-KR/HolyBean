@@ -140,16 +140,19 @@ fun HomeScreen(
                     items(menuItems, key = { it.id }) { item ->
                         MenuTile(item.name, item.price, onClick = { onMenuClick(item.id) })
                     }
-                    item(key = COUPON_TILE_ID) {
-                        MenuTile("쿠폰", null, onClick = onCouponClick, style = TileStyle.Coupon)
-                    }
-                    item(key = SETTINGS_TILE_ID) {
-                        MenuTile(
-                            "설정", null,
-                            onClick = onSettingsClick,
-                            style = TileStyle.Settings,
-                            icon = Icons.Filled.Settings,
-                        )
+                    // 쿠폰/설정은 전체 메뉴(index 0)에서만 노출한다.
+                    if (selectedCategory == 0) {
+                        item(key = COUPON_TILE_ID) {
+                            MenuTile("쿠폰", null, onClick = onCouponClick, style = TileStyle.Coupon)
+                        }
+                        item(key = SETTINGS_TILE_ID) {
+                            MenuTile(
+                                "설정", null,
+                                onClick = onSettingsClick,
+                                style = TileStyle.Settings,
+                                icon = Icons.Filled.Settings,
+                            )
+                        }
                     }
                 }
             }
