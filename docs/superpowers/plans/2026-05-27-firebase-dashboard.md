@@ -534,7 +534,7 @@ import {
   signInWithEmailAndPassword, signOut, onAuthStateChanged,
 } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
 import {
-  collection, query, orderBy, limit, where, getDocs, documentId,
+  collection, query, orderBy, getDocs, documentId,
 } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 import { auth, db } from "./firebase-init.js";
 import { salesRows, totalCups, exportAOA, formatDateLabel } from "./transform.js";
@@ -543,16 +543,19 @@ const COLL = "reportRollups";
 const $ = (id) => document.getElementById(id);
 const won = (n) => n.toLocaleString("ko-KR");
 
-// 현재 보고 있는 날: { date, data } 또는 null
-let current = null;
+// 로그인 후 reportRollups 전체를 ID 오름차순으로 로드한 배열 [{date, data}], 그리고 현재 인덱스
+let days = [];
+let idx = -1;
 
 // ---------- 인증 ----------
 onAuthStateChanged(auth, (user) => {
   if (user) {
     $("login").hidden = true;
     $("dash").hidden = false;
-    loadInitial();
+    if (idx === -1) loadDays(); // 토큰 갱신 시 재로드 방지
   } else {
+    days = [];
+    idx = -1;
     $("dash").hidden = true;
     $("message").hidden = true;
     $("login").hidden = false;
@@ -571,71 +574,48 @@ $("loginBtn").addEventListener("click", async () => {
 
 $("logoutBtn").addEventListener("click", () => signOut(auth));
 
-// ---------- Firestore 날짜 조회 ----------
-async function fetchLatest() {
-  const snap = await getDocs(query(collection(db, COLL), orderBy(documentId(), "desc"), limit(1)));
-  return snap.empty ? null : { date: snap.docs[0].id, data: snap.docs[0].data() };
-}
-
-async function fetchAdjacent(date, dir) {
-  const op = dir === "prev" ? "<" : ">";
-  const dir2 = dir === "prev" ? "desc" : "asc";
-  const snap = await getDocs(query(
-    collection(db, COLL),
-    where(documentId(), op, date),
-    orderBy(documentId(), dir2),
-    limit(1),
-  ));
-  return snap.empty ? null : { date: snap.docs[0].id, data: snap.docs[0].data() };
-}
-
 // ---------- 로드 & 렌더 ----------
-async function loadInitial() {
+// Firestore는 문서 키 내림차순 정렬("descending key scan")을 지원하지 않으므로,
+// 오름차순으로 전체를 한 번 로드해 메모리 배열에 담고 인덱스로 ◀▶ 탐색한다.
+async function loadDays() {
   try {
-    const latest = await fetchLatest();
-    if (!latest) return showMessage("아직 매출 기록이 없어요.");
-    current = latest;
-    await render();
+    const snap = await getDocs(query(collection(db, COLL), orderBy(documentId(), "asc")));
+    days = snap.docs.map((d) => ({ date: d.id, data: d.data() }));
+    if (days.length === 0) return showMessage("아직 매출 기록이 없어요.");
+    idx = days.length - 1; // 가장 최근 날
+    render();
   } catch {
     showMessage("데이터를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.");
   }
 }
 
-async function move(dir) {
-  if (!current) return;
-  const next = await fetchAdjacent(current.date, dir);
-  if (next) {
-    current = next;
-    await render();
-  }
+function move(dir) {
+  const n = idx + (dir === "prev" ? -1 : 1);
+  if (n < 0 || n >= days.length) return;
+  idx = n;
+  render();
 }
 
-async function render() {
+function render() {
   $("message").hidden = true;
   $("dash").hidden = false;
-  const { date, data } = current;
+  const { date, data } = days[idx];
   const rows = salesRows(data);
 
   $("dateLabel").textContent = formatDateLabel(date);
-  $("total").textContent = won(data.total ?? 0);
+  $("total").textContent = won(Number(data.total) || 0);
   $("cups").textContent = totalCups(rows);
 
   $("items").innerHTML = rows.length
     ? rows.map((r) =>
         `<div class="item"><span class="name">${escapeHtml(r.name)}</span>` +
-        `<span class="right"><span class="cnt tnum">${r.quantity}개</span>` +
-        `<span class="amt tnum">${won(r.sales)}원</span></span></div>`).join("")
+        `<span class="right"><span class="cnt tnum">${Number(r.quantity) || 0}개</span>` +
+        `<span class="amt tnum">${won(Number(r.sales) || 0)}원</span></span></div>`).join("")
     : `<div class="empty">이날 판매된 메뉴가 없어요.</div>`;
 
   $("exportBtn").disabled = rows.length === 0;
-
-  // 화살표 활성/비활성 (양 옆 존재 여부)
-  const [prev, next] = await Promise.all([
-    fetchAdjacent(date, "prev"),
-    fetchAdjacent(date, "next"),
-  ]);
-  $("prev").disabled = !prev;
-  $("next").disabled = !next;
+  $("prev").disabled = idx <= 0;
+  $("next").disabled = idx >= days.length - 1;
 }
 
 function showMessage(text) {
@@ -651,13 +631,14 @@ function escapeHtml(s) {
 
 // ---------- 엑셀 export ----------
 $("exportBtn").addEventListener("click", () => {
-  if (!current) return;
-  const rows = salesRows(current.data);
-  const aoa = exportAOA(current.date, rows, current.data.total ?? 0);
+  if (idx < 0) return;
+  const { date, data } = days[idx];
+  const rows = salesRows(data);
+  const aoa = exportAOA(date, rows, Number(data.total) || 0);
   const ws = XLSX.utils.aoa_to_sheet(aoa);
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, current.date);
-  XLSX.writeFile(wb, `holybean-${current.date}.xlsx`);
+  XLSX.utils.book_append_sheet(wb, ws, date);
+  XLSX.writeFile(wb, `holybean-${date}.xlsx`);
 });
 
 // ---------- 날짜 이동 버튼 ----------

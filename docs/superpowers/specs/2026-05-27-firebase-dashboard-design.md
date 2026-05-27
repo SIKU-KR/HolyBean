@@ -88,14 +88,12 @@ reportRollups/{YYYY-MM-DD} = {
 
 ## 6. "실제 있는 날만" 날짜 이동
 
-전체 날짜 목록을 한꺼번에 읽지 않는다. 문서 ID(`YYYY-MM-DD`)가 사전식으로 정렬 가능하다는 점을 이용해 이동당 문서 1건만 읽는다.
+로그인 후 `reportRollups` 전체를 **문서 ID(`YYYY-MM-DD`) 오름차순으로 한 번 로드**해 메모리 배열에 담고, ◀▶는 그 배열의 인덱스를 ±1 이동한다. 양 끝(가장 최근/가장 오래된)에서는 해당 화살표를 비활성화한다.
 
-- **최초 진입**: `reportRollups`를 `orderBy(documentId()) desc, limit(1)` → 가장 최근 날
-- **◀ (이전 날)**: `where(documentId() < 현재), orderBy desc, limit(1)`
-- **▶ (다음 날)**: `where(documentId() > 현재), orderBy asc, limit(1)`
-- 더 이상 결과가 없으면 해당 화살표 비활성
+- **최초 진입**: `getDocs(query(reportRollups, orderBy(documentId(), "asc")))` → `[{date, data}]` 오름차순 배열, 초기 인덱스 = 마지막(가장 최근 날)
+- **◀ / ▶**: 인덱스 −1 / +1 (경계에서 비활성). 추가 읽기 없음 — 렌더는 동기 함수.
 
-> 참고: Firestore `documentId()` 범위 쿼리는 컬렉션 그룹 인덱스가 자동 지원되므로 추가 인덱스 정의가 필요 없을 가능성이 높다. 구현 시 에뮬레이터로 확인하고, 필요하면 `firestore.indexes.json`에 추가한다.
+> **설계 변경 이력:** 초기 설계는 "이동당 1건만 읽기"를 위해 `documentId()` 범위 쿼리 + `orderBy(documentId(), "desc")`를 쓰려 했으나, 구현 중 에뮬레이터 검증에서 Firestore가 **문서 키 내림차순 정렬("descending key scan")을 지원하지 않음**을 확인했다(2026-05-27). 오름차순 키 스캔은 지원되므로 전체를 한 번 오름차순 로드하는 방식으로 변경했다. 이 카페는 단일 사용자이고 운영일(=문서) 수가 수백 건 규모라 1회 로드(수백 reads, 무료 한도 내)는 충분하며, 부수적으로 렌더 시 경계 판별 읽기와 비동기 race가 제거된다. 추가 인덱스(`firestore.indexes.json`)는 단일 필드 키 정렬이라 불필요하다.
 
 ## 7. 엑셀 Export
 
