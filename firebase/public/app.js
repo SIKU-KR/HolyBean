@@ -32,10 +32,13 @@ onAuthStateChanged(auth, (user) => {
 
 $("loginBtn").addEventListener("click", async () => {
   $("loginError").hidden = true;
+  // 아이디만 입력하면 @holybean.app을 붙여 이메일로 변환 (전체 이메일 입력도 허용)
+  const raw = $("email").value.trim();
+  const email = raw.includes("@") ? raw : `${raw}@holybean.app`;
   try {
-    await signInWithEmailAndPassword(auth, $("email").value.trim(), $("pw").value);
+    await signInWithEmailAndPassword(auth, email, $("pw").value);
   } catch {
-    $("loginError").textContent = "로그인에 실패했습니다. 이메일과 비밀번호를 확인해주세요.";
+    $("loginError").textContent = "로그인에 실패했습니다. 아이디와 비밀번호를 확인해주세요.";
     $("loginError").hidden = false;
   }
 });
