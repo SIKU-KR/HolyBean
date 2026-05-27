@@ -41,6 +41,7 @@ body{font-family:'Pretendard',system-ui,sans-serif;background:#f2f2f0;color:var(
 .export:hover{background:#f0e2cf}
 .export:disabled{opacity:.4;cursor:default}
 .list{background:var(--bg);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+#payList{margin-bottom:14px}
 .list .head{display:flex;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--line)}
 .list .head .t{font-weight:800;font-size:15px}
 .list .head .sub{color:var(--muted);font-weight:600;font-size:13px}
