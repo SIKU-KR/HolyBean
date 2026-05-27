@@ -2,7 +2,7 @@ import {
   signInWithEmailAndPassword, signOut, onAuthStateChanged,
 } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
 import {
-  collection, query, orderBy, getDocs, documentId,
+  collection, query, orderBy, getDocs, documentId, where,
 } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 import { auth, db } from "./firebase-init.js";
 import { salesRows, totalCups, exportAOA, formatDateLabel, paymentRows, transactionAOA } from "./transform.js";
@@ -107,15 +107,27 @@ function escapeHtml(s) {
 }
 
 // ---------- 엑셀 export ----------
-$("exportBtn").addEventListener("click", () => {
+$("exportBtn").addEventListener("click", async () => {
   if (idx < 0) return;
   const { date, data } = days[idx];
   const rows = salesRows(data);
-  const aoa = exportAOA(date, rows, Number(data.total) || 0);
-  const ws = XLSX.utils.aoa_to_sheet(aoa);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, date);
-  XLSX.writeFile(wb, `holybean-${date}.xlsx`);
+  const btn = $("exportBtn");
+  btn.disabled = true;
+  try {
+    // 해당 날짜의 모든 주문(정산·외상 포함)을 조회해 거래내역 시트를 만든다.
+    const snap = await getDocs(query(collection(db, "orders"), where("orderDate", "==", date)));
+    const orders = snap.docs
+      .map((d) => d.data())
+      .sort((a, b) => (Number(a.orderNum) || 0) - (Number(b.orderNum) || 0));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(transactionAOA(orders)), "거래내역");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(exportAOA(date, rows, Number(data.total) || 0)), "메뉴집계");
+    XLSX.writeFile(wb, `holybean-${date}.xlsx`);
+  } catch {
+    alert("엑셀 데이터를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.");
+  } finally {
+    btn.disabled = rows.length === 0;
+  }
 });
 
 // ---------- 날짜 이동 버튼 ----------
