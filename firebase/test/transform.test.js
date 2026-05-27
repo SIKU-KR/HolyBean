@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { salesRows, totalCups, exportAOA, formatDateLabel, paymentRows, transactionAOA } from "../public/transform.js";
+import { salesRows, totalCups, exportAOA, formatDateLabel, paymentRows, transactionAOA, isEmptyRollup } from "../public/transform.js";
 
 const rollup = {
   total: 142000,
@@ -69,6 +69,19 @@ describe("paymentRows", () => {
     expect(paymentRows({ paymentSales: { "현금": 0, "쿠폰": 5000 } })).toEqual([
       { method: "쿠폰", amount: 5000 },
     ]);
+  });
+});
+
+describe("isEmptyRollup", () => {
+  it("매출 0 + 메뉴 없음 + 결제수단 0원이면 빈 날", () => {
+    expect(isEmptyRollup({ total: 0, menuSales: {}, paymentSales: { "현금": 0 } })).toBe(true);
+    expect(isEmptyRollup({})).toBe(true);
+    expect(isEmptyRollup(null)).toBe(true);
+  });
+  it("매출/판매/결제수단 중 하나라도 있으면 빈 날 아님", () => {
+    expect(isEmptyRollup({ total: 5000, menuSales: {}, paymentSales: {} })).toBe(false);
+    expect(isEmptyRollup({ total: 0, menuSales: { "아메리카노": { quantity: 1, sales: 3000 } } })).toBe(false);
+    expect(isEmptyRollup({ total: 0, paymentSales: { "쿠폰": 5000 } })).toBe(false);
   });
 });
 

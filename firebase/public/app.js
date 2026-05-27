@@ -5,7 +5,7 @@ import {
   collection, query, orderBy, getDocs, documentId, where,
 } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 import { auth, db } from "./firebase-init.js";
-import { salesRows, totalCups, exportAOA, formatDateLabel, paymentRows, transactionAOA } from "./transform.js";
+import { salesRows, totalCups, exportAOA, formatDateLabel, paymentRows, transactionAOA, isEmptyRollup } from "./transform.js";
 
 const COLL = "reportRollups";
 const $ = (id) => document.getElementById(id);
@@ -51,7 +51,10 @@ $("logoutBtn").addEventListener("click", () => signOut(auth));
 async function loadDays() {
   try {
     const snap = await getDocs(query(collection(db, COLL), orderBy(documentId(), "asc")));
-    days = snap.docs.map((d) => ({ date: d.id, data: d.data() }));
+    // 주문이 전부 삭제돼 0으로만 남은 날은 목록에서 제외한다.
+    days = snap.docs
+      .map((d) => ({ date: d.id, data: d.data() }))
+      .filter((day) => !isEmptyRollup(day.data));
     if (days.length === 0) return showMessage("아직 매출 기록이 없어요.");
     idx = days.length - 1; // 가장 최근 날
     render();

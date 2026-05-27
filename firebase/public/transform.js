@@ -18,6 +18,15 @@ export function paymentRows(rollup) {
     .sort((a, b) => b.amount - a.amount);
 }
 
+/** rollup이 사실상 빈 날인지 — 매출 0 + 실판매 메뉴 없음 + 결제수단 없음.
+ *  주문이 전부 삭제/취소돼 0으로 남은 rollup을 날짜 목록에서 제외하는 데 사용. */
+export function isEmptyRollup(rollup) {
+  if ((Number(rollup && rollup.total) || 0) > 0) return false;
+  if (salesRows(rollup).some((r) => (Number(r.quantity) || 0) > 0 || (Number(r.sales) || 0) > 0)) return false;
+  if (paymentRows(rollup).length > 0) return false;
+  return true;
+}
+
 /** 판매 행 배열의 전체 잔 수 합 */
 export function totalCups(rows) {
   return rows.reduce((sum, r) => sum + r.quantity, 0);
