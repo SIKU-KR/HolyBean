@@ -22,7 +22,7 @@ export function exportAOA(date, rows, total) {
   ];
 }
 
-/** "2026-05-27" -> "5월 27일 (화)" */
+/** "2026-05-27" -> "5월 27일 (수)" */
 export function formatDateLabel(date) {
   const [y, m, d] = date.split("-").map(Number);
   const dow = ["일", "월", "화", "수", "목", "금", "토"][new Date(y, m - 1, d).getDay()];
