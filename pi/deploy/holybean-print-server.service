@@ -1,0 +1,19 @@
+[Unit]
+Description=HolyBean Print Server
+After=network-online.target
+Wants=network-online.target
+# 재시작 횟수 제한 해제 → 무한 재시작(절대 포기 안 함)
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/holybean-print-server
+Environment=HOLYBEAN_PRINT_BIND=0.0.0.0:9100
+Environment=HOLYBEAN_PRINT_DEVICE=/dev/usb/lp0
+Environment=RUST_LOG=info
+User=root
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target
