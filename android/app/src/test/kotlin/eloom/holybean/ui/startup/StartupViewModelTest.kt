@@ -4,8 +4,10 @@ import com.google.firebase.crashlytics.FirebaseCrashlytics
 import eloom.holybean.data.repository.FirestoreRepository
 import eloom.holybean.data.repository.MenuRepository
 import eloom.holybean.printer.PiPrintClient
+import eloom.holybean.printer.network.PrinterAddressResolver
 import eloom.holybean.util.MainDispatcherRule
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
@@ -29,6 +31,7 @@ class StartupViewModelTest {
     private val menu: MenuRepository = mockk(relaxed = true)
     private val firestore: FirestoreRepository = mockk(relaxed = true)
     private val pi: PiPrintClient = mockk(relaxed = true)
+    private val resolver: PrinterAddressResolver = mockk(relaxed = true)
 
     @Before
     fun setUp() {
@@ -41,7 +44,16 @@ class StartupViewModelTest {
         unmockkAll()
     }
 
-    private fun vm() = StartupViewModel(menu, firestore, pi)
+    private fun vm() = StartupViewModel(menu, firestore, pi, resolver)
+
+    @Test fun `warms up printer address on init`() = runTest {
+        coEvery { menu.getMenuListSync() } returns emptyList()
+        coEvery { firestore.getOrderNumber() } returns 1
+        coEvery { pi.checkHealth() } returns true
+        vm()
+        advanceUntilIdle()
+        coVerify(atLeast = 1) { resolver.rediscover() }
+    }
 
     @Test fun `both succeed sets success and autoEnter`() = runTest {
         coEvery { menu.getMenuListSync() } returns emptyList()

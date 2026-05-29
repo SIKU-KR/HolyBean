@@ -6,6 +6,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import eloom.holybean.data.repository.FirestoreRepository
 import eloom.holybean.data.repository.MenuRepository
 import eloom.holybean.printer.PiPrintClient
+import eloom.holybean.printer.network.PrinterAddressResolver
 import eloom.holybean.util.launchSafely
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -20,6 +21,7 @@ class StartupViewModel @Inject constructor(
     private val menuRepository: MenuRepository,
     private val firestoreRepository: FirestoreRepository,
     private val piPrintClient: PiPrintClient,
+    private val printerAddressResolver: PrinterAddressResolver,
 ) : ViewModel() {
 
     data class UiState(
@@ -50,6 +52,7 @@ class StartupViewModel @Inject constructor(
         viewModelScope.launchSafely(onError = {
             _uiState.update { it.copy(printer = StepStatus.Failed) }
         }) {
+            printerAddressResolver.rediscover()              // 캐시 워밍업(실패해도 health가 판정)
             val ok = piPrintClient.checkHealth()             // checkHealth 는 throw 안 함(Boolean)
             _uiState.update { it.copy(printer = if (ok) StepStatus.Success else StepStatus.Failed) }
         }
