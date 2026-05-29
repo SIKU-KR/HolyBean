@@ -15,7 +15,8 @@ pub const LF: u8 = 0x0A;
 pub const CUT: &[u8] = &[0x1D, 0x56, 0x01]; // GS V 1
 
 /// 절단 전 용지 피드(dots). ESC J n (n ≤ 255). 절단 위치 확보용.
-pub const FEED_BEFORE_CUT_DOTS: u8 = 100;
+/// 실기 보정 결과 255(≈31mm)에서 하단 여백이 적절함(2026-05-30, 세우 SLK-TS400B).
+pub const FEED_BEFORE_CUT_DOTS: u8 = 255;
 
 /// 스타일이 적용된 하나의 Run을 ESC/POS 바이트로 인코딩해 out에 덧붙인다.
 pub fn render_run(run: &Run, out: &mut Vec<u8>) {

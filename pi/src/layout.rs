@@ -1,7 +1,7 @@
 use crate::command::{Align, Segment, Size};
 
-/// 라인당 최대 칸 수(레거시 EscPosPrinter nbrCharactersPerLine).
-pub const LINE_WIDTH: i32 = 32;
+/// 라인당 최대 칸 수. 세우 SLK-TS400B 80mm(인쇄폭 72mm=512dots) 기본 폰트 A = 42칸(실측 확정 2026-05-30).
+pub const LINE_WIDTH: i32 = 42;
 
 /// 프린터 칸 기준 표시 폭. EUC-KR 인코딩 바이트 수 × 크기계수.
 /// (레거시 PrinterTextParserString.length(): getBytes("EUC-KR").length * coef)
@@ -153,7 +153,7 @@ mod tests {
         let line = flatten(&runs);
         assert_eq!(line.chars().count(), LINE_WIDTH as usize);
         assert!(line.starts_with("ab"));
-        assert_eq!(&line[2..], &" ".repeat(30));
+        assert_eq!(&line[2..], &" ".repeat(LINE_WIDTH as usize - 2));
     }
 
     #[test]
@@ -169,9 +169,10 @@ mod tests {
         let runs = layout_row(&[seg("ab", Align::Center)]);
         let line = flatten(&runs);
         assert_eq!(line.chars().count(), LINE_WIDTH as usize);
-        // (32-2)/2 = 15 좌측 공백
-        assert_eq!(&line[..15], &" ".repeat(15));
-        assert_eq!(&line[15..17], "ab");
+        // (LINE_WIDTH-2)/2 좌측 공백
+        let left = (LINE_WIDTH as usize - 2) / 2;
+        assert_eq!(&line[..left], &" ".repeat(left));
+        assert_eq!(&line[left..left + 2], "ab");
     }
 
     #[test]
@@ -186,7 +187,7 @@ mod tests {
 
     #[test]
     fn three_columns_distribute_forgotten_chars() {
-        // 32/3 = 10칸씩, 잉여 2칸은 앞 두 칸에 1칸씩 분배 → 총 32칸 유지
+        // LINE_WIDTH/3 칸씩, 잉여 칸은 앞쪽부터 1칸씩 분배 → 총 LINE_WIDTH 칸 유지
         let runs = layout_row(&[
             seg("a", Align::Left),
             seg("b", Align::Right),
