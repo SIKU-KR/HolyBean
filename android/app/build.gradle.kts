@@ -1,4 +1,5 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.util.Properties
 
 plugins {
     id("kotlin-kapt")
@@ -11,6 +12,17 @@ plugins {
     id("com.google.gms.google-services")
     id("com.google.firebase.crashlytics")
 }
+
+// Feature flags: local.properties → -P gradle property → default.
+// 빌드타입과 독립적으로 백엔드/프린터 구성을 토글한다.
+//   useFirebaseEmulator=true  → Firestore/Auth 를 10.0.2.2 에뮬레이터로
+//   useFakePrinter=true       → 실제 Pi 대신 FakePrintServerApi
+val featureFlagProps = Properties().apply {
+    val f = rootProject.file("local.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
+}
+fun featureFlag(name: String, default: Boolean): Boolean =
+    (featureFlagProps.getProperty(name) ?: (project.findProperty(name) as String?))?.toBoolean() ?: default
 
 android {
     namespace = "eloom.holybean"
@@ -26,6 +38,9 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+
+        buildConfigField("boolean", "USE_FIREBASE_EMULATOR", featureFlag("useFirebaseEmulator", false).toString())
+        buildConfigField("boolean", "USE_FAKE_PRINTER", featureFlag("useFakePrinter", false).toString())
     }
 
     buildTypes {

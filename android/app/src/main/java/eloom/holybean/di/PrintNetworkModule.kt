@@ -5,7 +5,7 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import eloom.holybean.BuildConfig
+import eloom.holybean.config.FeatureFlags
 import eloom.holybean.printer.network.FakePrintServerApi
 import eloom.holybean.printer.network.MdnsDiscovery
 import eloom.holybean.printer.network.NsdMdnsDiscovery
@@ -61,8 +61,8 @@ object PrintNetworkModule {
     fun providePrintServerApi(
         @Named("PrintServer") retrofit: Retrofit,
     ): PrintServerApi =
-        if (BuildConfig.DEBUG) {
-            // debug 빌드는 실제 프린터를 호출하지 않는다(인터셉터/네트워크 미경유).
+        if (FeatureFlags.useFakePrinter) {
+            // useFakePrinter 플래그가 켜진 빌드는 실제 프린터를 호출하지 않는다(인터셉터/네트워크 미경유).
             FakePrintServerApi()
         } else {
             retrofit.create(PrintServerApi::class.java)
