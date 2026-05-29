@@ -12,4 +12,10 @@ object FeatureFlags {
 
     /** 실제 Pi 인쇄서버 대신 FakePrintServerApi(no-op)를 사용한다. */
     val useFakePrinter: Boolean get() = BuildConfig.USE_FAKE_PRINTER
+
+    /**
+     * App Check를 Debug provider로 사용한다(false면 PlayIntegrity).
+     * 기본 true = Play 미경유 설치(debug 토큰)에서 동작. 실제 Play 프로덕션만 false.
+     */
+    val useDebugAppCheck: Boolean get() = BuildConfig.USE_DEBUG_APPCHECK
 }

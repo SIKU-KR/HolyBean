@@ -41,6 +41,9 @@ android {
 
         buildConfigField("boolean", "USE_FIREBASE_EMULATOR", featureFlag("useFirebaseEmulator", false).toString())
         buildConfigField("boolean", "USE_FAKE_PRINTER", featureFlag("useFakePrinter", false).toString())
+        // App Check: 기본 true = Debug provider(등록된 debug 토큰 사용, Play 미경유 가능).
+        // 실제 Play 스토어 프로덕션 배포 시에만 useDebugAppCheck=false 로 PlayIntegrity 사용.
+        buildConfigField("boolean", "USE_DEBUG_APPCHECK", featureFlag("useDebugAppCheck", true).toString())
     }
 
     buildTypes {
@@ -49,6 +52,9 @@ android {
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
             )
+            // Play 미경유 내부 배포용: debug 키로 서명해 별도 키스토어 없이 설치 가능.
+            // (실제 Play 프로덕션 출시 시 전용 release signingConfig로 교체할 것)
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
     compileOptions {

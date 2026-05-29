@@ -7,6 +7,7 @@ import com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderF
 import com.google.firebase.auth.auth
 import com.google.firebase.Firebase
 import dagger.hilt.android.HiltAndroidApp
+import eloom.holybean.config.FeatureFlags
 
 @HiltAndroidApp
 class AppClass : Application() {
@@ -14,7 +15,7 @@ class AppClass : Application() {
         super.onCreate()
 
         Firebase.appCheck.installAppCheckProviderFactory(
-            if (BuildConfig.DEBUG) DebugAppCheckProviderFactory.getInstance()
+            if (FeatureFlags.useDebugAppCheck) DebugAppCheckProviderFactory.getInstance()
             else PlayIntegrityAppCheckProviderFactory.getInstance()
         )
 
