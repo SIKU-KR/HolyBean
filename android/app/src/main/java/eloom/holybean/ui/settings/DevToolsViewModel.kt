@@ -6,6 +6,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import eloom.holybean.data.repository.FirestoreRepository
 import eloom.holybean.diag.NetworkStatusProvider
 import eloom.holybean.printer.PiPrintClient
+import eloom.holybean.printer.network.PrinterAddressResolver
+import eloom.holybean.printer.network.PrinterStatus
 import eloom.holybean.util.launchSafely
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -14,6 +16,8 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import javax.inject.Inject
 
@@ -22,6 +26,7 @@ class DevToolsViewModel @Inject constructor(
     private val piPrintClient: PiPrintClient,
     private val firestoreRepository: FirestoreRepository,
     private val networkStatusProvider: NetworkStatusProvider,
+    private val printerAddressResolver: PrinterAddressResolver,
 ) : ViewModel() {
     data class State(
         val printerOk: Boolean? = null,
@@ -47,6 +52,36 @@ class DevToolsViewModel @Inject constructor(
 
     sealed class DevToolsUiEvent {
         data class ShowToast(val message: String) : DevToolsUiEvent()
+    }
+
+    init {
+        printerAddressResolver.status
+            .onEach { status -> _uiState.update { it.copy(printerStatusText = status.toDisplay()) } }
+            .launchIn(viewModelScope)
+    }
+
+    private fun PrinterStatus.toDisplay(): String = when (this) {
+        is PrinterStatus.Connected -> "연결됨 ${address.toAuthority()}"
+        PrinterStatus.Resolving -> "탐색 중…"
+        PrinterStatus.Unreachable -> "연결 안 됨"
+        PrinterStatus.Unknown -> "확인 전"
+    }
+
+    fun rescanPrinter() {
+        viewModelScope.launchSafely(onError = {
+            _uiEvent.tryEmit(DevToolsUiEvent.ShowToast("프린터 탐색 실패"))
+        }) {
+            printerAddressResolver.rediscover()
+        }
+    }
+
+    fun setPrinterOverride(value: String?) {
+        viewModelScope.launchSafely(onError = {
+            _uiEvent.tryEmit(DevToolsUiEvent.ShowToast("주소 저장 실패"))
+        }) {
+            printerAddressResolver.setManualOverride(value?.takeIf { it.isNotBlank() })
+            _uiEvent.tryEmit(DevToolsUiEvent.ShowToast("프린터 주소를 저장했습니다"))
+        }
     }
 
     fun refresh() {

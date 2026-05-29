@@ -5,6 +5,8 @@ import eloom.holybean.data.repository.FirestoreRepository
 import eloom.holybean.diag.NetworkStatus
 import eloom.holybean.diag.NetworkStatusProvider
 import eloom.holybean.printer.PiPrintClient
+import eloom.holybean.printer.network.PrinterAddressResolver
+import eloom.holybean.printer.network.PrinterStatus
 import eloom.holybean.util.MainDispatcherRule
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -13,6 +15,7 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -31,11 +34,13 @@ class DevToolsViewModelTest {
     private val pi: PiPrintClient = mockk(relaxed = true)
     private val firestore: FirestoreRepository = mockk(relaxed = true)
     private val network: NetworkStatusProvider = mockk(relaxed = true)
+    private val resolver: PrinterAddressResolver = mockk(relaxed = true)
 
     @Before
     fun setUp() {
         mockkStatic(FirebaseCrashlytics::class)
         every { FirebaseCrashlytics.getInstance() } returns mockk(relaxed = true)
+        every { resolver.status } returns MutableStateFlow(PrinterStatus.Unknown)
     }
 
     @After
@@ -43,7 +48,7 @@ class DevToolsViewModelTest {
         unmockkAll()
     }
 
-    private fun vm() = DevToolsViewModel(pi, firestore, network)
+    private fun vm() = DevToolsViewModel(pi, firestore, network, resolver)
 
     @Test fun `refresh populates printer network and firestore status`() = runTest {
         coEvery { pi.checkHealth() } returns true
@@ -91,5 +96,19 @@ class DevToolsViewModelTest {
         advanceUntilIdle()
         assertTrue(events.any { it is DevToolsViewModel.DevToolsUiEvent.ShowToast })
         collector.cancel()
+    }
+
+    @Test fun `rescanPrinter delegates to resolver rediscover`() = runTest {
+        val vm = vm()
+        vm.rescanPrinter()
+        advanceUntilIdle()
+        coVerify(exactly = 1) { resolver.rediscover() }
+    }
+
+    @Test fun `setPrinterOverride delegates to resolver`() = runTest {
+        val vm = vm()
+        vm.setPrinterOverride("10.0.0.9:9100")
+        advanceUntilIdle()
+        coVerify(exactly = 1) { resolver.setManualOverride("10.0.0.9:9100") }
     }
 }
