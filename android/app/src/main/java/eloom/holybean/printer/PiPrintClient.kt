@@ -6,6 +6,7 @@ import eloom.holybean.printer.network.PrintFailureReason
 import eloom.holybean.printer.network.PrintRequestDto
 import eloom.holybean.printer.network.PrintServerApi
 import eloom.holybean.printer.network.PrintServerException
+import eloom.holybean.printer.network.PrinterAddressResolver
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
@@ -22,6 +23,7 @@ import javax.inject.Singleton
 @Singleton
 class PiPrintClient @Inject constructor(
     private val api: PrintServerApi,
+    private val resolver: PrinterAddressResolver,
     @PrinterDispatcher private val printerDispatcher: CoroutineDispatcher,
 ) {
     private val mutex = Mutex()
@@ -37,10 +39,15 @@ class PiPrintClient @Inject constructor(
      */
     suspend fun print(commands: List<PrintCommandDto>) = withContext(printerDispatcher) {
         mutex.withLock {
+            var rediscovered = false
             withRetry {
                 val response = try {
                     api.print(PrintRequestDto(commands))
                 } catch (e: java.io.IOException) {
+                    if (!rediscovered) {
+                        rediscovered = true
+                        resolver.rediscover()   // 다음 시도에서 인터셉터가 새 주소 사용
+                    }
                     throw PrintServerException(
                         PrintFailureReason.ServerUnreachable,
                         "print server unreachable",
