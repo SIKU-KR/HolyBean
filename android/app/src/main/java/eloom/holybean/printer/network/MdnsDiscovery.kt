@@ -25,10 +25,14 @@ class NsdMdnsDiscovery @Inject constructor(
     override suspend fun discover(timeoutMs: Long): PrinterAddress? {
         val nsd = context.getSystemService(Context.NSD_SERVICE) as? NsdManager ?: return null
         val wifi = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as? WifiManager
-        val lock = wifi?.createMulticastLock("holybean-mdns")?.apply {
-            setReferenceCounted(false)
-            acquire()
-        }
+        // MulticastLock은 mDNS 수신을 돕지만, 권한 부재(SecurityException) 등으로 실패해도
+        // 탐색 자체는 진행한다(다수 기기는 lock 없이도 동작).
+        val lock = runCatching {
+            wifi?.createMulticastLock("holybean-mdns")?.apply {
+                setReferenceCounted(false)
+                acquire()
+            }
+        }.onFailure { Log.w(TAG, "multicast lock 획득 실패(무시하고 진행)", it) }.getOrNull()
         return try {
             withTimeoutOrNull(timeoutMs) { runDiscovery(nsd) }
         } catch (e: TimeoutCancellationException) {
