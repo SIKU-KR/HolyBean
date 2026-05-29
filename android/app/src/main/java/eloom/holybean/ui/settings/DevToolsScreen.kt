@@ -71,7 +71,7 @@ fun DevToolsScreen(
             HealthRow("Firestore", state.firestoreOk,
                 when (state.firestoreOk) { true -> "정상"; false -> "응답 없음"; null -> "—" })
             Text(
-                "프린터 서버 URL: ${state.printerUrl}",
+                "프린터 연결: ${state.printerStatusText}",
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(vertical = Dimens.spaceSm),
             )

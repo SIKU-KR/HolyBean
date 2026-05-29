@@ -26,8 +26,6 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
-
-        buildConfigField("String", "PRINT_SERVER_URL", "\"http://192.168.4.1:9100/\"")
     }
 
     buildTypes {

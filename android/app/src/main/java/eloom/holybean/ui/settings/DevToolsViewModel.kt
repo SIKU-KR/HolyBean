@@ -3,7 +3,6 @@ package eloom.holybean.ui.settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import eloom.holybean.BuildConfig
 import eloom.holybean.data.repository.FirestoreRepository
 import eloom.holybean.diag.NetworkStatusProvider
 import eloom.holybean.printer.PiPrintClient
@@ -30,7 +29,7 @@ class DevToolsViewModel @Inject constructor(
         val networkOk: Boolean? = null,
         val networkInfo: String = "",
         val firestoreOk: Boolean? = null,
-        val printerUrl: String = BuildConfig.PRINT_SERVER_URL,
+        val printerStatusText: String = "확인 전",
     )
 
     private val _uiState = MutableStateFlow(State())
