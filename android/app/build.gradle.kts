@@ -1,3 +1,4 @@
+import com.google.firebase.appdistribution.gradle.firebaseAppDistribution
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.util.Properties
 
@@ -11,6 +12,7 @@ plugins {
     id("org.jetbrains.kotlin.plugin.serialization")
     id("com.google.gms.google-services")
     id("com.google.firebase.crashlytics")
+    id("com.google.firebase.appdistribution")
 }
 
 // Feature flags: local.properties → -P gradle property → default.
@@ -31,8 +33,10 @@ android {
     defaultConfig {
         applicationId = "eloom.holybean"
         minSdk = 31
-        versionCode = 2
-        versionName = "2.0"
+        // 버전은 versionName(MAJOR.MINOR) 단일 소스에서 파생한다. 릴리스 스킬은 appVersionName 한 줄만 갱신.
+        val appVersionName = "3.0"
+        versionName = appVersionName
+        versionCode = appVersionName.split(".").let { (maj, min) -> maj.toInt() * 100 + min.toInt() }  // 3.0 → 300
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -55,6 +59,14 @@ android {
             // Play 미경유 내부 배포용: debug 키로 서명해 별도 키스토어 없이 설치 가능.
             // (실제 Play 프로덕션 출시 시 전용 release signingConfig로 교체할 것)
             signingConfig = signingConfigs.getByName("debug")
+
+            // Firebase App Distribution: CI(distribute.yml)에서 GOOGLE_APPLICATION_CREDENTIALS(서비스 계정 키)로 인증.
+            // release-notes.txt 는 워크플로가 GitHub Release 본문으로 생성한다.
+            firebaseAppDistribution {
+                artifactType = "APK"
+                testers = "bumshik0126@gmail.com"
+                releaseNotesFile = rootProject.file("release-notes.txt").absolutePath
+            }
         }
     }
     compileOptions {

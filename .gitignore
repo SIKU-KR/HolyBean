@@ -33,3 +33,6 @@ firebase/public/firebase-config.js
 
 # Superpowers brainstorming companion
 .superpowers/
+
+# Firebase App Distribution: 워크플로/스킬이 GitHub Release 본문에서 생성하는 릴리스 노트
+android/release-notes.txt
