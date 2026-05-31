@@ -1,65 +1,84 @@
 # Project: HolyBean
 
 <div align="left">
-<img src="https://img.shields.io/badge/Kotlin-7F52FF?style=for-the-badge&logo=Kotlin&logoColor=white"><img src="https://img.shields.io/badge/Android-34A853?style=for-the-badge&logo=Android&logoColor=white"><img src="https://img.shields.io/badge/AWS_Lambda-FF9900?style=for-the-badge&logo=amazonaws&logoColor=white"><img src="https://img.shields.io/badge/DynamoDB-4053D6?style=for-the-badge&logo=amazondynamodb&logoColor=white"><img src="https://img.shields.io/badge/SQLite-003B57?style=for-the-badge&logo=SQLite&logoColor=white"><img src="https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white">
+<img src="https://img.shields.io/badge/Kotlin-7F52FF?style=for-the-badge&logo=Kotlin&logoColor=white"><img src="https://img.shields.io/badge/Firebase-DD2C00?style=for-the-badge&logo=firebase&logoColor=white"><img src="https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=white"><img src="https://img.shields.io/badge/Raspberry_Pi-A22846?style=for-the-badge&logo=raspberrypi&logoColor=white">
 </div>
 
 ## 📌 프로젝트 개요 (1인 개발)
 
-**강원도 원주시 이룸교회 카페의 비효율적인 종이 주문서 및 엑셀 기반 관리 시스템을 대체하기 위해 개발된 안드로이드 기반 맞춤형 POS 솔루션입니다.** 블루투스 프린터 연동 및 클라우드 기반 데이터 관리를 통해
-**매출 관리의 편의성과 정확성을 크게 향상**시켰으며, 2024년 1월부터 현재까지 **실제 운영 환경에서 안정적으로 사용**되고 있습니다. (매주 평균 40건 이상, 총 2,650건 이상의 거래 처리 -
-2025.04 기준)
+**강원도 원주시 이룸교회 카페의 비효율적인 종이 주문서 및 엑셀 기반 관리 시스템을 대체하기 위해 개발된 안드로이드 기반 맞춤형 POS 솔루션입니다.** 2024년 1월부터 현재까지 **실제 운영 환경에서 안정적으로 사용**되고 있으며, 기존 수기 방식 대비 **업무 효율 증대 및 오류 감소 효과**를 성공적으로 입증했습니다. (매주 평균 40건 이상, 총 2,650건 이상의 거래 처리 - 2025.04 기준)
 
-기존 수기 방식 대비 **업무 효율 증대 및 오류 감소 효과**를 성공적으로 입증했습니다.
+2026년 5월 **v3 대규모 아키텍처 개편**을 통해 데이터·인쇄·UI 세 축을 모두 재설계했습니다. 클라우드 백엔드(AWS Lambda/DynamoDB)를 제거하고 **Firebase Firestore 직접 접근**으로, 불안정한 Bluetooth 인쇄를 **Raspberry Pi 기반 유선 네트워크 인쇄**로, Fragment/XML UI를 **Jetpack Compose**로 전환하여 운영 안정성과 유지보수성을 크게 끌어올렸습니다.
 
 ## 💡 주요 기능
 
-- **직관적인 주문 관리:** 쉬운 UI/UX, 다양한 결제 옵션(현금, 외상, 복수 결제), 실시간 영수증 출력(블루투스 연동)
-- **효율적인 매출 관리:** 일별/기간별 매출 데이터 조회 및 분석, 판매 이력 자동 기록, 보고서 생성 및 출력
-- **안정적인 데이터 관리:** AWS 클라우드(DynamoDB, Lambda) 연동을 통한 데이터 백업, 동기화 및 확장성 확보
+- **직관적인 주문 관리:** Jetpack Compose 기반 UI/UX, 다양한 결제 옵션(현금, 외상, 복수 결제), 안정적인 영수증 출력(Raspberry Pi 프린트 서버 연동)
+- **효율적인 매출 관리:** 일별/기간별 매출 데이터 조회 및 분석, 판매 이력 자동 기록, 보고서 생성 및 출력, **웹 매출 대시보드**(Firebase Hosting)에서 Excel 내보내기
+- **안정적인 데이터 관리:** Firestore 직접 접근 + **오프라인 영속성**으로 인터넷 단절에도 읽기/쓰기 및 자동 동기화, App Check·Auth·보안 규칙 기반 인가
 
 ## 🔧 시스템 구성 및 아키텍처
 
+모노레포 구조로 세 개의 빌드 가능한 서브시스템으로 구성됩니다. (`android/` · `firebase/` · `pi/`)
+
 ### 클라이언트 (Android)
 
-- **Kotlin 기반 네이티브 앱**
+- **Kotlin + Jetpack Compose 기반 네이티브 앱** (단일 Activity, Material3 디자인 시스템)
 - **MVVM 아키텍처:** UI와 비즈니스 로직 분리, 테스트 용이성 및 유지보수성 향상
-- **Retrofit2 & Coroutines:** 효율적인 비동기 REST API 통신
+- **Coroutines:** `launchSafely` 표준 패턴 + main-safe 리포지토리로 효율적·안전한 비동기 처리
 - **Hilt:** 의존성 주입을 통한 모듈화 및 코드 간결성 증대
-- **SQLite:** 로컬 데이터 캐싱 및 오프라인 기능 지원
+- **Cloud Firestore SDK:** 백엔드 없이 데이터를 직접 읽고 쓰며, 오프라인 캐시로 로컬 데이터 영속성 지원
 
-### 서버 (AWS Serverless)
+### 데이터 백엔드 (Firebase)
 
-- **AWS Lambda (Python):** 이벤트 기반 마이크로서비스 구현, 서버 관리 부담 최소화
-- **AWS DynamoDB:** 뛰어난 확장성과 성능을 제공하는 NoSQL 데이터베이스
-- **AWS API Gateway:** RESTful API 엔드포인트 관리 및 보안 강화
-- **AWS CloudWatch:** 실시간 모니터링 및 로그 분석
+- **Cloud Firestore:** 읽기는 point read 1건(고정 경로), 쓰기 시 사전 집계(pre-aggregation)로 설계. `orders`가 source of truth이고 나머지는 재생성 가능한 파생 문서
+- **Firebase Auth + App Check:** 익명/단일 운영 계정 인증 + Play Integrity 앱 증명
+- **보안 규칙(Security Rules):** 인가의 최종 경계, 에뮬레이터 회귀 테스트로 검증
+- **Firebase Hosting:** 정적 웹 매출 대시보드(`holybean.web.app`)
+- **Crashlytics:** Android 크래시/ANR을 난독화 복원하여 단일 콘솔에서 수집
+
+### 인쇄 서버 (Raspberry Pi, Rust)
+
+- **Rust HTTP 프린트 서버:** Android가 보낸 구조화 JSON 명령을 `PrintCommand` 합타입으로 받아 ESC/POS로 변환(EUC-KR 한글 폭 계산·컬럼 레이아웃 포함)
+- **잡 큐 직렬화:** 동시 출력 시 영수증이 섞이지 않도록 보장, 실패 3회 자동 재시도
+- **systemd:** 부팅 자동 시작 + 크래시 자동 복구, `mDNS`로 주소 광고(앱이 빌드 고정 IP 없이 런타임 탐색)
 
 ### 데이터 흐름
 
 ```
-[안드로이드 클라이언트] ↔ [AWS API Gateway] ↔ [AWS Lambda] ↔ [AWS DynamoDB]
+                       ┌──────────────────────────────────────┐
+[안드로이드 클라이언트] ─┼─ ① 데이터: 직접 읽기/쓰기 ──▶ [Cloud Firestore]
+                       │
+                       └─ ② 인쇄: POST /print (HTTP) ──▶ [Raspberry Pi · Rust] ──USB──▶ [영수증 프린터]
+
+두 경로는 독립적 — 데이터 경로가 느리거나 끊겨도 인쇄는 영향받지 않음
 ```
 
 ## 🛠 기술 스택
 
 ### 클라이언트 개발
 
-* **주요 기술**: Kotlin, Android SDK, MVVM 패턴
-* **비동기 & 네트워킹**: Coroutines, Retrofit2
-* **데이터 관리**: SQLite, 클라우드 동기화
+* **주요 기술**: Kotlin, Jetpack Compose, Android SDK, MVVM 패턴
+* **비동기 & DI**: Coroutines, Hilt
+* **데이터 관리**: Cloud Firestore SDK (오프라인 영속성)
 
-### 서버 & 클라우드
+### 백엔드 & 클라우드 (Firebase)
 
-* **Compute:** AWS Lambda (Python)
-* **Database:** AWS DynamoDB (NoSQL)
-* **API:** AWS API Gateway
-* **Monitoring:** AWS CloudWatch
+* **Database:** Cloud Firestore (NoSQL, 직접 접근)
+* **Auth/인가:** Firebase Auth + App Check + Security Rules
+* **Hosting:** 웹 매출 대시보드
+* **Monitoring:** Firebase Crashlytics
+
+### 인쇄 서버
+
+* **언어:** Rust (clippy `-D warnings` 엄격 적용)
+* **프로토콜:** ESC/POS, 잡 큐 직렬화
+* **운영:** systemd, mDNS
 
 ### 하드웨어 통합
 
 * **디바이스**: Galaxy Tab A7 lite (Android 기반)
-* **주변기기**: Bluetooth 영수증 프린터 (ESC/POS 프로토콜)
+* **중계 장비**: Raspberry Pi 3B (이더넷 업링크 + USB)
+* **주변기기**: 세우 SLK-TS400B 영수증 프린터 (USB, ESC/POS 프로토콜)
 
 ## 📱 실제 운영 환경 및 성과
 
@@ -125,6 +144,19 @@ val optimizedQuery = """
     - **앱의 전반적인 반응성 및 사용자 경험(UX) 향상.**
     - 비동기 코드의 가독성 및 유지보수성 개선.
 
+### 4. 백엔드 제거 및 인쇄·UI 전면 재설계 (v3.0)
+
+- **도전 과제:** AWS Lambda 10개가 실질적으로 순수 CRUD 패스스루였고, 불안정한 Bluetooth 인쇄가 단일 매장 운영에 비해 과도한 관리 비용을 유발.
+- **핵심 질문:** "백엔드를 어디로 옮길까"가 아니라 **"백엔드가 필요한가"** 로 문제를 재정의.
+- **해결 방안:**
+    - **백엔드 제거** — 클라우드 서버를 삭제하고 Android가 Firestore를 직접 접근. 읽기는 point read 1건, 쓰기는 로컬 우선 WriteBatch + 사전 집계로 **핫패스 서버 왕복 0회** 달성. 인가는 App Check + Auth + 보안 규칙 3계층으로 대체.
+    - **인쇄 경로 전환** — Bluetooth 인쇄를 Raspberry Pi 기반 유선 HTTP 인쇄로 교체. 영수증 포맷 책임을 Pi(Rust)로 이동시켜 **앱 배포 없이 포맷 변경** 가능. mDNS 런타임 주소 해석으로 고정 IP 의존 제거.
+    - **UI 재작성** — Fragment/XML/ViewBinding을 단일 Activity Jetpack Compose로 전면 포팅, 접근성·대비·터치타깃 기준의 디자인 시스템 구축.
+- **성과:**
+    - **유지보수 대상 서버 제거** — 배포 대상이 앱(+Pi)으로 축소, 관측이 Firebase 단일 콘솔로 통합.
+    - **인쇄 안정성 확보 및 인쇄/데이터 경로 격리** — 한쪽 장애가 다른 쪽에 전파되지 않음.
+    - **오프라인 내구성 확보** — 인터넷 단절에도 주문 접수·조회가 로컬에서 완결.
+
 ## 📝 업데이트 이력
 
 | **버전**    | **날짜**     | **주요 내용**                                                    |
@@ -142,6 +174,7 @@ val optimizedQuery = """
 | **1.4.2** | 2024.09.23 | 메뉴 카테고리 버그 수정, UUID 도입 (중복 데이터 방지)                           |
 | **2.0.0** | 2024.12.28 | **AWS 클라우드 연동 (Lambda, DynamoDB), MVVM 패턴 적용, Coroutine 도입** |
 | **2.1.0** | 2025.03.12 | 모든 기능 클라우드 연동 완료, 메뉴 순서 변경 오류 해결                             |
+| **3.0.0** | 2026.05.31 | **Firestore 직접 접근, Bluetooth 인쇄→Raspberry Pi 유선 인쇄, Jetpack Compose 마이그레이션** |
 
 ## 🔒 라이선스
 
