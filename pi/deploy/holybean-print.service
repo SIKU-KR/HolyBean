@@ -1,0 +1,16 @@
+<?xml version="1.0" standalone='no'?>
+<!DOCTYPE service-group SYSTEM "avahi-service.dtd">
+<!--
+  Avahi(mDNS/DNS-SD) 서비스 광고 정의.
+  배치 위치: /etc/avahi/services/holybean-print.service
+  Android 앱(NsdManager)이 `_holybean-print._tcp`를 탐색해 Pi 인쇄서버 host:port를 런타임에 해석한다.
+  서버 바인딩(0.0.0.0:9100)과 포트가 일치해야 한다(pi/src/config.rs, holybean-print-server.service).
+-->
+<service-group>
+  <name replace-wildcards="yes">HolyBean Print Server on %h</name>
+  <service>
+    <type>_holybean-print._tcp</type>
+    <port>9100</port>
+    <txt-record>path=/print</txt-record>
+  </service>
+</service-group>

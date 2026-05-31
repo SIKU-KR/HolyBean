@@ -1,0 +1,1735 @@
+{
+  "fields": {
+    "items": {
+      "arrayValue": {
+        "values": [
+          {
+            "mapValue": {
+              "fields": {
+                "price": {
+                  "integerValue": "2500"
+                },
+                "id": {
+                  "integerValue": "1001"
+                },
+                "inuse": {
+                  "booleanValue": true
+                },
+                "placement": {
+                  "integerValue": "1001"
+                },
+                "name": {
+                  "stringValue": "핫 아메리카노"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "inuse": {
+                  "booleanValue": true
+                },
+                "placement": {
+                  "integerValue": "1002"
+                },
+                "name": {
+                  "stringValue": "에스프레소"
+                },
+                "price": {
+                  "integerValue": "2000"
+                },
+                "id": {
+                  "integerValue": "1002"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "inuse": {
+                  "booleanValue": true
+                },
+                "placement": {
+                  "integerValue": "1003"
+                },
+                "name": {
+                  "stringValue": "핫 카페라떼"
+                },
+                "price": {
+                  "integerValue": "3000"
+                },
+                "id": {
+                  "integerValue": "1003"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "placement": {
+                  "integerValue": "1004"
+                },
+                "inuse": {
+                  "booleanValue": true
+                },
+                "name": {
+                  "stringValue": "핫 바닐라라떼"
+                },
+                "price": {
+                  "integerValue": "3000"
+                },
+                "id": {
+                  "integerValue": "1004"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "name": {
+                  "stringValue": "핫 카라멜마끼야또"
+                },
+                "placement": {
+                  "integerValue": "1005"
+                },
+                "inuse": {
+                  "booleanValue": true
+                },
+                "id": {
+                  "integerValue": "1005"
+                },
+                "price": {
+                  "integerValue": "3000"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "price": {
+                  "integerValue": "3000"
+                },
+                "id": {
+                  "integerValue": "1006"
+                },
+                "inuse": {
+                  "booleanValue": true
+                },
+                "placement": {
+                  "integerValue": "1006"
+                },
+                "name": {
+                  "stringValue": "핫 카페모카"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "name": {
+                  "stringValue": "핫 헤이즐넛"
+                },
+                "inuse": {
+                  "booleanValue": true
+                },
+                "placement": {
+                  "integerValue": "1007"
+                },
+                "id": {
+                  "integerValue": "1007"
+                },
+                "price": {
+                  "integerValue": "2500"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "price": {
+                  "integerValue": "2500"
+                },
+                "id": {
+                  "integerValue": "1008"
+                },
+                "placement": {
+                  "integerValue": "1008"
+                },
+                "inuse": {
+                  "booleanValue": true
+                },
+                "name": {
+                  "stringValue": "핫 녹차라떼"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "name": {
+                  "stringValue": "핫 초코라떼"
+                },
+                "placement": {
+                  "integerValue": "1009"
+                },
+                "inuse": {
+                  "booleanValue": true
+                },
+                "id": {
+                  "integerValue": "1009"
+                },
+                "price": {
+                  "integerValue": "2500"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "name": {
+                  "stringValue": "핫 헤이즐넛라떼"
+                },
+                "placement": {
+                  "integerValue": "1010"
+                },
+                "inuse": {
+                  "booleanValue": true
+                },
+                "id": {
+                  "integerValue": "1010"
+                },
+                "price": {
+                  "integerValue": "2500"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "id": {
+                  "integerValue": "1011"
+                },
+                "price": {
+                  "integerValue": "3500"
+                },
+                "name": {
+                  "stringValue": "꿀 생강라떼"
+                },
+                "inuse": {
+                  "booleanValue": true
+                },
+                "placement": {
+                  "integerValue": "1011"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "id": {
+                  "integerValue": "1012"
+                },
+                "price": {
+                  "integerValue": "0"
+                },
+                "name": {
+                  "stringValue": "ㄴ 덜달게"
+                },
+                "inuse": {
+                  "booleanValue": true
+                },
+                "placement": {
+                  "integerValue": "1012"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "id": {
+                  "integerValue": "1013"
+                },
+                "price": {
+                  "integerValue": "0"
+                },
+                "name": {
+                  "stringValue": "ㄴ 달게"
+                },
+                "placement": {
+                  "integerValue": "1013"
+                },
+                "inuse": {
+                  "booleanValue": true
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "price": {
+                  "integerValue": "0"
+                },
+                "id": {
+                  "integerValue": "1014"
+                },
+                "inuse": {
+                  "booleanValue": true
+                },
+                "placement": {
+                  "integerValue": "1014"
+                },
+                "name": {
+                  "stringValue": "ㄴ 샷추가"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "placement": {
+                  "integerValue": "1015"
+                },
+                "inuse": {
+                  "booleanValue": true
+                },
+                "name": {
+                  "stringValue": "ㄴ 연하게"
+                },
+                "price": {
+                  "integerValue": "0"
+                },
+                "id": {
+                  "integerValue": "1015"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "name": {
+                  "stringValue": "ㄴ 우유조금"
+                },
+                "inuse": {
+                  "booleanValue": true
+                },
+                "placement": {
+                  "integerValue": "1016"
+                },
+                "id": {
+                  "integerValue": "1016"
+                },
+                "price": {
+                  "integerValue": "0"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "inuse": {
+                  "booleanValue": true
+                },
+                "placement": {
+                  "integerValue": "2001"
+                },
+                "name": {
+                  "stringValue": "아이스 아메리카노"
+                },
+                "price": {
+                  "integerValue": "2500"
+                },
+                "id": {
+                  "integerValue": "2001"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "price": {
+                  "integerValue": "3000"
+                },
+                "id": {
+                  "integerValue": "2002"
+                },
+                "placement": {
+                  "integerValue": "2002"
+                },
+                "inuse": {
+                  "booleanValue": true
+                },
+                "name": {
+                  "stringValue": "아이스 카페라떼"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "id": {
+                  "integerValue": "2003"
+                },
+                "price": {
+                  "integerValue": "3000"
+                },
+                "name": {
+                  "stringValue": "아이스 바닐라라떼"
+                },
+                "placement": {
+                  "integerValue": "2003"
+                },
+                "inuse": {
+                  "booleanValue": true
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "name": {
+                  "stringValue": "아이스 카라멜마끼야또"
+                },
+                "inuse": {
+                  "booleanValue": true
+                },
+                "placement": {
+                  "integerValue": "2004"
+                },
+                "id": {
+                  "integerValue": "2004"
+                },
+                "price": {
+                  "integerValue": "3000"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "placement": {
+                  "integerValue": "2005"
+                },
+                "inuse": {
+                  "booleanValue": true
+                },
+                "name": {
+                  "stringValue": "아이스 카페모카"
+                },
+                "price": {
+                  "integerValue": "3000"
+                },
+                "id": {
+                  "integerValue": "2005"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "price": {
+                  "integerValue": "2500"
+                },
+                "id": {
+                  "integerValue": "2006"
+                },
+                "inuse": {
+                  "booleanValue": true
+                },
+                "placement": {
+                  "integerValue": "2006"
+                },
+                "name": {
+                  "stringValue": "아이스 헤이즐넛"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "id": {
+                  "integerValue": "2007"
+                },
+                "price": {
+                  "integerValue": "2500"
+                },
+                "name": {
+                  "stringValue": "아이스 녹차라떼"
+                },
+                "inuse": {
+                  "booleanValue": true
+                },
+                "placement": {
+                  "integerValue": "2007"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "price": {
+                  "integerValue": "2500"
+                },
+                "id": {
+                  "integerValue": "2008"
+                },
+                "placement": {
+                  "integerValue": "2008"
+                },
+                "inuse": {
+                  "booleanValue": true
+                },
+                "name": {
+                  "stringValue": "아이스 초코라떼"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "price": {
+                  "integerValue": "4000"
+                },
+                "id": {
+                  "integerValue": "2009"
+                },
+                "placement": {
+                  "integerValue": "2009"
+                },
+                "inuse": {
+                  "booleanValue": true
+                },
+                "name": {
+                  "stringValue": "아몬드크림라떼"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "id": {
+                  "integerValue": "2010"
+                },
+                "price": {
+                  "integerValue": "0"
+                },
+                "name": {
+                  "stringValue": "ㄴ 덜달게"
+                },
+                "inuse": {
+                  "booleanValue": true
+                },
+                "placement": {
+                  "integerValue": "2010"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "name": {
+                  "stringValue": "ㄴ 달게"
+                },
+                "placement": {
+                  "integerValue": "2011"
+                },
+                "inuse": {
+                  "booleanValue": true
+                },
+                "id": {
+                  "integerValue": "2011"
+                },
+                "price": {
+                  "integerValue": "0"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "price": {
+                  "integerValue": "0"
+                },
+                "id": {
+                  "integerValue": "2012"
+                },
+                "placement": {
+                  "integerValue": "2012"
+                },
+                "inuse": {
+                  "booleanValue": true
+                },
+                "name": {
+                  "stringValue": "ㄴ 샷추가"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "id": {
+                  "integerValue": "2013"
+                },
+                "price": {
+                  "integerValue": "0"
+                },
+                "name": {
+                  "stringValue": "ㄴ 연하게"
+                },
+                "placement": {
+                  "integerValue": "2013"
+                },
+                "inuse": {
+                  "booleanValue": true
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "name": {
+                  "stringValue": "ㄴ 우유조금"
+                },
+                "inuse": {
+                  "booleanValue": true
+                },
+                "placement": {
+                  "integerValue": "2014"
+                },
+                "id": {
+                  "integerValue": "2014"
+                },
+                "price": {
+                  "integerValue": "0"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "price": {
+                  "integerValue": "1500"
+                },
+                "id": {
+                  "integerValue": "3001"
+                },
+                "placement": {
+                  "integerValue": "3001"
+                },
+                "inuse": {
+                  "booleanValue": false
+                },
+                "name": {
+                  "stringValue": "복숭아아이스티 (소)"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "id": {
+                  "integerValue": "3002"
+                },
+                "price": {
+                  "integerValue": "1500"
+                },
+                "name": {
+                  "stringValue": "레몬아이스티 (소)"
+                },
+                "inuse": {
+                  "booleanValue": false
+                },
+                "placement": {
+                  "integerValue": "3002"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "price": {
+                  "integerValue": "2500"
+                },
+                "id": {
+                  "integerValue": "3003"
+                },
+                "placement": {
+                  "integerValue": "3003"
+                },
+                "inuse": {
+                  "booleanValue": true
+                },
+                "name": {
+                  "stringValue": "복숭아아이스티"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "price": {
+                  "integerValue": "2500"
+                },
+                "id": {
+                  "integerValue": "3004"
+                },
+                "inuse": {
+                  "booleanValue": true
+                },
+                "placement": {
+                  "integerValue": "3004"
+                },
+                "name": {
+                  "stringValue": "레몬아이스티"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "price": {
+                  "integerValue": "2500"
+                },
+                "id": {
+                  "integerValue": "3005"
+                },
+                "placement": {
+                  "integerValue": "3005"
+                },
+                "inuse": {
+                  "booleanValue": true
+                },
+                "name": {
+                  "stringValue": "자몽차"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "inuse": {
+                  "booleanValue": true
+                },
+                "placement": {
+                  "integerValue": "3006"
+                },
+                "name": {
+                  "stringValue": "유자차"
+                },
+                "price": {
+                  "integerValue": "2500"
+                },
+                "id": {
+                  "integerValue": "3006"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "name": {
+                  "stringValue": "레몬차"
+                },
+                "inuse": {
+                  "booleanValue": true
+                },
+                "placement": {
+                  "integerValue": "3007"
+                },
+                "id": {
+                  "integerValue": "3007"
+                },
+                "price": {
+                  "integerValue": "2500"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "placement": {
+                  "integerValue": "3008"
+                },
+                "inuse": {
+                  "booleanValue": true
+                },
+                "name": {
+                  "stringValue": "생강차"
+                },
+                "price": {
+                  "integerValue": "2500"
+                },
+                "id": {
+                  "integerValue": "3008"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "id": {
+                  "integerValue": "3009"
+                },
+                "price": {
+                  "integerValue": "2000"
+                },
+                "name": {
+                  "stringValue": "레몬생강차"
+                },
+                "placement": {
+                  "integerValue": "3009"
+                },
+                "inuse": {
+                  "booleanValue": true
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "name": {
+                  "stringValue": "자몽에이드 (생과일)"
+                },
+                "inuse": {
+                  "booleanValue": true
+                },
+                "placement": {
+                  "integerValue": "4008"
+                },
+                "id": {
+                  "integerValue": "4001"
+                },
+                "price": {
+                  "integerValue": "3500"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "placement": {
+                  "integerValue": "4009"
+                },
+                "inuse": {
+                  "booleanValue": true
+                },
+                "name": {
+                  "stringValue": "레몬에이드 (생과일)"
+                },
+                "price": {
+                  "integerValue": "3500"
+                },
+                "id": {
+                  "integerValue": "4002"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "id": {
+                  "integerValue": "4003"
+                },
+                "price": {
+                  "integerValue": "3000"
+                },
+                "name": {
+                  "stringValue": "청포도에이드"
+                },
+                "inuse": {
+                  "booleanValue": true
+                },
+                "placement": {
+                  "integerValue": "4006"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "placement": {
+                  "integerValue": "4007"
+                },
+                "inuse": {
+                  "booleanValue": true
+                },
+                "name": {
+                  "stringValue": "자두에이드"
+                },
+                "price": {
+                  "integerValue": "3000"
+                },
+                "id": {
+                  "integerValue": "4004"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "id": {
+                  "integerValue": "4005"
+                },
+                "price": {
+                  "integerValue": "3000"
+                },
+                "name": {
+                  "stringValue": "수제아로니아 베리에이드"
+                },
+                "placement": {
+                  "integerValue": "4010"
+                },
+                "inuse": {
+                  "booleanValue": false
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "placement": {
+                  "integerValue": "4001"
+                },
+                "inuse": {
+                  "booleanValue": true
+                },
+                "name": {
+                  "stringValue": "플레인요거트스무디"
+                },
+                "price": {
+                  "integerValue": "3000"
+                },
+                "id": {
+                  "integerValue": "4006"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "placement": {
+                  "integerValue": "4003"
+                },
+                "inuse": {
+                  "booleanValue": true
+                },
+                "name": {
+                  "stringValue": "딸기스무디"
+                },
+                "price": {
+                  "integerValue": "4000"
+                },
+                "id": {
+                  "integerValue": "4007"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "price": {
+                  "integerValue": "4000"
+                },
+                "id": {
+                  "integerValue": "4008"
+                },
+                "inuse": {
+                  "booleanValue": true
+                },
+                "placement": {
+                  "integerValue": "4002"
+                },
+                "name": {
+                  "stringValue": "딸기요거트스무디"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "name": {
+                  "stringValue": "유자스무디"
+                },
+                "inuse": {
+                  "booleanValue": true
+                },
+                "placement": {
+                  "integerValue": "4004"
+                },
+                "id": {
+                  "integerValue": "4009"
+                },
+                "price": {
+                  "integerValue": "3000"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "price": {
+                  "integerValue": "4000"
+                },
+                "id": {
+                  "integerValue": "4010"
+                },
+                "inuse": {
+                  "booleanValue": true
+                },
+                "placement": {
+                  "integerValue": "4005"
+                },
+                "name": {
+                  "stringValue": "딸기라떼"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "id": {
+                  "integerValue": "5001"
+                },
+                "price": {
+                  "integerValue": "2000"
+                },
+                "name": {
+                  "stringValue": "크루아상"
+                },
+                "placement": {
+                  "integerValue": "5001"
+                },
+                "inuse": {
+                  "booleanValue": false
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "name": {
+                  "stringValue": "베이글"
+                },
+                "inuse": {
+                  "booleanValue": false
+                },
+                "placement": {
+                  "integerValue": "5002"
+                },
+                "id": {
+                  "integerValue": "5002"
+                },
+                "price": {
+                  "integerValue": "2000"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "placement": {
+                  "integerValue": "5003"
+                },
+                "inuse": {
+                  "booleanValue": false
+                },
+                "name": {
+                  "stringValue": "베이글세트"
+                },
+                "price": {
+                  "integerValue": "5000"
+                },
+                "id": {
+                  "integerValue": "5003"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "price": {
+                  "integerValue": "1500"
+                },
+                "id": {
+                  "integerValue": "5004"
+                },
+                "inuse": {
+                  "booleanValue": false
+                },
+                "placement": {
+                  "integerValue": "5004"
+                },
+                "name": {
+                  "stringValue": "크림치즈 (플레인)"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "id": {
+                  "integerValue": "5005"
+                },
+                "price": {
+                  "integerValue": "1500"
+                },
+                "name": {
+                  "stringValue": "크림치즈 (바질)"
+                },
+                "placement": {
+                  "integerValue": "5005"
+                },
+                "inuse": {
+                  "booleanValue": false
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "name": {
+                  "stringValue": "크림치즈 (블루베리)"
+                },
+                "placement": {
+                  "integerValue": "5006"
+                },
+                "inuse": {
+                  "booleanValue": false
+                },
+                "id": {
+                  "integerValue": "5006"
+                },
+                "price": {
+                  "integerValue": "1500"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "id": {
+                  "integerValue": "5007"
+                },
+                "price": {
+                  "integerValue": "2000"
+                },
+                "name": {
+                  "stringValue": "미니바게트"
+                },
+                "inuse": {
+                  "booleanValue": false
+                },
+                "placement": {
+                  "integerValue": "5007"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "price": {
+                  "integerValue": "3000"
+                },
+                "id": {
+                  "integerValue": "5008"
+                },
+                "inuse": {
+                  "booleanValue": false
+                },
+                "placement": {
+                  "integerValue": "5008"
+                },
+                "name": {
+                  "stringValue": "호두파이"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "inuse": {
+                  "booleanValue": false
+                },
+                "placement": {
+                  "integerValue": "5009"
+                },
+                "name": {
+                  "stringValue": "벨지움초코타르트"
+                },
+                "price": {
+                  "integerValue": "3000"
+                },
+                "id": {
+                  "integerValue": "5009"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "price": {
+                  "integerValue": "1500"
+                },
+                "id": {
+                  "integerValue": "5010"
+                },
+                "inuse": {
+                  "booleanValue": false
+                },
+                "placement": {
+                  "integerValue": "5010"
+                },
+                "name": {
+                  "stringValue": "마카롱 (초코)"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "placement": {
+                  "integerValue": "5011"
+                },
+                "inuse": {
+                  "booleanValue": false
+                },
+                "name": {
+                  "stringValue": "마카롱 (바닐라)"
+                },
+                "price": {
+                  "integerValue": "1500"
+                },
+                "id": {
+                  "integerValue": "5011"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "placement": {
+                  "integerValue": "5012"
+                },
+                "inuse": {
+                  "booleanValue": false
+                },
+                "name": {
+                  "stringValue": "마카롱 (라즈베리)"
+                },
+                "price": {
+                  "integerValue": "1500"
+                },
+                "id": {
+                  "integerValue": "5012"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "placement": {
+                  "integerValue": "5013"
+                },
+                "inuse": {
+                  "booleanValue": true
+                },
+                "name": {
+                  "stringValue": "하겐다즈 바닐라"
+                },
+                "price": {
+                  "integerValue": "5000"
+                },
+                "id": {
+                  "integerValue": "5013"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "price": {
+                  "integerValue": "5000"
+                },
+                "id": {
+                  "integerValue": "5014"
+                },
+                "placement": {
+                  "integerValue": "5014"
+                },
+                "inuse": {
+                  "booleanValue": true
+                },
+                "name": {
+                  "stringValue": "하겐다즈 그린티"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "placement": {
+                  "integerValue": "5015"
+                },
+                "inuse": {
+                  "booleanValue": true
+                },
+                "name": {
+                  "stringValue": "하겐다즈 스트로베리"
+                },
+                "price": {
+                  "integerValue": "5000"
+                },
+                "id": {
+                  "integerValue": "5015"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "id": {
+                  "integerValue": "5016"
+                },
+                "price": {
+                  "integerValue": "5000"
+                },
+                "name": {
+                  "stringValue": "하겐다즈 벨지안초콜릿"
+                },
+                "inuse": {
+                  "booleanValue": true
+                },
+                "placement": {
+                  "integerValue": "5016"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "id": {
+                  "integerValue": "5017"
+                },
+                "price": {
+                  "integerValue": "5000"
+                },
+                "name": {
+                  "stringValue": "하겐다즈 마카다미아넛"
+                },
+                "placement": {
+                  "integerValue": "5017"
+                },
+                "inuse": {
+                  "booleanValue": true
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "inuse": {
+                  "booleanValue": true
+                },
+                "placement": {
+                  "integerValue": "5018"
+                },
+                "name": {
+                  "stringValue": "하겐다즈 쿠키&크림"
+                },
+                "price": {
+                  "integerValue": "5000"
+                },
+                "id": {
+                  "integerValue": "5018"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "id": {
+                  "integerValue": "5019"
+                },
+                "price": {
+                  "integerValue": "5000"
+                },
+                "name": {
+                  "stringValue": "하겐다즈 카라멜샌드"
+                },
+                "inuse": {
+                  "booleanValue": true
+                },
+                "placement": {
+                  "integerValue": "5019"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "price": {
+                  "integerValue": "5000"
+                },
+                "id": {
+                  "integerValue": "5020"
+                },
+                "placement": {
+                  "integerValue": "5020"
+                },
+                "inuse": {
+                  "booleanValue": true
+                },
+                "name": {
+                  "stringValue": "하겐다즈 스트로베리샌드"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "placement": {
+                  "integerValue": "5021"
+                },
+                "inuse": {
+                  "booleanValue": false
+                },
+                "name": {
+                  "stringValue": "퐁당 오 쇼콜라"
+                },
+                "price": {
+                  "integerValue": "3000"
+                },
+                "id": {
+                  "integerValue": "5021"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "id": {
+                  "integerValue": "5022"
+                },
+                "price": {
+                  "integerValue": "15000"
+                },
+                "name": {
+                  "stringValue": "하겐다즈 파인트 초콜릿"
+                },
+                "inuse": {
+                  "booleanValue": true
+                },
+                "placement": {
+                  "integerValue": "5022"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "name": {
+                  "stringValue": "하겐다즈 파인트 바닐라"
+                },
+                "inuse": {
+                  "booleanValue": true
+                },
+                "placement": {
+                  "integerValue": "5023"
+                },
+                "id": {
+                  "integerValue": "5023"
+                },
+                "price": {
+                  "integerValue": "15000"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "price": {
+                  "integerValue": "15000"
+                },
+                "id": {
+                  "integerValue": "5024"
+                },
+                "placement": {
+                  "integerValue": "5024"
+                },
+                "inuse": {
+                  "booleanValue": true
+                },
+                "name": {
+                  "stringValue": "하겐다즈 파인트 스트로베리"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "name": {
+                  "stringValue": "골드메달 사과주스"
+                },
+                "inuse": {
+                  "booleanValue": true
+                },
+                "placement": {
+                  "integerValue": "5025"
+                },
+                "id": {
+                  "integerValue": "5025"
+                },
+                "price": {
+                  "integerValue": "3000"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "placement": {
+                  "integerValue": "5026"
+                },
+                "inuse": {
+                  "booleanValue": true
+                },
+                "name": {
+                  "stringValue": "과일사이다 (복숭아)"
+                },
+                "price": {
+                  "integerValue": "2500"
+                },
+                "id": {
+                  "integerValue": "5026"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "name": {
+                  "stringValue": "과일사이다 (수박)"
+                },
+                "inuse": {
+                  "booleanValue": true
+                },
+                "placement": {
+                  "integerValue": "5027"
+                },
+                "id": {
+                  "integerValue": "5027"
+                },
+                "price": {
+                  "integerValue": "2500"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "price": {
+                  "integerValue": "2500"
+                },
+                "id": {
+                  "integerValue": "5028"
+                },
+                "inuse": {
+                  "booleanValue": true
+                },
+                "placement": {
+                  "integerValue": "5028"
+                },
+                "name": {
+                  "stringValue": "과일사이다 (메론)"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "name": {
+                  "stringValue": "과일사이다 (사과)"
+                },
+                "placement": {
+                  "integerValue": "5029"
+                },
+                "inuse": {
+                  "booleanValue": true
+                },
+                "id": {
+                  "integerValue": "5029"
+                },
+                "price": {
+                  "integerValue": "2500"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "price": {
+                  "integerValue": "3500"
+                },
+                "id": {
+                  "integerValue": "5030"
+                },
+                "placement": {
+                  "integerValue": "5030"
+                },
+                "inuse": {
+                  "booleanValue": true
+                },
+                "name": {
+                  "stringValue": "분다버그 (자몽)"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "id": {
+                  "integerValue": "5031"
+                },
+                "price": {
+                  "integerValue": "3500"
+                },
+                "name": {
+                  "stringValue": "분다버그 (레몬)"
+                },
+                "placement": {
+                  "integerValue": "5031"
+                },
+                "inuse": {
+                  "booleanValue": true
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "id": {
+                  "integerValue": "5032"
+                },
+                "price": {
+                  "integerValue": "3500"
+                },
+                "name": {
+                  "stringValue": "분다버그 (망고)"
+                },
+                "inuse": {
+                  "booleanValue": true
+                },
+                "placement": {
+                  "integerValue": "5032"
+                }
+              }
+            }
+          },
+          {
+            "mapValue": {
+              "fields": {
+                "price": {
+                  "integerValue": "0"
+                },
+                "id": {
+                  "integerValue": "5033"
+                },
+                "inuse": {
+                  "booleanValue": true
+                },
+                "placement": {
+                  "integerValue": "5033"
+                },
+                "name": {
+                  "stringValue": "ㄴ 아이스컵"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "updatedAt": {
+      "timestampValue": "2026-05-27T14:03:17.616Z"
+    }
+  }
+}

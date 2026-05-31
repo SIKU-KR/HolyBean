@@ -1,16 +1,35 @@
 *.iml
 .gradle
-/local.properties
-/.idea
 .DS_Store
-/build
-/captures
 .externalNativeBuild
 .cxx
 local.properties
 lambda.http
-/app/release
 GEMINI.md
 CLAUDE.md
 AGENTS.md
 /.cursor
+/.idea
+
+# android module
+/android/.idea
+/android/build
+/android/captures
+/android/local.properties
+/android/app/release
+/android/google-services.json
+
+# Firebase
+android/app/google-services.json
+
+# Firebase ETL secrets/data
+firebase/serviceAccount.json
+firebase/data/
+firebase/node_modules/
+firebase/*-debug.log
+firebase/menu-backup-*.json
+firebase/.firebase/
+firebase/public/firebase-config.js
+
+# Superpowers brainstorming companion
+.superpowers/

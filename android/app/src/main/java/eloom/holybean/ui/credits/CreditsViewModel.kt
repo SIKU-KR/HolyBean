@@ -1,0 +1,105 @@
+package eloom.holybean.ui.credits
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.lifecycle.HiltViewModel
+import eloom.holybean.data.model.CreditItem
+import eloom.holybean.data.model.OrdersDetailItem
+import eloom.holybean.data.repository.FirestoreRepository
+import eloom.holybean.util.launchSafely
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.*
+import javax.inject.Inject
+
+@HiltViewModel
+class CreditsViewModel @Inject constructor(
+    private val firestoreRepository: FirestoreRepository,
+) : ViewModel() {
+
+    data class CreditsUiState(
+        val creditsList: List<CreditItem> = emptyList(),
+        val selectedOrderNumber: Int = 0,
+        val selectedOrderTotal: Int = 0,
+        val selectedOrderDate: String = "",
+        val orderDetails: List<OrdersDetailItem> = emptyList(),
+        val isLoading: Boolean = false
+    )
+
+    sealed class CreditsUiEvent {
+        data class ShowToast(val message: String) : CreditsUiEvent()
+        object RefreshCredits : CreditsUiEvent()
+    }
+
+    private val _uiState = MutableStateFlow(CreditsUiState())
+    val uiState: StateFlow<CreditsUiState> = _uiState.asStateFlow()
+
+    // replay = 0: 토스트/새로고침 같은 일회성 이벤트이므로 새 구독자(재구성 등)에게
+    // 다시 재생되면 안 된다. 재생될 경우 오래된 토스트가 다시 표시된다.
+    private val _uiEvent = MutableSharedFlow<CreditsUiEvent>(
+        replay = 0,
+        extraBufferCapacity = 16,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
+    val uiEvent: SharedFlow<CreditsUiEvent> = _uiEvent.asSharedFlow()
+
+    init {
+        loadCredits()
+    }
+
+    fun loadCredits() {
+        viewModelScope.launchSafely(onError = { e ->
+            _uiState.update { it.copy(isLoading = false) }
+            _uiEvent.tryEmit(CreditsUiEvent.ShowToast("외상 목록을 불러오는 중 오류가 발생했습니다: ${e.message}"))
+        }) {
+            _uiState.update { it.copy(isLoading = true) }
+            val creditsList = firestoreRepository.getCreditsList()
+            _uiState.update { it.copy(creditsList = creditsList, isLoading = false) }
+        }
+    }
+
+    fun selectOrder(orderNumber: Int, totalAmount: Int, date: String) {
+        _uiState.update {
+            it.copy(
+                selectedOrderNumber = orderNumber,
+                selectedOrderTotal = totalAmount,
+                selectedOrderDate = date,
+                orderDetails = emptyList() // Clear previous details
+            )
+        }
+    }
+
+    fun fetchOrderDetail() {
+        val currentState = _uiState.value
+        if (currentState.selectedOrderNumber == 0) {
+            _uiEvent.tryEmit(CreditsUiEvent.ShowToast("주문을 선택해주세요"))
+            return
+        }
+
+        viewModelScope.launchSafely(onError = { e ->
+            _uiEvent.tryEmit(CreditsUiEvent.ShowToast("주문 조회 중 오류가 발생했습니다: ${e.message}"))
+        }) {
+            val fetched = firestoreRepository.getOrderDetail(currentState.selectedOrderDate, currentState.selectedOrderNumber)
+            if (fetched.isEmpty()) {
+                _uiEvent.tryEmit(CreditsUiEvent.ShowToast("주문 내역이 없습니다."))
+            } else {
+                _uiState.update { it.copy(orderDetails = fetched) }
+            }
+        }
+    }
+
+    fun handleDeleteButton() {
+        val currentState = _uiState.value
+        if (currentState.selectedOrderNumber == 0) {
+            _uiEvent.tryEmit(CreditsUiEvent.ShowToast("주문을 선택해주세요"))
+            return
+        }
+
+        viewModelScope.launchSafely(onError = { e ->
+            _uiEvent.tryEmit(CreditsUiEvent.ShowToast("외상 처리 중 오류가 발생했습니다: ${e.message}"))
+        }) {
+            firestoreRepository.setCreditOrderPaid(currentState.selectedOrderDate, currentState.selectedOrderNumber)
+            _uiEvent.tryEmit(CreditsUiEvent.ShowToast("외상이 성공적으로 처리되었습니다."))
+            _uiEvent.tryEmit(CreditsUiEvent.RefreshCredits)
+        }
+    }
+}

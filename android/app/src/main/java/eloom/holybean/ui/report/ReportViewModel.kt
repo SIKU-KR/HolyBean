@@ -1,0 +1,106 @@
+package eloom.holybean.ui.report
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.lifecycle.HiltViewModel
+import eloom.holybean.data.model.PrinterDTO
+import eloom.holybean.data.model.ReportDetailItem
+import eloom.holybean.data.repository.FirestoreRepository
+import eloom.holybean.printer.PiPrintClient
+import eloom.holybean.di.AppScope
+import eloom.holybean.printer.polymorphism.ReportPrinter
+import eloom.holybean.util.launchSafely
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.*
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.*
+import javax.inject.Inject
+
+@HiltViewModel
+class ReportViewModel @Inject constructor(
+    private val firestoreRepository: FirestoreRepository,
+    @AppScope private val applicationScope: CoroutineScope,
+    private val piPrintClient: PiPrintClient,
+    private val reportPrinter: ReportPrinter,
+) : ViewModel() {
+
+    data class ReportUiState(
+        val reportData: Map<String, Int> = emptyMap(),
+        val reportDetailData: List<ReportDetailItem> = emptyList(),
+        val reportTitle: String = "",
+        val isLoading: Boolean = false
+    )
+
+    sealed class ReportUiEvent {
+        data class ShowToast(val message: String) : ReportUiEvent()
+        data class ShowError(val message: String) : ReportUiEvent()
+    }
+
+    private val _uiState = MutableStateFlow(ReportUiState())
+    val uiState: StateFlow<ReportUiState> = _uiState.asStateFlow()
+
+    // replay = 0: 토스트/에러 같은 일회성 이벤트이므로 새 구독자(재구성 등)에게
+    // 다시 재생되면 안 된다. 재생될 경우 오래된 토스트가 다시 표시된다.
+    private val _uiEvent = MutableSharedFlow<ReportUiEvent>(
+        replay = 0,
+        extraBufferCapacity = 16,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
+    val uiEvent: SharedFlow<ReportUiEvent> = _uiEvent.asSharedFlow()
+
+    private val dateFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd", Locale.ROOT)
+
+    fun loadReportData(startDate: String, endDate: String) {
+        if (!isValidDateRange(startDate, endDate)) {
+            _uiEvent.tryEmit(ReportUiEvent.ShowError("잘못된 날짜 범위입니다"))
+            return
+        }
+
+        viewModelScope.launchSafely(onError = { e ->
+            _uiState.update { it.copy(isLoading = false) }
+            _uiEvent.tryEmit(ReportUiEvent.ShowError("리포트를 불러오는데 실패했습니다: ${e.localizedMessage}"))
+        }) {
+            _uiState.update { it.copy(isLoading = true, reportTitle = "$startDate ~ $endDate") }
+            val report = firestoreRepository.getReport(startDate, endDate)
+            _uiState.update { it.copy(reportDetailData = report.menuSales, reportData = report.paymentSales, isLoading = false) }
+        }
+    }
+
+    fun printReport() {
+        val currentState = _uiState.value
+        val summary = currentState.reportData
+        val details = currentState.reportDetailData
+        val title = currentState.reportTitle
+
+        if (summary.isEmpty() || details.isEmpty() || title.isEmpty()) {
+            _uiEvent.tryEmit(ReportUiEvent.ShowError("인쇄할 데이터가 없습니다"))
+            return
+        }
+
+        applicationScope.launchSafely(onError = { e ->
+            _uiEvent.tryEmit(ReportUiEvent.ShowError("인쇄 실패 : ${e.localizedMessage}"))
+        }) {
+            val dateParts = title.split(" ~ ")
+            val printerDTO = PrinterDTO(dateParts[0], dateParts[1], summary, details)
+            piPrintClient.print(reportPrinter.makeCommands(printerDTO))
+            _uiEvent.tryEmit(ReportUiEvent.ShowToast("리포트 인쇄가 완료되었습니다"))
+        }
+    }
+
+    private fun isValidDateRange(start: String, end: String): Boolean {
+        return try {
+            val startDate = LocalDate.parse(start, dateFormatter)
+            val endDate = LocalDate.parse(end, dateFormatter)
+            !startDate.isAfter(endDate)
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    fun formatDate(year: Int, month: Int, day: Int): String {
+        val selectedDate = LocalDate.of(year, month + 1, day)
+        return selectedDate.format(dateFormatter)
+    }
+}
