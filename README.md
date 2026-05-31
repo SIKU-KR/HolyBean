@@ -42,31 +42,10 @@
 - **잡 큐 직렬화:** 동시 출력 시 영수증이 섞이지 않도록 보장, 실패 3회 자동 재시도
 - **systemd:** 부팅 자동 시작 + 크래시 자동 복구, `mDNS`로 주소 광고(앱이 빌드 고정 IP 없이 런타임 탐색)
 
-## 🛠 기술 스택
-
-### 클라이언트 개발
-
-* **주요 기술**: Kotlin, Jetpack Compose, Android SDK, MVVM 패턴
-* **비동기 & DI**: Coroutines, Hilt
-* **데이터 관리**: Cloud Firestore SDK (오프라인 영속성)
-
-### 백엔드 & 클라우드 (Firebase)
-
-* **Database:** Cloud Firestore (NoSQL, 직접 접근)
-* **Auth/인가:** Firebase Auth + App Check + Security Rules
-* **Hosting:** 웹 매출 대시보드
-* **Monitoring:** Firebase Crashlytics
-
-### 인쇄 서버
-
-* **언어:** Rust (clippy `-D warnings` 엄격 적용)
-* **프로토콜:** ESC/POS, 잡 큐 직렬화
-* **운영:** systemd, mDNS
-
-### 하드웨어 통합
+### 하드웨어
 
 * **디바이스**: Galaxy Tab A7 lite (Android 기반)
-* **중계 장비**: Raspberry Pi 3B (이더넷 업링크 + USB)
+* **중계 장비**: Raspberry Pi 3B+ (이더넷 업링크 + USB)
 * **주변기기**: 세우 SLK-TS400B 영수증 프린터 (USB, ESC/POS 프로토콜)
 
 ## 🔍 주요 기술적 도전 과제 및 해결 과정
