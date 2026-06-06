@@ -20,6 +20,10 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      # google-services.json(레포 미커밋, .gitignore)을 Secret 에서 복원 — google-services 플러그인이 빌드 시 필요
+      - name: Restore google-services.json
+        run: printf '%s' '${{ secrets.GOOGLE_SERVICES_JSON }}' > app/google-services.json
+
       # 서비스 계정 키(공식 ADC 경로)를 Secret 에서 파일로 복원
       - name: Restore service account key
         run: printf '%s' '${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}' > "$RUNNER_TEMP/sa-key.json"
