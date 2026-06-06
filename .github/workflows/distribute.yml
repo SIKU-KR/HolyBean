@@ -1,0 +1,34 @@
+name: Distribute to Firebase App Distribution
+
+# 본인이 GitHub Release 를 Publish 할 때만 실행 (수동 릴리스 트리거).
+# 릴리스는 보통 로컬 `/release` 스킬이 사용자 gh 인증으로 생성하므로 release 이벤트가 정상 트리거된다.
+on:
+  release:
+    types: [published]
+
+jobs:
+  distribute:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: android
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      # 서비스 계정 키(공식 ADC 경로)를 Secret 에서 파일로 복원
+      - name: Restore service account key
+        run: printf '%s' '${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}' > "$RUNNER_TEMP/sa-key.json"
+
+      # GitHub Release 본문을 App Distribution 릴리스 노트로 전달 (gradle: rootProject/release-notes.txt)
+      - name: Write release notes from GitHub Release body
+        run: printf '%s' "${{ github.event.release.body }}" > release-notes.txt
+
+      - name: Build & distribute
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa-key.json
+        run: ./gradlew assembleRelease appDistributionUploadRelease --stacktrace
