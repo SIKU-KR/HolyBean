@@ -5,6 +5,9 @@ import eloom.holybean.data.repository.FirestoreRepository
 import eloom.holybean.data.repository.MenuRepository
 import eloom.holybean.printer.PiPrintClient
 import eloom.holybean.printer.network.PrinterAddressResolver
+import eloom.holybean.printer.transport.PrintMethod
+import eloom.holybean.printer.transport.PrintTransportSelector
+import eloom.holybean.printer.transport.TransportSelection
 import eloom.holybean.util.MainDispatcherRule
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -13,6 +16,7 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -32,11 +36,14 @@ class StartupViewModelTest {
     private val firestore: FirestoreRepository = mockk(relaxed = true)
     private val pi: PiPrintClient = mockk(relaxed = true)
     private val resolver: PrinterAddressResolver = mockk(relaxed = true)
+    private val selector: PrintTransportSelector = mockk(relaxed = true)
+    private val selection = MutableStateFlow(TransportSelection(PrintMethod.PI_HTTP))
 
     @Before
     fun setUp() {
         mockkStatic(FirebaseCrashlytics::class)
         every { FirebaseCrashlytics.getInstance() } returns mockk(relaxed = true)
+        every { selector.selection } returns selection
     }
 
     @After
@@ -44,7 +51,7 @@ class StartupViewModelTest {
         unmockkAll()
     }
 
-    private fun vm() = StartupViewModel(menu, firestore, pi, resolver)
+    private fun vm() = StartupViewModel(menu, firestore, pi, resolver, selector)
 
     @Test fun `warms up printer address on init`() = runTest {
         coEvery { menu.getMenuListSync() } returns emptyList()
@@ -52,6 +59,7 @@ class StartupViewModelTest {
         coEvery { pi.checkHealth() } returns true
         vm()
         advanceUntilIdle()
+        coVerify(atLeast = 1) { selector.probe() }
         coVerify(atLeast = 1) { resolver.rediscover() }
     }
 

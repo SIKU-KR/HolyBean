@@ -3,10 +3,10 @@ package eloom.holybean.printer
 import eloom.holybean.di.PrinterDispatcher
 import eloom.holybean.printer.network.PrintCommandDto
 import eloom.holybean.printer.network.PrintFailureReason
-import eloom.holybean.printer.network.PrintRequestDto
-import eloom.holybean.printer.network.PrintServerApi
 import eloom.holybean.printer.network.PrintServerException
 import eloom.holybean.printer.network.PrinterAddressResolver
+import eloom.holybean.printer.transport.PrintTransportSelector
+import eloom.holybean.printer.transport.UsbFastFailException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
@@ -15,14 +15,9 @@ import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/**
- * Pi 프린트 서버로 구조화 JSON을 전송하는 클라이언트.
- * 모든 출력은 내부 Mutex로 직렬화되어 영수증이 섞이지 않는다.
- * 일시적 실패는 BackoffRetry 정책으로 최대 3회 재시도한다.
- */
 @Singleton
 class PiPrintClient @Inject constructor(
-    private val api: PrintServerApi,
+    private val selector: PrintTransportSelector,
     private val resolver: PrinterAddressResolver,
     @PrinterDispatcher private val printerDispatcher: CoroutineDispatcher,
 ) {
@@ -34,50 +29,31 @@ class PiPrintClient @Inject constructor(
         maxDelayMs = 1_500,
     )
 
-    /**
-     * 명령 배열 1개(영수증 1장)를 출력한다. 실패 시 PrintServerException.
-     */
     suspend fun print(commands: List<PrintCommandDto>) = withContext(printerDispatcher) {
         mutex.withLock {
             var rediscovered = false
             withRetry {
-                val response = try {
-                    api.print(PrintRequestDto(commands))
-                } catch (e: java.io.IOException) {
-                    if (!rediscovered) {
+                val transport = selector.requireActive()
+                try {
+                    transport.print(commands)
+                } catch (e: UsbFastFailException) {
+                    val newTransport = selector.reprobeOnFastFail(e.reason)
+                    newTransport.print(commands)
+                } catch (e: PrintServerException) {
+                    if (e.reason == PrintFailureReason.ServerUnreachable && !rediscovered) {
                         rediscovered = true
-                        resolver.rediscover()   // 다음 시도에서 인터셉터가 새 주소 사용
+                        resolver.rediscover()
                     }
-                    throw PrintServerException(
-                        PrintFailureReason.ServerUnreachable,
-                        "print server unreachable",
-                        e,
-                    )
-                }
-                if (!response.isSuccessful) {
-                    val reason = when (response.code()) {
-                        503 -> PrintFailureReason.PrinterOffline
-                        500 -> PrintFailureReason.PrinterError
-                        else -> PrintFailureReason.Unknown
-                    }
-                    throw PrintServerException(reason, "print server returned HTTP ${response.code()}")
+                    throw e
                 }
             }
         }
     }
 
-    /** /health 핑. 실패는 false(best-effort). 단, 취소는 삼키지 않고 재전파한다. */
     suspend fun checkHealth(): Boolean = withContext(printerDispatcher) {
-        try {
-            api.health().isSuccessful
-        } catch (e: kotlinx.coroutines.CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            false
-        }
+        selector.requireActive().checkHealth()
     }
 
-    /** 진단용 테스트 영수증 1장 출력. */
     suspend fun printTestReceipt() = print(
         listOf(
             PrintCommandDto(type = "text", content = "HolyBean 테스트 출력", align = "center", bold = true),

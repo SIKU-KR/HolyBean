@@ -48,6 +48,8 @@ android {
         // App Check: 기본 true = Debug provider(등록된 debug 토큰 사용, Play 미경유 가능).
         // 실제 Play 스토어 프로덕션 배포 시에만 useDebugAppCheck=false 로 PlayIntegrity 사용.
         buildConfigField("boolean", "USE_DEBUG_APPCHECK", featureFlag("useDebugAppCheck", true).toString())
+        // USB-C 직접 프린터 연결. 전환 기간 동안 true, 문제 발생 시 false로 즉시 Pi-only 복귀.
+        buildConfigField("boolean", "USE_USB_DIRECT", featureFlag("useUsbDirect", true).toString())
     }
 
     buildTypes {

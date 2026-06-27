@@ -8,6 +8,9 @@ import eloom.holybean.diag.NetworkStatusProvider
 import eloom.holybean.printer.PiPrintClient
 import eloom.holybean.printer.network.PrinterAddressResolver
 import eloom.holybean.printer.network.PrinterStatus
+import eloom.holybean.printer.transport.PrintTransportSelector
+import eloom.holybean.printer.transport.PrinterTransportStore
+import eloom.holybean.ui.printer.toDisplayText
 import eloom.holybean.util.launchSafely
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -27,6 +30,8 @@ class DevToolsViewModel @Inject constructor(
     private val firestoreRepository: FirestoreRepository,
     private val networkStatusProvider: NetworkStatusProvider,
     private val printerAddressResolver: PrinterAddressResolver,
+    private val transportSelector: PrintTransportSelector,
+    private val transportStore: PrinterTransportStore,
 ) : ViewModel() {
     data class State(
         val printerOk: Boolean? = null,
@@ -35,6 +40,8 @@ class DevToolsViewModel @Inject constructor(
         val networkInfo: String = "",
         val firestoreOk: Boolean? = null,
         val printerStatusText: String = "확인 전",
+        val transportMethodText: String = "확인 전",
+        val forcePi: Boolean = false,
     )
 
     private val _uiState = MutableStateFlow(State())
@@ -58,6 +65,16 @@ class DevToolsViewModel @Inject constructor(
         printerAddressResolver.status
             .onEach { status -> _uiState.update { it.copy(printerStatusText = status.toDisplay()) } }
             .launchIn(viewModelScope)
+        transportSelector.selection
+            .onEach { selection ->
+                _uiState.update {
+                    it.copy(
+                        transportMethodText = selection.toDisplayText(),
+                        forcePi = transportStore.forcePi,
+                    )
+                }
+            }
+            .launchIn(viewModelScope)
     }
 
     private fun PrinterStatus.toDisplay(): String = when (this) {
@@ -71,7 +88,15 @@ class DevToolsViewModel @Inject constructor(
         viewModelScope.launchSafely(onError = {
             _uiEvent.tryEmit(DevToolsUiEvent.ShowToast("프린터 탐색 실패"))
         }) {
+            transportSelector.probe()
             printerAddressResolver.rediscover()
+        }
+    }
+
+    fun setForcePi(force: Boolean) {
+        transportStore.forcePi = force
+        viewModelScope.launchSafely(onError = {}) {
+            transportSelector.probe()
         }
     }
 
@@ -92,6 +117,7 @@ class DevToolsViewModel @Inject constructor(
             _uiState.update { it.copy(networkOk = net.connected, networkInfo = net.info) }
 
             val start = System.currentTimeMillis()
+            transportSelector.probe()
             val printerHealthy = piPrintClient.checkHealth()
             val latency = System.currentTimeMillis() - start
             _uiState.update { it.copy(printerOk = printerHealthy, printerLatencyMs = latency) }

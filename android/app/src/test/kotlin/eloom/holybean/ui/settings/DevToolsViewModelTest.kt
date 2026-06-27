@@ -7,6 +7,10 @@ import eloom.holybean.diag.NetworkStatusProvider
 import eloom.holybean.printer.PiPrintClient
 import eloom.holybean.printer.network.PrinterAddressResolver
 import eloom.holybean.printer.network.PrinterStatus
+import eloom.holybean.printer.transport.PrintMethod
+import eloom.holybean.printer.transport.PrintTransportSelector
+import eloom.holybean.printer.transport.PrinterTransportStore
+import eloom.holybean.printer.transport.TransportSelection
 import eloom.holybean.util.MainDispatcherRule
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -35,12 +39,18 @@ class DevToolsViewModelTest {
     private val firestore: FirestoreRepository = mockk(relaxed = true)
     private val network: NetworkStatusProvider = mockk(relaxed = true)
     private val resolver: PrinterAddressResolver = mockk(relaxed = true)
+    private val selector: PrintTransportSelector = mockk(relaxed = true)
+    private val store: PrinterTransportStore = mockk(relaxed = true)
 
     @Before
     fun setUp() {
         mockkStatic(FirebaseCrashlytics::class)
         every { FirebaseCrashlytics.getInstance() } returns mockk(relaxed = true)
         every { resolver.status } returns MutableStateFlow(PrinterStatus.Unknown)
+        every { selector.selection } returns MutableStateFlow(
+            TransportSelection(PrintMethod.PI_HTTP),
+        )
+        every { store.forcePi } returns false
     }
 
     @After
@@ -48,7 +58,7 @@ class DevToolsViewModelTest {
         unmockkAll()
     }
 
-    private fun vm() = DevToolsViewModel(pi, firestore, network, resolver)
+    private fun vm() = DevToolsViewModel(pi, firestore, network, resolver, selector, store)
 
     @Test fun `refresh populates printer network and firestore status`() = runTest {
         coEvery { pi.checkHealth() } returns true
@@ -98,11 +108,20 @@ class DevToolsViewModelTest {
         collector.cancel()
     }
 
-    @Test fun `rescanPrinter delegates to resolver rediscover`() = runTest {
+    @Test fun `rescanPrinter probes selector and rediscovers resolver`() = runTest {
         val vm = vm()
         vm.rescanPrinter()
         advanceUntilIdle()
+        coVerify(exactly = 1) { selector.probe() }
         coVerify(exactly = 1) { resolver.rediscover() }
+    }
+
+    @Test fun `setForcePi updates store and probes selector`() = runTest {
+        val vm = vm()
+        vm.setForcePi(true)
+        advanceUntilIdle()
+        coVerify { store.forcePi = true }
+        coVerify(exactly = 1) { selector.probe() }
     }
 
     @Test fun `setPrinterOverride delegates to resolver`() = runTest {

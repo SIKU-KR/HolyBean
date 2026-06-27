@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -44,7 +45,15 @@ fun DevToolsRoute(onClose: () -> Unit, vm: DevToolsViewModel = hiltViewModel()) 
             }
         }
     }
-    DevToolsScreen(state, onClose, vm::refresh, vm::testPrint, vm::rescanPrinter, vm::setPrinterOverride)
+    DevToolsScreen(
+        state = state,
+        onClose = onClose,
+        onRefresh = vm::refresh,
+        onTestPrint = vm::testPrint,
+        onRescan = vm::rescanPrinter,
+        onSetOverride = vm::setPrinterOverride,
+        onSetForcePi = vm::setForcePi,
+    )
 }
 
 @Composable
@@ -55,6 +64,7 @@ fun DevToolsScreen(
     onTestPrint: () -> Unit,
     onRescan: () -> Unit,
     onSetOverride: (String?) -> Unit,
+    onSetForcePi: (Boolean) -> Unit,
 ) {
     ScreenContainer {
         Column(Modifier.fillMaxSize()) {
@@ -64,7 +74,7 @@ fun DevToolsScreen(
                     SecondaryButton("닫기", onClick = onClose)
                 },
             )
-            HealthRow("Pi 프린터 (/health)", state.printerOk,
+            HealthRow("프린터 상태", state.printerOk,
                 when (state.printerOk) {
                     true -> state.printerLatencyMs?.let { "정상 · ${it}ms" } ?: "정상"
                     false -> "응답 실패"
@@ -82,6 +92,25 @@ fun DevToolsScreen(
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(vertical = Dimens.spaceSm),
             )
+            Text(
+                "현재 전송 방식: ${state.transportMethodText}",
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(vertical = Dimens.spaceSm),
+            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(vertical = Dimens.spaceSm),
+            ) {
+                Text(
+                    "Pi 서버 강제 사용",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.weight(1f),
+                )
+                Switch(
+                    checked = state.forcePi,
+                    onCheckedChange = onSetForcePi,
+                )
+            }
             var manual by remember { mutableStateOf("") }
             OutlinedTextField(
                 value = manual,
