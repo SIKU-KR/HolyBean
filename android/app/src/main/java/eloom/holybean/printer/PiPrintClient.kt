@@ -5,8 +5,11 @@ import eloom.holybean.printer.network.PrintCommandDto
 import eloom.holybean.printer.network.PrintFailureReason
 import eloom.holybean.printer.network.PrintServerException
 import eloom.holybean.printer.network.PrinterAddressResolver
+import eloom.holybean.printer.transport.PrintMethod
+import eloom.holybean.printer.transport.PrintTransport
 import eloom.holybean.printer.transport.PrintTransportSelector
 import eloom.holybean.printer.transport.UsbFastFailException
+import eloom.holybean.printer.transport.UsbPartialPrintException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
@@ -32,19 +35,32 @@ class PiPrintClient @Inject constructor(
     suspend fun print(commands: List<PrintCommandDto>) = withContext(printerDispatcher) {
         mutex.withLock {
             var rediscovered = false
-            withRetry {
-                val transport = selector.requireActive()
+            // 직접 Pi 출력과 USB 폴백 공용: ServerUnreachable이면 같은 시도 안에서
+            // rediscover 후 예외를 전파해 다음 재시도가 갱신된 주소를 쓰게 한다
+            suspend fun printViaPi(piTransport: PrintTransport) {
                 try {
-                    transport.print(commands)
-                } catch (e: UsbFastFailException) {
-                    val newTransport = selector.reprobeOnFastFail(e.reason)
-                    newTransport.print(commands)
+                    piTransport.print(commands)
                 } catch (e: PrintServerException) {
                     if (e.reason == PrintFailureReason.ServerUnreachable && !rediscovered) {
                         rediscovered = true
                         resolver.rediscover()
                     }
                     throw e
+                }
+            }
+
+            selector.reprobeForPrint()
+            withRetry {
+                val transport = selector.requireActive()
+                if (transport.method == PrintMethod.USB_DIRECT) {
+                    try {
+                        transport.print(commands)
+                    } catch (e: UsbFastFailException) {
+                        // 아무것도 인쇄되지 않은 실패만 여기로 오므로 Pi 폴백이 안전하다
+                        printViaPi(selector.fallbackToPi(e.reason))
+                    }
+                } else {
+                    printViaPi(transport)
                 }
             }
         }
@@ -69,6 +85,8 @@ class PiPrintClient @Inject constructor(
                 return block()
             } catch (error: Exception) {
                 if (error is kotlinx.coroutines.CancellationException) throw error
+                // 일부가 이미 인쇄된 실패는 재시도하면 영수증이 중복 출력된다
+                if (error is UsbPartialPrintException) throw error
                 if (attempt >= retry.maxAttempts) {
                     throw error
                 }

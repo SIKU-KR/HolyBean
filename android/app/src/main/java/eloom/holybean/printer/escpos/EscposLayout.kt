@@ -8,6 +8,15 @@ import kotlin.math.floor
 
 const val LINE_WIDTH = 42
 
+// 폭 계산과 바이트 인코딩이 반드시 같은 charset을 쓰도록 공유 (EUC-KR 미지원 환경은 MS949 폴백)
+internal val ESCPOS_CHARSET: Charset by lazy {
+    try {
+        Charset.forName("EUC-KR")
+    } catch (_: Exception) {
+        Charset.forName("MS949")
+    }
+}
+
 data class EscposStyle(
     val bold: Boolean = false,
     val underline: Boolean = false,
@@ -20,20 +29,13 @@ data class EscposRun(
 )
 
 fun displayWidth(content: String, size: PrintSize): Int {
-    val encoded = content.toByteArray(eucKrCharset())
+    val encoded = content.toByteArray(ESCPOS_CHARSET)
     val coef = when (size) {
         PrintSize.NORMAL -> 1
         PrintSize.BIG -> 2
     }
     return encoded.size * coef
 }
-
-private fun eucKrCharset(): Charset =
-    try {
-        Charset.forName("EUC-KR")
-    } catch (_: Exception) {
-        Charset.forName("MS949")
-    }
 
 fun layoutRow(columns: List<PrintSegmentDto>): List<EscposRun> {
     val n = columns.size

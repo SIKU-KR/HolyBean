@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 enum class StepStatus { Loading, Success, Failed }
@@ -69,6 +70,11 @@ class StartupViewModel @Inject constructor(
             transportSelector.probe()
             if (transportSelector.selection.value.method == PrintMethod.PI_HTTP) {
                 printerAddressResolver.rediscover()          // Pi 경로 사용 시 캐시 워밍업
+            } else {
+                // USB 경로여도 Pi 폴백 대비 주소 캐시를 미리 워밍업(베스트에포트, 실패해도 프린터 상태에 영향 없음)
+                viewModelScope.launch {
+                    runCatching { printerAddressResolver.rediscover() }
+                }
             }
             val ok = piPrintClient.checkHealth()             // checkHealth 는 throw 안 함(Boolean)
             _uiState.update { it.copy(printer = if (ok) StepStatus.Success else StepStatus.Failed) }

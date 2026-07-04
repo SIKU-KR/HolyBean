@@ -5,7 +5,6 @@ import eloom.holybean.printer.network.PrintSize
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.nio.charset.Charset
 
 class EscposRendererTest {
 
@@ -42,6 +41,15 @@ class EscposRendererTest {
     }
 
     @Test
+    fun `rendered bytes use shared charset and agree with layout width`() {
+        val text = "아메리카노"
+        val out = mutableListOf<Byte>()
+        renderRun(EscposRun(text), out)
+        assertEquals(text.toByteArray(ESCPOS_CHARSET).toList(), out)
+        assertEquals(displayWidth(text, PrintSize.NORMAL), out.size)
+    }
+
+    @Test
     fun `document starts with reset charset align`() {
         val bytes = renderDocument(listOf(PrintCommandDto(type = "blank")))
         val prefix = RESET + CHARSET_EUC_KR + ALIGN_LEFT
@@ -53,7 +61,7 @@ class EscposRendererTest {
     fun `divider fills line width`() {
         val bytes = renderDocument(listOf(PrintCommandDto(type = "divider", ch = "=")))
         val dashes = "=".repeat(LINE_WIDTH)
-        val needle = dashes.toByteArray(Charset.forName("EUC-KR")).toList()
+        val needle = dashes.toByteArray(ESCPOS_CHARSET).toList()
         assertTrue(bytes.windowed(needle.size).any { it == needle })
     }
 

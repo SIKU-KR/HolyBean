@@ -3,7 +3,6 @@ package eloom.holybean.printer.escpos
 import eloom.holybean.printer.network.PrintCommandDto
 import eloom.holybean.printer.network.PrintSegmentDto
 import eloom.holybean.printer.network.PrintSize
-import java.nio.charset.Charset
 import javax.inject.Inject
 
 val RESET: List<Byte> = listOf(0x1B.toByte(), 0x40.toByte())
@@ -31,7 +30,7 @@ fun renderRun(run: EscposRun, out: MutableList<Byte>) {
         out.addAll(SIZE_BIG)
     }
 
-    out.addAll(run.text.toByteArray(Charset.forName("EUC-KR")).toList())
+    out.addAll(run.text.toByteArray(ESCPOS_CHARSET).toList())
 
     if (run.style.size == PrintSize.BIG) {
         out.addAll(SIZE_NORMAL)

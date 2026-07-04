@@ -486,6 +486,63 @@ class HomeViewModelTest {
         job.cancel()
     }
 
+    @Test
+    fun `usb partial print is reported as PrintFailed and allows skip without reprint`() = runTest(testDispatcher) {
+        // 저장은 성공했지만 USB 직결 인쇄가 중간에 끊긴 경우 — SaveFailed로 오인되면
+        // 재시도 경로가 영수증을 처음부터 다시 찍어 중복 출력된다.
+        val order = createTestOrder()
+        coEvery { firestoreRepository.postOrder(any()) } just Runs
+        coEvery { piPrintClient.print(any<List<PrintCommandDto>>()) } coAnswers {
+            kotlinx.coroutines.delay(10) // 저장(postOrder)이 먼저 완료된 뒤 인쇄가 실패하는 시나리오
+            throw eloom.holybean.printer.transport.UsbPartialPrintException(bytesSent = 128, totalBytes = 512)
+        }
+        val events = mutableListOf<HomeViewModel.UiEvent>()
+        val job: Job = launch { homeViewModel.uiEvent.collect { events.add(it) } }
+
+        homeViewModel.onOrderConfirmed(order, "포장")
+        advanceUntilIdle()
+
+        val err = homeViewModel.uiState.value.submitError
+        assertTrue(err is HomeViewModel.SubmitError.PrintFailed)
+        assertEquals(
+            eloom.holybean.printer.network.PrintFailureReason.PrinterError,
+            (err as HomeViewModel.SubmitError.PrintFailed).reason,
+        )
+        assertTrue(events.none { it is HomeViewModel.UiEvent.NavigateHome })
+
+        // 저장은 끝났으므로 '영수증 없이 완료'로 재출력 없이 마무리할 수 있어야 한다
+        homeViewModel.skipPrintAndComplete()
+        advanceUntilIdle()
+        assertEquals(null, homeViewModel.uiState.value.submitError)
+        assertTrue(events.any { it is HomeViewModel.UiEvent.NavigateHome })
+        job.cancel()
+    }
+
+    @Test
+    fun `generic print failure after successful save is reported as PrintFailed`() = runTest(testDispatcher) {
+        // USB 재시도 소진 후 전파되는 일반 예외 등 — 저장이 이미 성공했으면 인쇄 단계 실패다.
+        val order = createTestOrder()
+        coEvery { firestoreRepository.postOrder(any()) } just Runs
+        coEvery { piPrintClient.print(any<List<PrintCommandDto>>()) } coAnswers {
+            kotlinx.coroutines.delay(10)
+            throw RuntimeException("usb stack boom")
+        }
+        val events = mutableListOf<HomeViewModel.UiEvent>()
+        val job: Job = launch { homeViewModel.uiEvent.collect { events.add(it) } }
+
+        homeViewModel.onOrderConfirmed(order, "포장")
+        advanceUntilIdle()
+
+        val err = homeViewModel.uiState.value.submitError
+        assertTrue(err is HomeViewModel.SubmitError.PrintFailed)
+        assertEquals(
+            eloom.holybean.printer.network.PrintFailureReason.Unknown,
+            (err as HomeViewModel.SubmitError.PrintFailed).reason,
+        )
+        assertTrue(events.none { it is HomeViewModel.UiEvent.NavigateHome })
+        job.cancel()
+    }
+
     // 헬퍼 메서드: 테스트용 Order 객체 생성
     private fun createTestOrder(orderNum: Int = 1): Order {
         val cartItems = listOf(

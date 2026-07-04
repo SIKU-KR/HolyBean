@@ -13,6 +13,7 @@ import eloom.holybean.printer.PiPrintClient
 import eloom.holybean.printer.network.PrintFailureReason
 import eloom.holybean.printer.network.PrintServerException
 import eloom.holybean.printer.polymorphism.HomePrinter
+import eloom.holybean.printer.transport.UsbPartialPrintException
 import eloom.holybean.util.launchSafely
 import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.BufferOverflow
@@ -225,12 +226,27 @@ class HomeViewModel @Inject constructor(
     // 저장이 한 번 성공하면 orderSaved=true 가 되어, 재시도 시 중복 저장(집계 이중 계상)을 막는다.
     private fun runSubmission(data: Order, takeOption: String) {
         viewModelScope.launchSafely(onError = { e ->
-            when (e) {
-                is PrintServerException -> {
+            when {
+                e is PrintServerException -> {
                     _uiState.update { it.copy(submitError = SubmitError.PrintFailed(e.reason, ++submitSeq)) }
                     FirebaseCrashlytics.getInstance().apply {
                         setCustomKey("orderNum", data.orderNum)
                         setCustomKey("print_reason", e.reason.name)
+                    }
+                }
+                // USB 직결 인쇄 실패(부분 전송 포함, 재시도 소진 포함)를 SaveFailed로 오인하면
+                // 재시도 경로가 이미 출력된 영수증을 다시 찍는다 — 인쇄 실패 UX(영수증 없이 완료)로 보고한다.
+                // orderSaved && !printDone: 저장은 이미 성공했으므로 이 예외는 인쇄 단계에서 온 것이다.
+                e is UsbPartialPrintException || (orderSaved && !printDone) -> {
+                    val reason = if (e is UsbPartialPrintException) {
+                        PrintFailureReason.PrinterError
+                    } else {
+                        PrintFailureReason.Unknown
+                    }
+                    _uiState.update { it.copy(submitError = SubmitError.PrintFailed(reason, ++submitSeq)) }
+                    FirebaseCrashlytics.getInstance().apply {
+                        setCustomKey("orderNum", data.orderNum)
+                        setCustomKey("print_reason", e.javaClass.simpleName)
                     }
                 }
                 else -> _uiState.update { it.copy(submitError = SubmitError.SaveFailed(++submitSeq)) }

@@ -63,6 +63,27 @@ class StartupViewModelTest {
         coVerify(atLeast = 1) { resolver.rediscover() }
     }
 
+    @Test fun `warms up printer address even when USB transport selected`() = runTest {
+        selection.value = TransportSelection(PrintMethod.USB_DIRECT)
+        coEvery { menu.getMenuListSync() } returns emptyList()
+        coEvery { firestore.getOrderNumber() } returns 1
+        coEvery { pi.checkHealth() } returns true
+        vm()
+        advanceUntilIdle()
+        coVerify(atLeast = 1) { resolver.rediscover() }
+    }
+
+    @Test fun `USB warmup failure does not fail printer step`() = runTest {
+        selection.value = TransportSelection(PrintMethod.USB_DIRECT)
+        coEvery { menu.getMenuListSync() } returns emptyList()
+        coEvery { firestore.getOrderNumber() } returns 1
+        coEvery { resolver.rediscover() } throws RuntimeException("unreachable")
+        coEvery { pi.checkHealth() } returns true
+        val sut = vm()
+        advanceUntilIdle()
+        assertEquals(StepStatus.Success, sut.uiState.value.printer)
+    }
+
     @Test fun `both succeed sets success and autoEnter`() = runTest {
         coEvery { menu.getMenuListSync() } returns emptyList()
         coEvery { firestore.getOrderNumber() } returns 1
