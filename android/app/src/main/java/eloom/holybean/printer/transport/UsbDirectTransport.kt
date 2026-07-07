@@ -23,8 +23,6 @@ class UsbDirectTransport @Inject constructor(
     @PrinterDispatcher private val dispatcher: CoroutineDispatcher,
 ) : PrintTransport {
 
-    override val method: PrintMethod = PrintMethod.USB_DIRECT
-
     // probe/checkHealth(스플래시, DevTools)와 print가 같은 장치를 동시에 open/claim하지 않도록 직렬화
     private val deviceMutex = Mutex()
 
@@ -124,13 +122,13 @@ class UsbDirectTransport @Inject constructor(
             )
             if (written <= 0) {
                 if (offset == 0) {
-                    // 아직 아무 바이트도 전송되지 않음: Pi로 폴백해도 중복 출력 위험이 없다
+                    // 아직 아무 바이트도 전송되지 않음: 재시도해도 중복 출력 위험이 없다
                     throw UsbFastFailException(
                         FastFailReason.CLAIM_FAILED,
                         "USB printer rejected first write",
                     )
                 }
-                // 일부가 이미 인쇄됨: 재시도/폴백하면 영수증이 중복 출력된다
+                // 일부가 이미 인쇄됨: 재시도하면 영수증이 중복 출력된다
                 throw UsbPartialPrintException(bytesSent = offset, totalBytes = bytes.size)
             }
             offset += written
@@ -151,7 +149,7 @@ class UsbDirectTransport @Inject constructor(
     private companion object {
         const val BULK_WRITE_CHUNK_BYTES = 16 * 1024
 
-        // 부분 전송 실패는 재시도/폴백이 불가능해 곧바로 영수증 절단이 된다.
+        // 부분 전송 실패는 재시도가 불가능해 곧바로 영수증 절단이 된다.
         // 열전사 프린터는 인쇄 중 벌크 전송을 블록하므로 버퍼가 빠질 시간을 충분히 준다.
         const val BULK_WRITE_TIMEOUT_MS = 5_000
     }

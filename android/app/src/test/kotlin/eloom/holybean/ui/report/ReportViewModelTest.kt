@@ -5,7 +5,7 @@ import com.google.firebase.crashlytics.FirebaseCrashlytics
 import eloom.holybean.data.model.ReportDetailItem
 import eloom.holybean.data.model.SalesReport
 import eloom.holybean.data.repository.FirestoreRepository
-import eloom.holybean.printer.PiPrintClient
+import eloom.holybean.printer.PrintClient
 import eloom.holybean.printer.network.PrintCommandDto
 import eloom.holybean.printer.polymorphism.ReportPrinter
 import eloom.holybean.util.MainDispatcherRule
@@ -34,7 +34,7 @@ class ReportViewModelTest {
     private lateinit var viewModel: ReportViewModel
     private val firestoreRepository: FirestoreRepository = mockk()
     private val reportPrinter: ReportPrinter = mockk(relaxed = true)
-    private val piPrintClient: PiPrintClient = mockk(relaxed = true)
+    private val printClient: PrintClient = mockk(relaxed = true)
 
     @Before
     fun setUp() {
@@ -44,7 +44,7 @@ class ReportViewModelTest {
         viewModel = ReportViewModel(
             firestoreRepository,
             CoroutineScope(SupervisorJob() + mainDispatcherRule.dispatcher),
-            piPrintClient,
+            printClient,
             reportPrinter,
         )
     }
@@ -153,7 +153,7 @@ class ReportViewModelTest {
     }
 
     @Test
-    fun `printReport should call piPrintClient when data is available`() = runTest {
+    fun `printReport should call printClient when data is available`() = runTest {
         // Given
         val startDate = "2024-01-01"
         val endDate = "2024-01-31"
@@ -176,7 +176,7 @@ class ReportViewModelTest {
 
         // Then
         verify { reportPrinter.makeCommands(any()) }
-        coVerify { piPrintClient.print(any<List<PrintCommandDto>>()) }
+        coVerify { printClient.print(any<List<PrintCommandDto>>()) }
         // Check success toast event
         val successEvent = events.find { it is ReportViewModel.ReportUiEvent.ShowToast }
         assertNotNull(successEvent)

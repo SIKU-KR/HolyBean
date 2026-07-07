@@ -10,15 +10,9 @@ object FeatureFlags {
     /** Firestore/Auth를 로컬 Firebase 에뮬레이터(10.0.2.2)로 붙인다. */
     val useFirebaseEmulator: Boolean get() = BuildConfig.USE_FIREBASE_EMULATOR
 
-    /** 실제 Pi 인쇄서버 대신 FakePrintServerApi(no-op)를 사용한다. */
-    val useFakePrinter: Boolean get() = BuildConfig.USE_FAKE_PRINTER
-
     /**
      * App Check를 Debug provider로 사용한다(false면 PlayIntegrity).
      * 기본 true = Play 미경유 설치(debug 토큰)에서 동작. 실제 Play 프로덕션만 false.
      */
     val useDebugAppCheck: Boolean get() = BuildConfig.USE_DEBUG_APPCHECK
-
-    /** USB-C 직접 프린터 연결을 활성화한다. false면 Pi HTTP 경로만 사용(회귀/전환용). */
-    val useUsbDirect: Boolean get() = BuildConfig.USE_USB_DIRECT
 }

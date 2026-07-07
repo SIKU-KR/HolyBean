@@ -9,16 +9,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -51,8 +45,6 @@ fun DevToolsRoute(onClose: () -> Unit, vm: DevToolsViewModel = hiltViewModel()) 
         onRefresh = vm::refresh,
         onTestPrint = vm::testPrint,
         onRescan = vm::rescanPrinter,
-        onSetOverride = vm::setPrinterOverride,
-        onSetForcePi = vm::setForcePi,
     )
 }
 
@@ -63,8 +55,6 @@ fun DevToolsScreen(
     onRefresh: () -> Unit,
     onTestPrint: () -> Unit,
     onRescan: () -> Unit,
-    onSetOverride: (String?) -> Unit,
-    onSetForcePi: (Boolean) -> Unit,
 ) {
     ScreenContainer {
         Column(Modifier.fillMaxSize()) {
@@ -87,44 +77,8 @@ fun DevToolsScreen(
             )
             HealthRow("Firestore", state.firestoreOk,
                 when (state.firestoreOk) { true -> "정상"; false -> "응답 없음"; null -> "—" })
-            Text(
-                "프린터 연결: ${state.printerStatusText}",
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(vertical = Dimens.spaceSm),
-            )
-            Text(
-                "현재 전송 방식: ${state.transportMethodText}",
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(vertical = Dimens.spaceSm),
-            )
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(vertical = Dimens.spaceSm),
-            ) {
-                Text(
-                    "Pi 서버 강제 사용",
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.weight(1f),
-                )
-                Switch(
-                    checked = state.forcePi,
-                    onCheckedChange = onSetForcePi,
-                )
-            }
-            var manual by remember { mutableStateOf("") }
-            OutlinedTextField(
-                value = manual,
-                onValueChange = { manual = it },
-                label = { Text("수동 주소 (예: 192.168.0.27 또는 192.168.0.27:9100)") },
-                singleLine = true,
-                modifier = Modifier.padding(vertical = Dimens.spaceSm),
-            )
             Row(horizontalArrangement = Arrangement.spacedBy(Dimens.spaceSm)) {
                 SecondaryButton("다시 탐색", onClick = onRescan)
-                SecondaryButton("주소 저장", onClick = { onSetOverride(manual) })
-                OutlinedButton(onClick = { manual = ""; onSetOverride(null) }) { Text("해제") }
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(Dimens.spaceSm)) {
                 SecondaryButton("새로고침", onClick = onRefresh)
                 PrimaryButton("테스트 영수증 출력", onClick = onTestPrint)
             }

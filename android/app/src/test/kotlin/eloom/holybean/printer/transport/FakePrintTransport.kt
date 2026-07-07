@@ -6,7 +6,6 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 
 class FakePrintTransport(
-    override val method: PrintMethod,
     var onPrint: (suspend (List<PrintCommandDto>) -> Unit)? = null,
     private val healthResult: Boolean = true,
     var fastFail: FastFailReason? = null,
@@ -38,7 +37,6 @@ class FakePrintTransport(
 }
 
 class CountingFailTransport(
-    override val method: PrintMethod,
     private val failFirst: Int,
     private val error: () -> Throwable,
 ) : PrintTransport {

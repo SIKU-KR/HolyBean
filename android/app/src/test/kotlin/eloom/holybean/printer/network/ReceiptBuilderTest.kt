@@ -37,7 +37,7 @@ class ReceiptBuilderTest {
         assertEquals(null, command.underline)
         assertEquals(null, command.size)
 
-        val json = Gson().toJson(PrintRequestDto(listOf(command)))
+        val json = Gson().toJson(command)
         assertTrue(json.contains("\"type\":\"text\""))
         assertTrue(json.contains("\"content\":\"hi\""))
         assertFalse("기본값 필드는 직렬화에서 생략되어야 함", json.contains("align"))

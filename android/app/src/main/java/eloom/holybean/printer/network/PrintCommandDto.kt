@@ -1,13 +1,8 @@
 package eloom.holybean.printer.network
 
 /**
- * Pi 프린트 서버 JSON 계약과 1:1 매핑되는 DTO.
- * Gson 기본 동작(널 필드 생략)으로 직렬화하면 계약의 최소 형태가 된다.
+ * 영수증 인쇄 명령 모델. 각 명령은 ESC/POS 렌더러가 프린터 바이트로 변환한다.
  */
-data class PrintRequestDto(
-    val commands: List<PrintCommandDto>,
-)
-
 data class PrintCommandDto(
     val type: String,                       // "text" | "row" | "divider" | "blank" | "cut"
     val content: String? = null,

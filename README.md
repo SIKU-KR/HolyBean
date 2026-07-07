@@ -1,7 +1,7 @@
 # Project: HolyBean
 
 <div align="left">
-<img src="https://img.shields.io/badge/Kotlin-7F52FF?style=for-the-badge&logo=Kotlin&logoColor=white"><img src="https://img.shields.io/badge/Firebase-DD2C00?style=for-the-badge&logo=firebase&logoColor=white"><img src="https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=white"><img src="https://img.shields.io/badge/Raspberry_Pi-A22846?style=for-the-badge&logo=raspberrypi&logoColor=white">
+<img src="https://img.shields.io/badge/Kotlin-7F52FF?style=for-the-badge&logo=Kotlin&logoColor=white"><img src="https://img.shields.io/badge/Firebase-DD2C00?style=for-the-badge&logo=firebase&logoColor=white"><img src="https://img.shields.io/badge/Jetpack_Compose-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white">
 </div>
 
 ## 📌 프로젝트 개요 (1인 개발)
@@ -12,13 +12,13 @@
 
 ## 💡 주요 기능
 
-- **직관적인 주문 관리:** Jetpack Compose 기반 UI/UX, 다양한 결제 옵션(현금, 외상, 복수 결제), 안정적인 영수증 출력(Raspberry Pi 프린트 서버 연동)
+- **직관적인 주문 관리:** Jetpack Compose 기반 UI/UX, 다양한 결제 옵션(현금, 외상, 복수 결제), 안정적인 영수증 출력(USB-C 프린터 직연결)
 - **효율적인 매출 관리:** 일별/기간별 매출 데이터 조회 및 분석, 판매 이력 자동 기록, 보고서 생성 및 출력, **웹 매출 대시보드**(Firebase Hosting)에서 Excel 내보내기
 - **안정적인 데이터 관리:** Firestore 직접 접근 + **오프라인 영속성**으로 인터넷 단절에도 읽기/쓰기 및 자동 동기화, App Check·Auth·보안 규칙 기반 인가
 
 ## 🔧 시스템 구성 및 아키텍처
 
-모노레포 구조로 세 개의 빌드 가능한 서브시스템으로 구성됩니다. (`android/` · `firebase/` · `pi/`)
+모노레포 구조로 두 개의 빌드 가능한 서브시스템으로 구성됩니다. (`android/` · `firebase/`)
 
 ### 클라이언트 (Android)
 
@@ -36,17 +36,16 @@
 - **Firebase Hosting:** 정적 웹 매출 대시보드(`holybean.web.app`)
 - **Crashlytics:** Android 크래시/ANR을 난독화 복원하여 단일 콘솔에서 수집
 
-### 인쇄 서버 (Raspberry Pi, Rust)
+### 인쇄 (USB-C 직연결)
 
-- **Rust HTTP 프린트 서버:** Android가 보낸 구조화 JSON 명령을 `PrintCommand` 합타입으로 받아 ESC/POS로 변환(EUC-KR 한글 폭 계산·컬럼 레이아웃 포함)
-- **잡 큐 직렬화:** 동시 출력 시 영수증이 섞이지 않도록 보장, 실패 3회 자동 재시도
-- **systemd:** 부팅 자동 시작 + 크래시 자동 복구, `mDNS`로 주소 광고(앱이 빌드 고정 IP 없이 런타임 탐색)
+- **앱 내 ESC/POS 렌더링:** 영수증 명령(`PrintCommandDto`)을 앱에서 직접 ESC/POS 바이트로 변환(EUC-KR 한글 폭 계산·컬럼 레이아웃 포함)
+- **USB 직연결:** `UsbManager`로 태블릿에 연결된 열전사 프린터를 탐색·권한 획득 후 벌크 전송. 별도 중계 장비 없이 케이블 한 개로 동작
+- **안전한 실패 처리:** 부분 전송 시 재시도로 인한 영수증 중복 출력을 방지하고, 실패는 결제 화면에 사용자 친화적으로 보고
 
 ### 하드웨어
 
 * **디바이스**: Galaxy Tab A7 lite (Android 기반)
-* **중계 장비**: Raspberry Pi 3B+ (이더넷 업링크 + USB)
-* **주변기기**: 세우 SLK-TS400B 영수증 프린터 (USB, ESC/POS 프로토콜)
+* **주변기기**: 세우 SLK-TS400B 영수증 프린터 (USB-C 직연결, ESC/POS 프로토콜)
 
 ## 🔍 주요 기술적 도전 과제 및 해결 과정
 
@@ -114,6 +113,12 @@ val optimizedQuery = """
     - **유지보수 대상 서버 제거** — 배포 대상이 앱(+Pi)으로 축소, 관측이 Firebase 단일 콘솔로 통합.
     - **인쇄 안정성 확보 및 인쇄/데이터 경로 격리** — 한쪽 장애가 다른 쪽에 전파되지 않음.
     - **오프라인 내구성 확보** — 인터넷 단절에도 주문 접수·조회가 로컬에서 완결.
+
+### 5. 인쇄 경로 단순화 — Pi 중계 제거·USB-C 직연결
+
+- **도전 과제:** v3.0의 Raspberry Pi 유선 HTTP 인쇄는 네트워크·전원·mDNS 등 관리 지점이 많고, 태블릿→Pi→프린터 2-홉 구성이 장애 표면을 키움.
+- **해결 방안:** 태블릿에 프린터를 **USB-C로 직접 연결**하고, 앱이 ESC/POS를 직접 렌더링해 `UsbManager`로 벌크 전송. 중계 서버·mDNS 탐색·HTTP 계층을 모두 제거하고 인쇄 경로를 단일 전송(USB)으로 통합.
+- **성과:** 중계 장비(Pi) 제거로 배포·관리 대상이 앱 하나로 축소, 인쇄 지연·장애 표면 감소.
 
 ## 📝 업데이트 이력
 
