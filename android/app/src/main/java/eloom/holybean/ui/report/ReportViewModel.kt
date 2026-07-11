@@ -6,7 +6,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import eloom.holybean.data.model.PrinterDTO
 import eloom.holybean.data.model.ReportDetailItem
 import eloom.holybean.data.repository.FirestoreRepository
-import eloom.holybean.printer.PiPrintClient
+import eloom.holybean.printer.PrintClient
 import eloom.holybean.di.AppScope
 import eloom.holybean.printer.polymorphism.ReportPrinter
 import eloom.holybean.util.launchSafely
@@ -22,7 +22,7 @@ import javax.inject.Inject
 class ReportViewModel @Inject constructor(
     private val firestoreRepository: FirestoreRepository,
     @AppScope private val applicationScope: CoroutineScope,
-    private val piPrintClient: PiPrintClient,
+    private val printClient: PrintClient,
     private val reportPrinter: ReportPrinter,
 ) : ViewModel() {
 
@@ -84,7 +84,7 @@ class ReportViewModel @Inject constructor(
         }) {
             val dateParts = title.split(" ~ ")
             val printerDTO = PrinterDTO(dateParts[0], dateParts[1], summary, details)
-            piPrintClient.print(reportPrinter.makeCommands(printerDTO))
+            printClient.print(reportPrinter.makeCommands(printerDTO))
             _uiEvent.tryEmit(ReportUiEvent.ShowToast("리포트 인쇄가 완료되었습니다"))
         }
     }

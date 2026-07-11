@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 세우 SLK-TS400B (Netchip 컨트롤러) -->
+    <usb-device vendor-id="1317" product-id="42752"/>
+    <!-- 프린터 클래스(7) 기반 폭넓은 매칭 -->
+    <usb-device class="7"/>
+</resources>

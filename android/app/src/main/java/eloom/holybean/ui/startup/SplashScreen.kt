@@ -59,7 +59,13 @@ fun SplashScreen(
         Spacer(Modifier.height(Dimens.sectionGap))
 
         StatusRow("데이터", state.data, loadingText = "데이터 불러오는 중…", successText = "데이터 준비 완료")
-        StatusRow("프린터", state.printer, loadingText = "프린터 연결 확인 중…", successText = "프린터 연결됨")
+        StatusRow(
+            "프린터",
+            state.printer,
+            loadingText = "프린터 연결 확인 중…",
+            successText = "프린터 연결됨",
+            failureText = "프린터 실패",
+        )
 
         Spacer(Modifier.height(Dimens.sectionGap))
 
@@ -86,7 +92,7 @@ fun SplashScreen(
                 )
                 Spacer(Modifier.height(Dimens.spaceSm))
                 Text(
-                    "영수증이 출력되지 않을 수 있습니다. 프린터 전원과 와이파이 연결을 확인해 주세요. 이대로도 주문은 가능합니다.",
+                    "영수증이 출력되지 않을 수 있습니다. USB 케이블·권한을 확인해 주세요. 이대로도 주문은 가능합니다.",
                     style = MaterialTheme.typography.bodyMedium,
                 )
                 Spacer(Modifier.height(Dimens.spaceMd))
@@ -107,6 +113,7 @@ private fun StatusRow(
     status: StepStatus,
     loadingText: String,
     successText: String,
+    failureText: String = "$label 실패",
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -124,7 +131,7 @@ private fun StatusRow(
             text = when (status) {
                 StepStatus.Loading -> loadingText
                 StepStatus.Success -> successText
-                StepStatus.Failed -> "$label 실패"
+                StepStatus.Failed -> failureText
             },
             style = MaterialTheme.typography.bodyMedium,
         )

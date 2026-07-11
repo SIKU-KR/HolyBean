@@ -7,7 +7,7 @@ import eloom.holybean.data.model.OrderItem
 import eloom.holybean.data.model.OrdersDetailItem
 import eloom.holybean.data.model.PrinterDTO
 import eloom.holybean.data.repository.FirestoreRepository
-import eloom.holybean.printer.PiPrintClient
+import eloom.holybean.printer.PrintClient
 import eloom.holybean.printer.polymorphism.OrdersPrinter
 import eloom.holybean.di.AppScope
 import eloom.holybean.printer.polymorphism.ReportPrinter
@@ -23,7 +23,7 @@ import javax.inject.Inject
 class OrdersViewModel @Inject constructor(
     private val firestoreRepository: FirestoreRepository,
     @AppScope private val applicationScope: CoroutineScope,
-    private val piPrintClient: PiPrintClient,
+    private val printClient: PrintClient,
     private val ordersPrinter: OrdersPrinter,
     private val reportPrinter: ReportPrinter,
 ) : ViewModel() {
@@ -120,7 +120,7 @@ class OrdersViewModel @Inject constructor(
         applicationScope.launchSafely(onError = { e ->
             _uiEvent.tryEmit(OrdersUiEvent.ShowToast("Printer error: ${e.message}"))
         }) {
-            piPrintClient.print(commands)
+            printClient.print(commands)
         }
     }
 
@@ -182,7 +182,7 @@ class OrdersViewModel @Inject constructor(
             val today = getCurrentDate()
             val report = firestoreRepository.getReport(today, today)
             val dto = PrinterDTO(today, today, report.paymentSales, report.menuSales)
-            piPrintClient.print(reportPrinter.makeCommands(dto))
+            printClient.print(reportPrinter.makeCommands(dto))
             _uiEvent.tryEmit(OrdersUiEvent.ShowToast("보고서 출력 완료"))
         }
     }

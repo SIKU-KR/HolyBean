@@ -11,7 +11,7 @@ import javax.inject.Singleton
 
 /**
  * 홈 화면 영수증 명령 생성기. 고객용/POS용 명령 배열을 만든다.
- * ESC/POS 변환은 Pi 서버가 담당한다.
+ * USB 직연결 전송 경로가 ESC/POS로 변환한다.
  */
 @Singleton
 class HomePrinter @Inject constructor() {

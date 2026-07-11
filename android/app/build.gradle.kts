@@ -16,9 +16,8 @@ plugins {
 }
 
 // Feature flags: local.properties → -P gradle property → default.
-// 빌드타입과 독립적으로 백엔드/프린터 구성을 토글한다.
+// 빌드타입과 독립적으로 백엔드 구성을 토글한다.
 //   useFirebaseEmulator=true  → Firestore/Auth 를 10.0.2.2 에뮬레이터로
-//   useFakePrinter=true       → 실제 Pi 대신 FakePrintServerApi
 val featureFlagProps = Properties().apply {
     val f = rootProject.file("local.properties")
     if (f.exists()) f.inputStream().use { load(it) }
@@ -44,7 +43,6 @@ android {
         }
 
         buildConfigField("boolean", "USE_FIREBASE_EMULATOR", featureFlag("useFirebaseEmulator", false).toString())
-        buildConfigField("boolean", "USE_FAKE_PRINTER", featureFlag("useFakePrinter", false).toString())
         // App Check: 기본 true = Debug provider(등록된 debug 토큰 사용, Play 미경유 가능).
         // 실제 Play 스토어 프로덕션 배포 시에만 useDebugAppCheck=false 로 PlayIntegrity 사용.
         buildConfigField("boolean", "USE_DEBUG_APPCHECK", featureFlag("useDebugAppCheck", true).toString())

@@ -31,7 +31,7 @@ import eloom.holybean.ui.components.layout.ScreenContainer
 import eloom.holybean.ui.components.layout.ScreenHeader
 import eloom.holybean.ui.components.layout.SectionLabel
 import eloom.holybean.ui.components.layout.TotalRow
-import eloom.holybean.printer.network.PrintFailureReason
+import eloom.holybean.printer.PrintFailureReason
 import eloom.holybean.ui.home.HomeViewModel
 import eloom.holybean.ui.theme.Dimens
 import eloom.holybean.ui.theme.DividerGray
@@ -260,8 +260,6 @@ private fun SubmitErrorDialog(
 
 private fun printFailureMessage(reason: PrintFailureReason): String =
     when (reason) {
-        PrintFailureReason.ServerUnreachable ->
-            "프린터 서버에 연결되지 않았어요. Pi 전원·네트워크 확인 후 재출력하세요."
         PrintFailureReason.PrinterOffline ->
             "프린터가 응답하지 않아요. 전원·USB 연결 확인 후 재출력하세요."
         PrintFailureReason.PrinterError ->

@@ -7,7 +7,7 @@ import eloom.holybean.data.model.OrdersDetailItem
 import eloom.holybean.data.model.ReportDetailItem
 import eloom.holybean.data.model.SalesReport
 import eloom.holybean.data.repository.FirestoreRepository
-import eloom.holybean.printer.PiPrintClient
+import eloom.holybean.printer.PrintClient
 import eloom.holybean.printer.network.PrintCommandDto
 import eloom.holybean.printer.polymorphism.OrdersPrinter
 import eloom.holybean.printer.polymorphism.ReportPrinter
@@ -39,12 +39,12 @@ class OrdersViewModelTest {
     private lateinit var viewModel: OrdersViewModel
     private val firestoreRepository: FirestoreRepository = mockk()
     private lateinit var ordersPrinter: OrdersPrinter
-    private lateinit var piPrintClient: PiPrintClient
+    private lateinit var printClient: PrintClient
     private lateinit var reportPrinter: ReportPrinter
 
     private fun createViewModelWithPrinter(
         printer: OrdersPrinter = mockk(relaxed = true),
-        client: PiPrintClient = mockk(relaxed = true),
+        client: PrintClient = mockk(relaxed = true),
         report: ReportPrinter = mockk(relaxed = true),
     ): OrdersViewModel {
         coEvery { firestoreRepository.getOrdersOfDay() } returns arrayListOf()
@@ -68,12 +68,12 @@ class OrdersViewModelTest {
         coEvery { firestoreRepository.getReport(any(), any()) } returns
             SalesReport(emptyList(), mapOf("총합" to 0))
         ordersPrinter = mockk(relaxed = true)
-        piPrintClient = mockk(relaxed = true)
+        printClient = mockk(relaxed = true)
         reportPrinter = mockk(relaxed = true)
         viewModel = OrdersViewModel(
             firestoreRepository,
             CoroutineScope(SupervisorJob() + mainDispatcherRule.dispatcher),
-            piPrintClient,
+            printClient,
             ordersPrinter,
             reportPrinter,
         )
@@ -232,7 +232,7 @@ class OrdersViewModelTest {
     }
 
     @Test
-    fun `reprint should call piPrintClient when order details exist`() = runTest {
+    fun `reprint should call printClient when order details exist`() = runTest {
         // Given
         val orderDetails = arrayListOf(OrdersDetailItem("Coffee", 1, 1000))
 
@@ -249,7 +249,7 @@ class OrdersViewModelTest {
 
         // Then
         verify { ordersPrinter.makeCommands(101, any()) }
-        coVerify { piPrintClient.print(any<List<PrintCommandDto>>()) }
+        coVerify { printClient.print(any<List<PrintCommandDto>>()) }
     }
 
     @Test
@@ -283,7 +283,7 @@ class OrdersViewModelTest {
     fun `reprint should emit error event when printing fails`() = runTest {
         // Given
         val printerMock = mockk<OrdersPrinter>(relaxed = true)
-        val clientMock = mockk<PiPrintClient>()
+        val clientMock = mockk<PrintClient>()
         val testViewModel = createViewModelWithPrinter(printerMock, clientMock)
         val orderDetails = arrayListOf(OrdersDetailItem("Tea", 1, 1500))
         val errorMessage = "Printer connection failed"

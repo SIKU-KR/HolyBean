@@ -7,7 +7,7 @@ import eloom.holybean.data.model.Order
 import eloom.holybean.data.model.PaymentMethod
 import eloom.holybean.data.repository.FirestoreRepository
 import eloom.holybean.data.repository.MenuRepository
-import eloom.holybean.printer.PiPrintClient
+import eloom.holybean.printer.PrintClient
 import eloom.holybean.printer.network.PrintCommandDto
 import eloom.holybean.printer.polymorphism.HomePrinter
 import eloom.holybean.util.MainDispatcherRule
@@ -51,7 +51,7 @@ class HomeViewModelTest {
     private val firestoreRepository: FirestoreRepository = mockk(relaxed = true)
     private val menuRepository: MenuRepository = mockk(relaxed = true)
     private val homePrinter: HomePrinter = mockk(relaxed = true)
-    private val piPrintClient: PiPrintClient = mockk(relaxed = true)
+    private val printClient: PrintClient = mockk(relaxed = true)
 
     @Before
     fun setUp() {
@@ -64,7 +64,7 @@ class HomeViewModelTest {
         homeViewModel = HomeViewModel(
             firestoreRepository,
             menuRepository,
-            piPrintClient,
+            printClient,
             homePrinter,
         )
     }
@@ -132,7 +132,7 @@ class HomeViewModelTest {
     }
 
     @Test
-    fun `onOrderConfirmed should call piPrintClient with receipt commands`() = runTest(testDispatcher) {
+    fun `onOrderConfirmed should call printClient with receipt commands`() = runTest(testDispatcher) {
         // Given
         val testOrder = createTestOrder()
         coEvery { firestoreRepository.postOrder(any()) } just Runs
@@ -142,7 +142,7 @@ class HomeViewModelTest {
         advanceUntilIdle()
 
         // Then
-        coVerify(exactly = 2) { piPrintClient.print(any<List<PrintCommandDto>>()) }
+        coVerify(exactly = 2) { printClient.print(any<List<PrintCommandDto>>()) }
     }
 
     @Test
@@ -167,7 +167,7 @@ class HomeViewModelTest {
         homeViewModel = HomeViewModel(
             firestoreRepository,
             menuRepository,
-            piPrintClient,
+            printClient,
             homePrinter,
         )
         advanceUntilIdle()
@@ -202,7 +202,7 @@ class HomeViewModelTest {
         homeViewModel = HomeViewModel(
             firestoreRepository,
             menuRepository,
-            piPrintClient,
+            printClient,
             homePrinter,
         )
         advanceUntilIdle()
@@ -221,7 +221,7 @@ class HomeViewModelTest {
         homeViewModel = HomeViewModel(
             firestoreRepository,
             menuRepository,
-            piPrintClient,
+            printClient,
             homePrinter,
         )
         advanceUntilIdle()
@@ -246,7 +246,7 @@ class HomeViewModelTest {
         homeViewModel = HomeViewModel(
             firestoreRepository,
             menuRepository,
-            piPrintClient,
+            printClient,
             homePrinter,
         )
         advanceUntilIdle()
@@ -266,7 +266,7 @@ class HomeViewModelTest {
         homeViewModel = HomeViewModel(
             firestoreRepository,
             menuRepository,
-            piPrintClient,
+            printClient,
             homePrinter,
         )
         advanceUntilIdle()
@@ -281,7 +281,7 @@ class HomeViewModelTest {
         val std = StandardTestDispatcher(testScheduler)
         Dispatchers.setMain(std)
         val vm = HomeViewModel(
-            firestoreRepository, menuRepository, piPrintClient, homePrinter,
+            firestoreRepository, menuRepository, printClient, homePrinter,
         )
         advanceUntilIdle() // init 소비
         coEvery { firestoreRepository.postOrder(any()) } just Runs
@@ -298,7 +298,7 @@ class HomeViewModelTest {
         val std = StandardTestDispatcher(testScheduler)
         Dispatchers.setMain(std)
         val vm = HomeViewModel(
-            firestoreRepository, menuRepository, piPrintClient, homePrinter,
+            firestoreRepository, menuRepository, printClient, homePrinter,
         )
         advanceUntilIdle()
         coEvery { firestoreRepository.postOrder(any()) } just Runs
@@ -317,10 +317,10 @@ class HomeViewModelTest {
     fun `print failure keeps user on screen with PrintFailed error and no navigate`() = runTest(testDispatcher) {
         val order = createTestOrder()
         coEvery { firestoreRepository.postOrder(any()) } just Runs
-        coEvery { piPrintClient.print(any<List<PrintCommandDto>>()) } throws
-            eloom.holybean.printer.network.PrintServerException(
-                eloom.holybean.printer.network.PrintFailureReason.PrinterOffline, "offline"
-            )
+        coEvery { printClient.print(any<List<PrintCommandDto>>()) } coAnswers {
+            kotlinx.coroutines.delay(10) // 저장(postOrder)이 먼저 완료된 뒤 인쇄가 실패하는 시나리오
+            throw RuntimeException("print failed")
+        }
         val events = mutableListOf<HomeViewModel.UiEvent>()
         val job: Job = launch { homeViewModel.uiEvent.collect { events.add(it) } }
 
@@ -330,7 +330,7 @@ class HomeViewModelTest {
         val err = homeViewModel.uiState.value.submitError
         assertTrue(err is HomeViewModel.SubmitError.PrintFailed)
         assertEquals(
-            eloom.holybean.printer.network.PrintFailureReason.PrinterOffline,
+            eloom.holybean.printer.PrintFailureReason.Unknown,
             (err as HomeViewModel.SubmitError.PrintFailed).reason,
         )
         assertTrue(events.none { it is HomeViewModel.UiEvent.NavigateHome })
@@ -372,15 +372,15 @@ class HomeViewModelTest {
     fun `retry after print failure reprints only and does not re-save order`() = runTest(testDispatcher) {
         val order = createTestOrder()
         coEvery { firestoreRepository.postOrder(any()) } just Runs
-        coEvery { piPrintClient.print(any<List<PrintCommandDto>>()) } throws
-            eloom.holybean.printer.network.PrintServerException(
-                eloom.holybean.printer.network.PrintFailureReason.PrinterOffline, "offline"
-            )
+        coEvery { printClient.print(any<List<PrintCommandDto>>()) } coAnswers {
+            kotlinx.coroutines.delay(10)
+            throw RuntimeException("print failed")
+        }
         homeViewModel.onOrderConfirmed(order, "포장")
         advanceUntilIdle()
         assertTrue(homeViewModel.uiState.value.submitError is HomeViewModel.SubmitError.PrintFailed)
 
-        coEvery { piPrintClient.print(any<List<PrintCommandDto>>()) } returns Unit
+        coEvery { printClient.print(any<List<PrintCommandDto>>()) } returns Unit
         val events = mutableListOf<HomeViewModel.UiEvent>()
         val job: Job = launch { homeViewModel.uiEvent.collect { events.add(it) } }
         homeViewModel.retrySubmission()
@@ -414,7 +414,7 @@ class HomeViewModelTest {
         // 출력되면 안 된다. printReceipt 는 print()를 2회(고객/POS) 호출하므로 최초 1회만 = 총 2회여야 한다.
         val order = createTestOrder()
         coEvery { firestoreRepository.postOrder(any()) } throws Exception("commit failed")
-        coEvery { piPrintClient.print(any<List<PrintCommandDto>>()) } returns Unit
+        coEvery { printClient.print(any<List<PrintCommandDto>>()) } returns Unit
         homeViewModel.onOrderConfirmed(order, "포장")
         advanceUntilIdle()
         assertTrue(homeViewModel.uiState.value.submitError is HomeViewModel.SubmitError.SaveFailed)
@@ -425,17 +425,17 @@ class HomeViewModelTest {
 
         assertEquals(null, homeViewModel.uiState.value.submitError)
         coVerify(exactly = 2) { firestoreRepository.postOrder(order) }   // 저장은 재시도(멱등 아님)
-        coVerify(exactly = 2) { piPrintClient.print(any<List<PrintCommandDto>>()) } // 인쇄는 최초 1회뿐
+        coVerify(exactly = 2) { printClient.print(any<List<PrintCommandDto>>()) } // 인쇄는 최초 1회뿐
     }
 
     @Test
     fun `skipPrintAndComplete completes saved order without reprint`() = runTest(testDispatcher) {
         val order = createTestOrder()
         coEvery { firestoreRepository.postOrder(any()) } just Runs
-        coEvery { piPrintClient.print(any<List<PrintCommandDto>>()) } throws
-            eloom.holybean.printer.network.PrintServerException(
-                eloom.holybean.printer.network.PrintFailureReason.PrinterError, "err"
-            )
+        coEvery { printClient.print(any<List<PrintCommandDto>>()) } coAnswers {
+            kotlinx.coroutines.delay(10)
+            throw RuntimeException("print failed")
+        }
         homeViewModel.onOrderConfirmed(order, "포장")
         advanceUntilIdle()
         assertTrue(homeViewModel.uiState.value.submitError is HomeViewModel.SubmitError.PrintFailed)
@@ -454,10 +454,7 @@ class HomeViewModelTest {
     fun `when both save and print fail SaveFailed takes precedence`() = runTest(testDispatcher) {
         val order = createTestOrder()
         coEvery { firestoreRepository.postOrder(any()) } throws Exception("commit failed")
-        coEvery { piPrintClient.print(any<List<PrintCommandDto>>()) } throws
-            eloom.holybean.printer.network.PrintServerException(
-                eloom.holybean.printer.network.PrintFailureReason.PrinterOffline, "offline"
-            )
+        coEvery { printClient.print(any<List<PrintCommandDto>>()) } throws RuntimeException("print failed")
         val events = mutableListOf<HomeViewModel.UiEvent>()
         val job: Job = launch { homeViewModel.uiEvent.collect { events.add(it) } }
 
@@ -483,6 +480,63 @@ class HomeViewModelTest {
         assertTrue(homeViewModel.uiState.value.submitError is HomeViewModel.SubmitError.SaveFailed)
         assertTrue(events.none { it is HomeViewModel.UiEvent.NavigateHome })
         assertEquals(false, homeViewModel.uiState.value.isSubmitting)
+        job.cancel()
+    }
+
+    @Test
+    fun `usb partial print is reported as PrintFailed and allows skip without reprint`() = runTest(testDispatcher) {
+        // 저장은 성공했지만 USB 직결 인쇄가 중간에 끊긴 경우 — SaveFailed로 오인되면
+        // 재시도 경로가 영수증을 처음부터 다시 찍어 중복 출력된다.
+        val order = createTestOrder()
+        coEvery { firestoreRepository.postOrder(any()) } just Runs
+        coEvery { printClient.print(any<List<PrintCommandDto>>()) } coAnswers {
+            kotlinx.coroutines.delay(10) // 저장(postOrder)이 먼저 완료된 뒤 인쇄가 실패하는 시나리오
+            throw eloom.holybean.printer.transport.UsbPartialPrintException(bytesSent = 128, totalBytes = 512)
+        }
+        val events = mutableListOf<HomeViewModel.UiEvent>()
+        val job: Job = launch { homeViewModel.uiEvent.collect { events.add(it) } }
+
+        homeViewModel.onOrderConfirmed(order, "포장")
+        advanceUntilIdle()
+
+        val err = homeViewModel.uiState.value.submitError
+        assertTrue(err is HomeViewModel.SubmitError.PrintFailed)
+        assertEquals(
+            eloom.holybean.printer.PrintFailureReason.PrinterError,
+            (err as HomeViewModel.SubmitError.PrintFailed).reason,
+        )
+        assertTrue(events.none { it is HomeViewModel.UiEvent.NavigateHome })
+
+        // 저장은 끝났으므로 '영수증 없이 완료'로 재출력 없이 마무리할 수 있어야 한다
+        homeViewModel.skipPrintAndComplete()
+        advanceUntilIdle()
+        assertEquals(null, homeViewModel.uiState.value.submitError)
+        assertTrue(events.any { it is HomeViewModel.UiEvent.NavigateHome })
+        job.cancel()
+    }
+
+    @Test
+    fun `generic print failure after successful save is reported as PrintFailed`() = runTest(testDispatcher) {
+        // USB 재시도 소진 후 전파되는 일반 예외 등 — 저장이 이미 성공했으면 인쇄 단계 실패다.
+        val order = createTestOrder()
+        coEvery { firestoreRepository.postOrder(any()) } just Runs
+        coEvery { printClient.print(any<List<PrintCommandDto>>()) } coAnswers {
+            kotlinx.coroutines.delay(10)
+            throw RuntimeException("usb stack boom")
+        }
+        val events = mutableListOf<HomeViewModel.UiEvent>()
+        val job: Job = launch { homeViewModel.uiEvent.collect { events.add(it) } }
+
+        homeViewModel.onOrderConfirmed(order, "포장")
+        advanceUntilIdle()
+
+        val err = homeViewModel.uiState.value.submitError
+        assertTrue(err is HomeViewModel.SubmitError.PrintFailed)
+        assertEquals(
+            eloom.holybean.printer.PrintFailureReason.Unknown,
+            (err as HomeViewModel.SubmitError.PrintFailed).reason,
+        )
+        assertTrue(events.none { it is HomeViewModel.UiEvent.NavigateHome })
         job.cancel()
     }
 
