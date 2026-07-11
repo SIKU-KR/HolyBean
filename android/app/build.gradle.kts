@@ -33,7 +33,7 @@ android {
         applicationId = "eloom.holybean"
         minSdk = 31
         // 버전은 versionName(MAJOR.MINOR) 단일 소스에서 파생한다. 릴리스 스킬은 appVersionName 한 줄만 갱신.
-        val appVersionName = "3.1"
+        val appVersionName = "3.2"
         versionName = appVersionName
         versionCode = appVersionName.split(".").let { (maj, min) -> maj.toInt() * 100 + min.toInt() }  // 3.0 → 300
 
