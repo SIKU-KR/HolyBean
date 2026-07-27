@@ -27,6 +27,9 @@ import eloom.holybean.ui.theme.*
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 @Composable
 fun OrdersRoute(onClose: () -> Unit, viewModel: OrdersViewModel = hiltViewModel()) {
@@ -37,7 +40,6 @@ fun OrdersRoute(onClose: () -> Unit, viewModel: OrdersViewModel = hiltViewModel(
             when (e) {
                 is OrdersViewModel.OrdersUiEvent.ShowToast ->
                     android.widget.Toast.makeText(context, e.message, android.widget.Toast.LENGTH_SHORT).show()
-                OrdersViewModel.OrdersUiEvent.RefreshOrders -> viewModel.loadOrdersOfDay()
             }
         }
     }
@@ -46,19 +48,31 @@ fun OrdersRoute(onClose: () -> Unit, viewModel: OrdersViewModel = hiltViewModel(
         AlertDialog(
             onDismissRequest = { confirmDelete = false },
             title = { Text("주문 삭제", style = MaterialTheme.typography.titleMedium) },
-            text = { Text("${state.selectedOrderNumber}번 주문을 삭제하시겠습니까? 복구할 수 없습니다.", style = MaterialTheme.typography.bodyMedium) },
+            text = {
+                Text(
+                    "${state.selectedDate} ${state.selectedOrderNumber}번 주문을 삭제하시겠습니까? " +
+                        "해당 날짜의 매출 집계도 변경되며 복구할 수 없습니다.",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            },
             confirmButton = { AppTextButton("삭제", onClick = { viewModel.deleteOrder(); confirmDelete = false }) },
             dismissButton = { AppTextButton("취소", onClick = { confirmDelete = false }) },
         )
     }
     OrdersScreen(
-        summary = state.todaySummary,
+        summary = state.daySummary,
+        selectedDate = state.selectedDate,
+        hasPreviousOrderDate = state.previousOrderDate != null,
+        hasNextOrderDate = state.nextNavigationDate != null,
+        isLoading = state.isLoading,
         orders = state.ordersList.toImmutableList(),
         selectedOrderNumber = state.selectedOrderNumber,
         details = state.orderDetails.toImmutableList(),
         selectedTotal = state.selectedOrderTotal,
         onClose = onClose,
-        onPrintReport = viewModel::printTodayReport,
+        onPreviousOrderDate = viewModel::goToPreviousOrderDate,
+        onNextOrderDate = viewModel::goToNextOrderDate,
+        onPrintReport = viewModel::printSelectedDateReport,
         onSelect = { viewModel.selectOrder(it.orderId, it.totalAmount) },
         onReprint = viewModel::reprint,
         onDelete = { confirmDelete = true },
@@ -67,12 +81,18 @@ fun OrdersRoute(onClose: () -> Unit, viewModel: OrdersViewModel = hiltViewModel(
 
 @Composable
 fun OrdersScreen(
-    summary: OrdersViewModel.TodaySummary,
+    summary: OrdersViewModel.DaySummary,
+    selectedDate: String,
+    hasPreviousOrderDate: Boolean,
+    hasNextOrderDate: Boolean,
+    isLoading: Boolean,
     orders: ImmutableList<OrderItem>,
     selectedOrderNumber: Int,
     details: ImmutableList<OrdersDetailItem>,
     selectedTotal: Int,
     onClose: () -> Unit,
+    onPreviousOrderDate: () -> Unit,
+    onNextOrderDate: () -> Unit,
     onPrintReport: () -> Unit,
     onSelect: (OrderItem) -> Unit,
     onReprint: () -> Unit,
@@ -83,6 +103,20 @@ fun OrdersScreen(
             ScreenHeader(
                 "주문기록",
                 actions = {
+                    SecondaryButton(
+                        "이전 주문일",
+                        onClick = onPreviousOrderDate,
+                        enabled = hasPreviousOrderDate && !isLoading,
+                    )
+                    Text(
+                        formatOrderDate(selectedDate),
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                    SecondaryButton(
+                        "다음 주문일",
+                        onClick = onNextOrderDate,
+                        enabled = hasNextOrderDate && !isLoading,
+                    )
                     SecondaryButton("닫기", onClick = onClose)
                 },
             )
@@ -91,20 +125,30 @@ fun OrdersScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(Dimens.spaceMd),
                 ) {
-                    StatChip("오늘 총 판매", "%,d원".format(summary.totalSales), OrangeOnContainer)
+                    StatChip("총 판매", "%,d원".format(summary.totalSales), OrangeOnContainer)
                     VerticalDivider(Modifier.height(Dimens.spaceXl), color = DividerGray)
                     StatChip("총 건수", "${summary.orderCount}건")
                     VerticalDivider(Modifier.height(Dimens.spaceXl), color = DividerGray)
                     StatChip("총 잔수", "${summary.drinkCount}잔")
                     Spacer(Modifier.weight(1f))
-                    SecondaryButton("보고서 출력", onClick = onPrintReport)
+                    SecondaryButton("보고서 출력", onClick = onPrintReport, enabled = !isLoading && orders.isNotEmpty())
                 }
             }
             Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(Dimens.paneGap)) {
                 Pane(Modifier.fillMaxWidth(Dimens.paneSplitWide).fillMaxHeight()) {
-                    LazyColumn(verticalArrangement = Arrangement.spacedBy(Dimens.itemGap)) {
-                        items(orders, key = { it.orderId }) { o ->
-                            OrderListItem(o, o.orderId == selectedOrderNumber) { onSelect(o) }
+                    if (isLoading) {
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator()
+                        }
+                    } else if (orders.isEmpty()) {
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text("선택한 날짜에 주문이 없습니다.", color = OnSurfaceMuted)
+                        }
+                    } else {
+                        LazyColumn(verticalArrangement = Arrangement.spacedBy(Dimens.itemGap)) {
+                            items(orders, key = { it.orderId }) { o ->
+                                OrderListItem(o, o.orderId == selectedOrderNumber) { onSelect(o) }
+                            }
                         }
                     }
                 }
@@ -122,14 +166,23 @@ fun OrdersScreen(
                         Modifier.fillMaxWidth().padding(top = Dimens.spaceMd),
                         horizontalArrangement = Arrangement.spacedBy(Dimens.spaceSm),
                     ) {
-                        PrimaryButton("재출력", onClick = onReprint, modifier = Modifier.weight(1f))
-                        DangerButton("삭제", onClick = onDelete)
+                        PrimaryButton(
+                            "재출력",
+                            onClick = onReprint,
+                            modifier = Modifier.weight(1f),
+                            enabled = details.isNotEmpty() && !isLoading,
+                        )
+                        DangerButton("삭제", onClick = onDelete, enabled = details.isNotEmpty() && !isLoading)
                     }
                 }
             }
         }
     }
 }
+
+private fun formatOrderDate(date: String): String = runCatching {
+    LocalDate.parse(date).format(DateTimeFormatter.ofPattern("yyyy년 M월 d일", Locale.KOREAN))
+}.getOrDefault(date)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -156,10 +209,15 @@ private fun OrderListItem(o: OrderItem, selected: Boolean, onClick: () -> Unit) 
 @Composable
 private fun OrdersPreview() = HolyBeanTheme {
     OrdersScreen(
-        summary = OrdersViewModel.TodaySummary(1240000, 86, 152),
+        summary = OrdersViewModel.DaySummary(1240000, 86, 152),
+        selectedDate = "2026-07-27",
+        hasPreviousOrderDate = true,
+        hasNextOrderDate = false,
+        isLoading = false,
         orders = persistentListOf(OrderItem(128, 15000, "현금", "홍길동")),
         selectedOrderNumber = 128,
         details = persistentListOf(OrdersDetailItem("아메리카노", 2, 7000)),
-        selectedTotal = 15000, onClose = {}, onPrintReport = {}, onSelect = {}, onReprint = {}, onDelete = {},
+        selectedTotal = 15000, onClose = {}, onPreviousOrderDate = {}, onNextOrderDate = {},
+        onPrintReport = {}, onSelect = {}, onReprint = {}, onDelete = {},
     )
 }

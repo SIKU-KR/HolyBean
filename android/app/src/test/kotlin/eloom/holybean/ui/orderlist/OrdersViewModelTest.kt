@@ -14,6 +14,7 @@ import eloom.holybean.printer.polymorphism.ReportPrinter
 import eloom.holybean.util.MainDispatcherRule
 import io.mockk.*
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
@@ -24,6 +25,7 @@ import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import java.time.LocalDate
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -47,7 +49,10 @@ class OrdersViewModelTest {
         client: PrintClient = mockk(relaxed = true),
         report: ReportPrinter = mockk(relaxed = true),
     ): OrdersViewModel {
-        coEvery { firestoreRepository.getOrdersOfDay() } returns arrayListOf()
+        coEvery { firestoreRepository.getOrdersOfDay(any()) } returns arrayListOf()
+        coEvery { firestoreRepository.getPreviousOrderDate(any()) } returns null
+        coEvery { firestoreRepository.getNextOrderDate(any()) } returns null
+        coEvery { firestoreRepository.getOrderDetail(any(), any()) } returns arrayListOf()
         coEvery { firestoreRepository.getReport(any(), any()) } returns
             SalesReport(emptyList(), mapOf("총합" to 0))
         return OrdersViewModel(
@@ -64,7 +69,10 @@ class OrdersViewModelTest {
         mockkStatic(FirebaseCrashlytics::class)
         every { FirebaseCrashlytics.getInstance() } returns mockk(relaxed = true)
         // Mock the initial loadOrdersOfDay / loadTodaySummary calls to prevent automatic execution
-        coEvery { firestoreRepository.getOrdersOfDay() } returns arrayListOf()
+        coEvery { firestoreRepository.getOrdersOfDay(any()) } returns arrayListOf()
+        coEvery { firestoreRepository.getPreviousOrderDate(any()) } returns null
+        coEvery { firestoreRepository.getNextOrderDate(any()) } returns null
+        coEvery { firestoreRepository.getOrderDetail(any(), any()) } returns arrayListOf()
         coEvery { firestoreRepository.getReport(any(), any()) } returns
             SalesReport(emptyList(), mapOf("총합" to 0))
         ordersPrinter = mockk(relaxed = true)
@@ -109,11 +117,11 @@ class OrdersViewModelTest {
             OrdersDetailItem(name = "Americano", count = 2, subtotal = 8000)
         )
 
-        coEvery { firestoreRepository.getOrdersOfDay() } returns mockOrders
+        coEvery { firestoreRepository.getOrdersOfDay(any()) } returns mockOrders
         coEvery { firestoreRepository.getOrderDetail(any(), any()) } returns mockOrderDetails
 
         // When
-        testViewModel.loadOrdersOfDay()
+        testViewModel.loadDate(testViewModel.getCurrentDate())
 
         // Then
         val uiState = testViewModel.uiState.first()
@@ -122,6 +130,90 @@ class OrdersViewModelTest {
         assertEquals(8000, uiState.selectedOrderTotal)
         assertEquals(mockOrderDetails, uiState.orderDetails)
         assertEquals(false, uiState.isLoading)
+    }
+
+    @Test
+    fun `loadDate loads historical orders details summary and adjacent dates`() = runTest {
+        val date = LocalDate.now().minusDays(7).toString()
+        val previous = LocalDate.now().minusDays(10).toString()
+        val next = LocalDate.now().minusDays(2).toString()
+        val orders = arrayListOf(OrderItem(7, 9_000, "현금", "홍길동"))
+        val details = arrayListOf(OrdersDetailItem("라떼", 2, 9_000))
+        val report = SalesReport(
+            menuSales = listOf(ReportDetailItem("라떼", 2, 9_000)),
+            paymentSales = mapOf("총합" to 9_000),
+        )
+        coEvery { firestoreRepository.getOrdersOfDay(date) } returns orders
+        coEvery { firestoreRepository.getOrderDetail(date, 7) } returns details
+        coEvery { firestoreRepository.getReport(date, date) } returns report
+        coEvery { firestoreRepository.getPreviousOrderDate(date) } returns previous
+        coEvery { firestoreRepository.getNextOrderDate(date) } returns next
+
+        viewModel.loadDate(date)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals(date, state.selectedDate)
+        assertEquals(previous, state.previousOrderDate)
+        assertEquals(next, state.nextOrderDate)
+        assertEquals(next, state.nextNavigationDate)
+        assertEquals(orders, state.ordersList)
+        assertEquals(details, state.orderDetails)
+        assertEquals(9_000, state.daySummary.totalSales)
+        assertEquals(1, state.daySummary.orderCount)
+        assertEquals(2, state.daySummary.drinkCount)
+    }
+
+    @Test
+    fun `next from latest historical order date returns to today`() = runTest {
+        val historicalDate = LocalDate.now().minusDays(3).toString()
+        coEvery { firestoreRepository.getNextOrderDate(historicalDate) } returns null
+
+        viewModel.loadDate(historicalDate)
+        advanceUntilIdle()
+        assertNull(viewModel.uiState.value.nextOrderDate)
+        assertEquals(viewModel.getCurrentDate(), viewModel.uiState.value.nextNavigationDate)
+
+        viewModel.goToNextOrderDate()
+        advanceUntilIdle()
+        assertEquals(viewModel.getCurrentDate(), viewModel.uiState.value.selectedDate)
+    }
+
+    @Test
+    fun `a later date load cancels stale date results`() = runTest {
+        val olderDate = LocalDate.now().minusDays(5).toString()
+        val newerDate = LocalDate.now().minusDays(2).toString()
+        val blockedOrders = CompletableDeferred<ArrayList<OrderItem>>()
+        coEvery { firestoreRepository.getOrdersOfDay(olderDate) } coAnswers { blockedOrders.await() }
+        coEvery { firestoreRepository.getOrdersOfDay(newerDate) } returns
+            arrayListOf(OrderItem(22, 4_000, "카드", ""))
+
+        viewModel.loadDate(olderDate)
+        viewModel.loadDate(newerDate)
+        advanceUntilIdle()
+        blockedOrders.complete(arrayListOf(OrderItem(11, 1_000, "현금", "")))
+        advanceUntilIdle()
+
+        assertEquals(newerDate, viewModel.uiState.value.selectedDate)
+        assertEquals(listOf(22), viewModel.uiState.value.ordersList.map { it.orderId })
+    }
+
+    @Test
+    fun `auxiliary load failures keep the successful order list usable`() = runTest {
+        val date = LocalDate.now().minusDays(6).toString()
+        val orders = arrayListOf(OrderItem(31, 6_000, "카드", ""))
+        coEvery { firestoreRepository.getOrdersOfDay(date) } returns orders
+        coEvery { firestoreRepository.getReport(date, date) } throws RuntimeException("report failed")
+        coEvery { firestoreRepository.getOrderDetail(date, 31) } throws RuntimeException("detail failed")
+
+        viewModel.loadDate(date)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals(date, state.selectedDate)
+        assertEquals(orders, state.ordersList)
+        assertEquals(31, state.selectedOrderNumber)
+        assertFalse(state.isLoading)
     }
 
     @Test
@@ -158,7 +250,7 @@ class OrdersViewModelTest {
         coEvery { firestoreRepository.getOrderDetail(currentDate, orderNumber) } returns mockOrderDetails
 
         // When
-        viewModel.fetchOrderDetail(orderNumber)
+        viewModel.selectOrder(orderNumber, 12_500)
 
         // Then
         coVerify { firestoreRepository.getOrderDetail(currentDate, orderNumber) }
@@ -184,7 +276,7 @@ class OrdersViewModelTest {
         }
 
         // When
-        testViewModel.fetchOrderDetail(orderNumber)
+        testViewModel.selectOrder(orderNumber, 0)
 
         // Wait for the coroutine to complete
         advanceUntilIdle()
@@ -373,6 +465,73 @@ class OrdersViewModelTest {
     }
 
     @Test
+    fun `deleteOrder uses selected historical date`() = runTest {
+        val historicalDate = LocalDate.now().minusDays(4).toString()
+        val orders = arrayListOf(
+            OrderItem(10, 3_000, "현금", ""),
+            OrderItem(11, 4_000, "카드", ""),
+        )
+        coEvery { firestoreRepository.getOrdersOfDay(historicalDate) } returns orders
+        coEvery { firestoreRepository.getOrderDetail(historicalDate, 10) } returns
+            arrayListOf(OrdersDetailItem("커피", 1, 3_000))
+        coEvery { firestoreRepository.deleteOrder(historicalDate, 10) } returns true
+
+        viewModel.loadDate(historicalDate)
+        advanceUntilIdle()
+        viewModel.deleteOrder()
+        advanceUntilIdle()
+
+        coVerify { firestoreRepository.deleteOrder(historicalDate, 10) }
+        assertEquals(historicalDate, viewModel.uiState.value.selectedDate)
+    }
+
+    @Test
+    fun `deleting the last historical order moves to the previous order date when there is no newer one`() = runTest {
+        val historicalDate = LocalDate.now().minusDays(4).toString()
+        val previousDate = LocalDate.now().minusDays(8).toString()
+        coEvery { firestoreRepository.getOrdersOfDay(historicalDate) } returns
+            arrayListOf(OrderItem(10, 3_000, "현금", ""))
+        coEvery { firestoreRepository.getOrderDetail(historicalDate, 10) } returns
+            arrayListOf(OrdersDetailItem("커피", 1, 3_000))
+        coEvery { firestoreRepository.getNextOrderDate(historicalDate) } returns null
+        coEvery { firestoreRepository.getPreviousOrderDate(historicalDate) } returns previousDate
+        coEvery { firestoreRepository.deleteOrder(historicalDate, 10) } returns true
+
+        viewModel.loadDate(historicalDate)
+        advanceUntilIdle()
+        viewModel.deleteOrder()
+        advanceUntilIdle()
+
+        assertEquals(previousDate, viewModel.uiState.value.selectedDate)
+        assertTrue(viewModel.uiState.value.ordersList.isEmpty())
+    }
+
+    @Test
+    fun `deleting the last order resolves adjacent dates even while navigation is still loading`() = runTest {
+        val historicalDate = LocalDate.now().minusDays(4).toString()
+        val previousDate = LocalDate.now().minusDays(8).toString()
+        val pendingPreviousDate = CompletableDeferred<String?>()
+        coEvery { firestoreRepository.getOrdersOfDay(historicalDate) } returns
+            arrayListOf(OrderItem(10, 3_000, "현금", ""))
+        coEvery { firestoreRepository.getOrderDetail(historicalDate, 10) } returns
+            arrayListOf(OrdersDetailItem("커피", 1, 3_000))
+        coEvery { firestoreRepository.getNextOrderDate(historicalDate) } returns null
+        coEvery { firestoreRepository.getPreviousOrderDate(historicalDate) } coAnswers { pendingPreviousDate.await() }
+        coEvery { firestoreRepository.deleteOrder(historicalDate, 10) } returns true
+
+        viewModel.loadDate(historicalDate)
+        assertEquals(10, viewModel.uiState.value.selectedOrderNumber)
+        assertTrue(viewModel.uiState.value.orderDetails.isNotEmpty())
+
+        viewModel.deleteOrder()
+        pendingPreviousDate.complete(previousDate)
+        advanceUntilIdle()
+
+        coVerify { firestoreRepository.deleteOrder(historicalDate, 10) }
+        assertEquals(previousDate, viewModel.uiState.value.selectedDate)
+    }
+
+    @Test
     fun `deleteOrder should update deleteStatus to Loading then Error when deletion fails`() = runTest {
         // Given
         val orderDetails = arrayListOf(OrdersDetailItem("Coffee", 1, 1000))
@@ -433,12 +592,12 @@ class OrdersViewModelTest {
 
         coEvery { firestoreRepository.deleteOrder(currentDate, orderNumber) } returns true
         // After deletion the day has no remaining orders
-        coEvery { firestoreRepository.getOrdersOfDay() } returns arrayListOf()
+        coEvery { firestoreRepository.getOrdersOfDay(any()) } returns arrayListOf()
 
         // When - delete succeeds, then the screen refreshes the (now empty) list
         viewModel.deleteOrder()
         advanceUntilIdle()
-        viewModel.loadOrdersOfDay()
+        viewModel.loadDate(currentDate)
         advanceUntilIdle()
 
         // Then - stale selection/detail is cleared
@@ -466,7 +625,7 @@ class OrdersViewModelTest {
                 menuSales = listOf(ReportDetailItem("아메리카노", 2, 7000)),
                 paymentSales = mapOf("총합" to 7000),
             )
-        coEvery { firestoreRepository.getOrdersOfDay() } returns arrayListOf(
+        coEvery { firestoreRepository.getOrdersOfDay(any()) } returns arrayListOf(
             OrderItem(1, 7000, "현금", "")
         )
 
@@ -475,7 +634,7 @@ class OrdersViewModelTest {
         advanceUntilIdle()
 
         // Then - the summary reflects the post-deletion totals, not the stale init values
-        val s = viewModel.uiState.value.todaySummary
+        val s = viewModel.uiState.value.daySummary
         assertEquals(7000, s.totalSales)
         assertEquals(1, s.orderCount)
         assertEquals(2, s.drinkCount)
@@ -488,14 +647,14 @@ class OrdersViewModelTest {
                 menuSales = listOf(ReportDetailItem("아메리카노", 5, 17500)),
                 paymentSales = mapOf("총합" to 100000),
             )
-        coEvery { firestoreRepository.getOrdersOfDay() } returns arrayListOf(
+        coEvery { firestoreRepository.getOrdersOfDay(any()) } returns arrayListOf(
             OrderItem(1, 5000, "현금", "")
         )
 
-        viewModel.loadTodaySummary()
+        viewModel.loadDate(viewModel.getCurrentDate())
         advanceUntilIdle()
 
-        val s = viewModel.uiState.value.todaySummary
+        val s = viewModel.uiState.value.daySummary
         assertEquals(100000, s.totalSales)
         assertEquals(1, s.orderCount)
         assertEquals(5, s.drinkCount)
@@ -511,15 +670,34 @@ class OrdersViewModelTest {
                 ),
                 paymentSales = mapOf("총합" to 100000),
             )
-        coEvery { firestoreRepository.getOrdersOfDay() } returns arrayListOf(
+        coEvery { firestoreRepository.getOrdersOfDay(any()) } returns arrayListOf(
             OrderItem(1, 5000, "현금", "")
         )
 
-        viewModel.loadTodaySummary()
+        viewModel.loadDate(viewModel.getCurrentDate())
         advanceUntilIdle()
 
-        val s = viewModel.uiState.value.todaySummary
+        val s = viewModel.uiState.value.daySummary
         assertEquals(5, s.drinkCount)
+    }
+
+    @Test
+    fun `printSelectedDateReport prints the selected historical date`() = runTest {
+        val historicalDate = LocalDate.now().minusDays(8).toString()
+        val report = SalesReport(emptyList(), mapOf("총합" to 12_000))
+        coEvery { firestoreRepository.getReport(historicalDate, historicalDate) } returns report
+
+        viewModel.loadDate(historicalDate)
+        advanceUntilIdle()
+        viewModel.printSelectedDateReport()
+        advanceUntilIdle()
+
+        verify {
+            reportPrinter.makeCommands(match {
+                it.startdate == historicalDate && it.enddate == historicalDate
+            })
+        }
+        coVerify { printClient.print(any<List<PrintCommandDto>>()) }
     }
 
     @Test

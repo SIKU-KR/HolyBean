@@ -3,6 +3,7 @@ package eloom.holybean.data.repository
 import com.google.firebase.firestore.FieldPath
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.SetOptions
 import eloom.holybean.data.firestore.FirestoreSchema
 import eloom.holybean.data.firestore.OrderAggregation
@@ -47,8 +48,8 @@ class FirestoreRepository @Inject constructor(
         }
     }
 
-    suspend fun getOrdersOfDay(): ArrayList<OrderItem> = withContext(ioDispatcher) {
-        val snap = db.collection(FirestoreSchema.DAY_SUMMARIES).document(today()).get().await()
+    suspend fun getOrdersOfDay(date: String): ArrayList<OrderItem> = withContext(ioDispatcher) {
+        val snap = db.collection(FirestoreSchema.DAY_SUMMARIES).document(date).get().await()
         @Suppress("UNCHECKED_CAST")
         val orders = (snap.get("orders") as? Map<String, Map<String, Any>>) ?: emptyMap()
         val list = orders.entries
@@ -62,6 +63,33 @@ class FirestoreRepository @Inject constructor(
                 )
             }
         ArrayList(list)
+    }
+
+    /** 선택일보다 앞선 주문 중 가장 가까운 주문일. 주문이 없는 날짜는 orders 컬렉션에 없으므로 자동으로 건너뛴다. */
+    suspend fun getPreviousOrderDate(date: String): String? = withContext(ioDispatcher) {
+        db.collection(FirestoreSchema.ORDERS)
+            .whereLessThan("orderDate", date)
+            .orderBy("orderDate", Query.Direction.DESCENDING)
+            .limit(1)
+            .get()
+            .await()
+            .documents
+            .firstOrNull()
+            ?.getString("orderDate")
+    }
+
+    /** 선택일보다 뒤이면서 오늘을 넘지 않는 가장 가까운 주문일. */
+    suspend fun getNextOrderDate(date: String): String? = withContext(ioDispatcher) {
+        db.collection(FirestoreSchema.ORDERS)
+            .whereGreaterThan("orderDate", date)
+            .whereLessThanOrEqualTo("orderDate", today())
+            .orderBy("orderDate", Query.Direction.ASCENDING)
+            .limit(1)
+            .get()
+            .await()
+            .documents
+            .firstOrNull()
+            ?.getString("orderDate")
     }
 
     suspend fun getOrderDetail(date: String, num: Int): ArrayList<OrdersDetailItem> = withContext(ioDispatcher) {
