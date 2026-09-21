@@ -3,6 +3,7 @@ package eloom.holybean.ui.home
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import eloom.holybean.data.model.CartItem
+import eloom.holybean.data.model.MenuItem
 import eloom.holybean.data.model.Order
 import eloom.holybean.data.model.PaymentMethod
 import eloom.holybean.data.repository.FirestoreRepository
@@ -19,6 +20,7 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkStatic
+import io.mockk.slot
 import io.mockk.unmockkAll
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -539,6 +541,149 @@ class HomeViewModelTest {
         assertTrue(events.none { it is HomeViewModel.UiEvent.NavigateHome })
         job.cancel()
     }
+
+    // ---- 영수증 항목 placement 정렬 ----
+
+    @Test
+    fun `receipt items are sorted by menu placement, not basket order`() = runTest(testDispatcher) {
+        // Given - 담은 순서는 스무디 → 라떼 → 아메리카노
+        val vm = vmWithMenu(
+            menuItem(1001, "아메리카노", order = 1001),
+            menuItem(2001, "스무디", order = 2001),
+            menuItem(1002, "라떼", order = 1002),
+        )
+        val order = orderOf(
+            CartItem(2001, "스무디", 6000, 1, 6000),
+            CartItem(1002, "라떼", 4500, 1, 4500),
+            CartItem(1001, "아메리카노", 4000, 1, 4000),
+        )
+        coEvery { firestoreRepository.postOrder(any()) } just Runs
+        val customer = slot<Order>()
+        val pos = slot<Order>()
+        coEvery { homePrinter.receiptForCustomer(capture(customer)) } returns emptyList()
+        coEvery { homePrinter.receiptForPOS(capture(pos), any()) } returns emptyList()
+
+        // When
+        vm.onOrderConfirmed(order, "포장")
+        advanceUntilIdle()
+
+        // Then - 영수증 2장 모두 placement 오름차순
+        val expected = listOf("아메리카노", "라떼", "스무디")
+        assertEquals(expected, customer.captured.orderItems.map { it.name })
+        assertEquals(expected, pos.captured.orderItems.map { it.name })
+    }
+
+    @Test
+    fun `receipt sorting follows placement even when it diverges from id`() = runTest(testDispatcher) {
+        // Given - 메뉴 관리에서 드래그로 재정렬하면 id는 그대로이고 placement만 바뀐다
+        val vm = vmWithMenu(
+            menuItem(1001, "아메리카노", order = 1005),
+            menuItem(1002, "라떼", order = 1001),
+        )
+        val order = orderOf(
+            CartItem(1001, "아메리카노", 4000, 1, 4000),
+            CartItem(1002, "라떼", 4500, 1, 4500),
+        )
+        coEvery { firestoreRepository.postOrder(any()) } just Runs
+        val customer = slot<Order>()
+        coEvery { homePrinter.receiptForCustomer(capture(customer)) } returns emptyList()
+
+        // When
+        vm.onOrderConfirmed(order, "포장")
+        advanceUntilIdle()
+
+        // Then - id 순(아메리카노 먼저)이 아니라 placement 순
+        assertEquals(listOf("라떼", "아메리카노"), customer.captured.orderItems.map { it.name })
+    }
+
+    @Test
+    fun `coupon items are printed last`() = runTest(testDispatcher) {
+        // Given - 쿠폰(id=999)은 메뉴에 없으므로 placement가 없다
+        val vm = vmWithMenu(
+            menuItem(1001, "아메리카노", order = 1001),
+            menuItem(2001, "스무디", order = 2001),
+        )
+        val order = orderOf(
+            CartItem(999, "쿠폰", 3000, 1, 3000),
+            CartItem(2001, "스무디", 6000, 1, 6000),
+            CartItem(999, "쿠폰", 1000, 1, 1000),
+            CartItem(1001, "아메리카노", 4000, 1, 4000),
+        )
+        coEvery { firestoreRepository.postOrder(any()) } just Runs
+        val customer = slot<Order>()
+        coEvery { homePrinter.receiptForCustomer(capture(customer)) } returns emptyList()
+
+        // When
+        vm.onOrderConfirmed(order, "포장")
+        advanceUntilIdle()
+
+        // Then - 실제 메뉴가 먼저, 쿠폰 2장은 담은 순서 그대로 맨 아래
+        val items = customer.captured.orderItems
+        assertEquals(listOf("아메리카노", "스무디", "쿠폰", "쿠폰"), items.map { it.name })
+        assertEquals(listOf(3000, 1000), items.filter { it.id == 999 }.map { it.price })
+    }
+
+    @Test
+    fun `sorting applies to the receipt only and never to the saved order`() = runTest(testDispatcher) {
+        // Given
+        val vm = vmWithMenu(
+            menuItem(1001, "아메리카노", order = 1001),
+            menuItem(2001, "스무디", order = 2001),
+        )
+        val order = orderOf(
+            CartItem(2001, "스무디", 6000, 1, 6000),
+            CartItem(1001, "아메리카노", 4000, 1, 4000),
+        )
+        val saved = slot<Order>()
+        coEvery { firestoreRepository.postOrder(capture(saved)) } just Runs
+
+        // When
+        vm.onOrderConfirmed(order, "포장")
+        advanceUntilIdle()
+
+        // Then - Firestore에는 담은 순서 그대로 저장된다
+        assertEquals(listOf("스무디", "아메리카노"), saved.captured.orderItems.map { it.name })
+    }
+
+    @Test
+    fun `receipt keeps basket order when the menu failed to load`() = runTest(testDispatcher) {
+        // Given - 메뉴 캐시/페치가 모두 비어 placement를 알 수 없는 상황
+        val vm = vmWithMenu()
+        val order = orderOf(
+            CartItem(2001, "스무디", 6000, 1, 6000),
+            CartItem(1001, "아메리카노", 4000, 1, 4000),
+        )
+        coEvery { firestoreRepository.postOrder(any()) } just Runs
+        val customer = slot<Order>()
+        coEvery { homePrinter.receiptForCustomer(capture(customer)) } returns emptyList()
+
+        // When
+        vm.onOrderConfirmed(order, "포장")
+        advanceUntilIdle()
+
+        // Then - 회귀 없이 기존 동작(담은 순서) 유지
+        assertEquals(listOf("스무디", "아메리카노"), customer.captured.orderItems.map { it.name })
+    }
+
+    private fun menuItem(id: Int, name: String, order: Int) =
+        MenuItem(id = id, name = name, price = 4000, order = order, inuse = true)
+
+    /** 주어진 메뉴 목록을 캐시에서 읽는 ViewModel을 새로 만든다. */
+    private fun vmWithMenu(vararg menus: MenuItem): HomeViewModel {
+        every { menuRepository.getCachedMenu() } returns menus.toList()
+        coEvery { menuRepository.getMenuListSync() } returns menus.toList()
+        return HomeViewModel(firestoreRepository, menuRepository, printClient, homePrinter)
+    }
+
+    private fun orderOf(vararg items: CartItem) = Order(
+        orderDate = "2024-01-15",
+        orderNum = 1,
+        creditStatus = 0,
+        customerName = "테스트고객",
+        orderItems = items.toList(),
+        paymentMethods = listOf(PaymentMethod("현금", items.sumOf { it.total })),
+        totalAmount = items.sumOf { it.total },
+    )
 
     // 헬퍼 메서드: 테스트용 Order 객체 생성
     private fun createTestOrder(orderNum: Int = 1): Order {

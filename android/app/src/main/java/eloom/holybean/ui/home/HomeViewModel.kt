@@ -263,9 +263,22 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    // 영수증 항목은 담은 순서가 아니라 메뉴 placement(order) 순으로 찍는다 —
+    // placement는 (카테고리 = 값/1000) 인코딩이라 카테고리별로 묶이고, 카테고리 안에서도
+    // 메뉴 관리에서 지정한 순서가 된다. 메뉴에 없는 항목(쿠폰 id=999)은 맨 아래로 보낸다.
+    // sortedBy는 안정 정렬이라 키가 같은 항목끼리는 담은 순서가 유지된다.
+    // 저장(postOrder)은 원본 순서 그대로 — 정렬본은 인쇄 경로에만 쓴다.
+    private fun sortedForReceipt(data: Order): Order {
+        val placement = _uiState.value.allMenuItems.associate { it.id to it.order }
+        return data.copy(
+            orderItems = data.orderItems.sortedBy { placement[it.id] ?: Int.MAX_VALUE }
+        )
+    }
+
     private suspend fun printReceipt(data: Order, takeOption: String) {
-        val customerCommands = homePrinter.receiptForCustomer(data)
-        val posCommands = homePrinter.receiptForPOS(data, takeOption)
+        val sorted = sortedForReceipt(data)
+        val customerCommands = homePrinter.receiptForCustomer(sorted)
+        val posCommands = homePrinter.receiptForPOS(sorted, takeOption)
         printClient.print(customerCommands)
         printClient.print(posCommands)
     }
