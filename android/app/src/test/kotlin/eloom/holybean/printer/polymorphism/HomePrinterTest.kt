@@ -14,7 +14,6 @@ class HomePrinterTest {
     private fun order() = Order(
         orderDate = "2026-05-23",
         orderNum = 42,
-        creditStatus = 0,
         customerName = "홍길동",
         orderItems = listOf(
             CartItem(id = 1, name = "아메리카노", price = 4000, count = 2, total = 8000),

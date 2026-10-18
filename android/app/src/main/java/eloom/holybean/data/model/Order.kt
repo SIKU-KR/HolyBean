@@ -6,7 +6,6 @@ package eloom.holybean.data.model
 data class Order(
     val orderDate: String,
     val orderNum: Int,
-    val creditStatus: Int,
     val customerName: String,
     val orderItems: List<CartItem>,
     val paymentMethods: List<PaymentMethod>,

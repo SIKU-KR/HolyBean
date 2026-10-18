@@ -16,11 +16,10 @@ data class PaymentSelection(
 )
 
 object PaymentForm {
-    val methods = listOf("현금", "쿠폰", "계좌이체", "외상", "무료쿠폰", "무료제공")
-    private val secondPool = listOf("계좌이체", "현금", "쿠폰", "무료쿠폰")
-    private fun needsOrderer(m: String?) = m == "계좌이체" || m == "외상"
+    val methods = listOf("현금", "쿠폰", "계좌이체", "무료쿠폰", "무료제공")
+    private fun needsOrderer(m: String?) = m == "계좌이체"
 
-    fun secondCandidates(first: String): List<String> = secondPool.filter { it != first }
+    fun secondCandidates(first: String): List<String> = methods.filter { it != first }
 
     /** 분할결제 ON 시 1번째(잔액)·2번째 수단의 금액 분배 라인. 입력이 유효하지 않으면 빈 리스트. */
     fun splitBreakdown(first: String, second: String?, total: Int, secondAmountText: String): List<SplitLine> {
@@ -40,7 +39,7 @@ object PaymentForm {
             if (needsOrderer(first) && sel.ordererName.isBlank())
                 return Result.failure(IllegalStateException("주문자를 입력하세요"))
             return Result.success(
-                order(date, orderId, credit(first), sel.ordererName, cart,
+                order(date, orderId, sel.ordererName, cart,
                     listOf(PaymentMethod(first, total)), total)
             )
         }
@@ -53,20 +52,17 @@ object PaymentForm {
         if ((needsOrderer(first) || needsOrderer(second)) && sel.ordererName.isBlank())
             return Result.failure(IllegalStateException("주문자를 입력하세요"))
         return Result.success(
-            order(date, orderId, credit(first, second), sel.ordererName, cart,
+            order(date, orderId, sel.ordererName, cart,
                 listOf(PaymentMethod(first, remainder), PaymentMethod(second, secondAmount)), total)
         )
     }
 
-    private fun credit(vararg m: String) = if (m.any { it == "외상" }) 1 else 0
-
     private fun order(
-        date: String, num: Int, credit: Int, name: String, items: List<CartItem>,
+        date: String, num: Int, name: String, items: List<CartItem>,
         methods: List<PaymentMethod>, total: Int,
     ) = Order(
         orderDate = date,
         orderNum = num,
-        creditStatus = credit,
         customerName = name,
         orderItems = items,
         paymentMethods = methods,

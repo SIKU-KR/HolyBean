@@ -33,4 +33,14 @@ class ReportPrinterTest {
         assertEquals("40000", detailRow.columns!![2].content)
         assertEquals("cut", commands.last().type)
     }
+
+    @Test
+    fun `credit line only printed when legacy credit sales exist`() {
+        fun texts(data: Map<String, Int>) = ReportPrinter()
+            .makeCommands(PrinterDTO("2026-05-01", "2026-05-23", data, emptyList()))
+            .filter { it.type == "text" }.mapNotNull { it.content }
+
+        assertTrue(texts(mapOf("총합" to 10000, "현금" to 10000)).none { it.startsWith("외상") })
+        assertTrue(texts(mapOf("총합" to 15000, "현금" to 10000, "외상" to 5000)).contains("외상 판매금액 : 5000"))
+    }
 }

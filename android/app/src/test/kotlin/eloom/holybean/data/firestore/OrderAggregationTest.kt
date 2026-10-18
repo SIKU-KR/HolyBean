@@ -9,10 +9,9 @@ import org.junit.Test
 class OrderAggregationTest {
 
     private fun order(
-        creditStatus: Int = 0,
         payments: List<PaymentMethod> = listOf(PaymentMethod("현금", 9000)),
         items: List<CartItem> = listOf(CartItem(1001, "아메리카노", 4500, 2, 9000))
-    ) = Order("2026-05-23", 3, creditStatus, "홍길동", items, payments, 9000)
+    ) = Order("2026-05-23", 3, "홍길동", items, payments, 9000)
 
     @Test
     fun `orderMethod는 결제수단을 플러스로 결합`() {

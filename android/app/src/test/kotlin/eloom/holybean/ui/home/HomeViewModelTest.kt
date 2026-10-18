@@ -177,7 +177,7 @@ class HomeViewModelTest {
         advanceUntilIdle()
 
         val order = Order(
-            "2026-05-23", 10, 0, "",
+            "2026-05-23", 10, "",
             listOf(CartItem(999, "쿠폰", 3000, 1, 3000)),
             listOf(PaymentMethod("현금", 3000)), 3000
         )
@@ -678,7 +678,6 @@ class HomeViewModelTest {
     private fun orderOf(vararg items: CartItem) = Order(
         orderDate = "2024-01-15",
         orderNum = 1,
-        creditStatus = 0,
         customerName = "테스트고객",
         orderItems = items.toList(),
         paymentMethods = listOf(PaymentMethod("현금", items.sumOf { it.total })),
@@ -698,7 +697,6 @@ class HomeViewModelTest {
         return Order(
             orderDate = "2024-01-15",
             orderNum = orderNum,
-            creditStatus = 0,
             customerName = "테스트고객",
             orderItems = cartItems,
             paymentMethods = paymentMethods,

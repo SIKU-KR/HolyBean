@@ -9,6 +9,5 @@ import kotlinx.serialization.Serializable
 @Serializable object PaymentDest
 @Serializable object OrdersDest
 @Serializable object MenuMgmtDest
-@Serializable object CreditsDest
 @Serializable object ReportDest
 @Serializable object DevToolsDest
