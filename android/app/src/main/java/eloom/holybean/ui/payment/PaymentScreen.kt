@@ -114,9 +114,6 @@ fun PaymentScreen(
     var second by rememberSaveable { mutableStateOf<String?>(null) }
     var secondAmt by rememberSaveable { mutableStateOf("") }
 
-    // 무료제공 선택 시 분할 비활성화
-    LaunchedEffect(first) { if (first == "무료제공") { split = false } }
-
     Box(Modifier.fillMaxSize()) {
         ScreenContainer {
             Column(Modifier.fillMaxSize()) {
@@ -156,11 +153,9 @@ fun PaymentScreen(
                             Column(verticalArrangement = Arrangement.spacedBy(Dimens.spaceSm)) {
                                 SectionLabel("결제 수단")
                                 MethodGrid(PaymentForm.methods.toImmutableList(), first) { first = it }
-                                if (first != "무료제공") {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Switch(checked = split, onCheckedChange = { split = it })
-                                        Text("  결제수단 추가 (분할결제)", style = MaterialTheme.typography.bodyMedium)
-                                    }
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Switch(checked = split, onCheckedChange = { split = it })
+                                    Text("  결제수단 추가 (분할결제)", style = MaterialTheme.typography.bodyMedium)
                                 }
                             }
                             if (split) {
@@ -226,6 +221,8 @@ private fun MethodGrid(methods: ImmutableList<String>, selected: String, onSelec
                 rowItems.forEach { m ->
                     PaymentMethodTile(m, m == selected, { onSelect(m) }, Modifier.weight(1f))
                 }
+                // 마지막 줄이 3칸 미만이면 빈 칸으로 채워 윗줄과 타일 폭을 맞춘다.
+                repeat(3 - rowItems.size) { Spacer(Modifier.weight(1f)) }
             }
         }
     }

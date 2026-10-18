@@ -27,9 +27,13 @@ class PaymentFormTest {
         assertTrue(r.isFailure)
     }
 
-    @Test fun `credit sets creditStatus 1`() {
+    @Test fun `legacy credit still sets creditStatus 1`() {
         val r = PaymentForm.build(base().copy(firstMethod = "외상", ordererName = "홍길동"), cart, 7000, 5, "2026-05-23")
         assertEquals(1, r.getOrThrow().creditStatus)
+    }
+
+    @Test fun `methods no longer include credit`() {
+        assertEquals(listOf("현금", "쿠폰", "계좌이체", "무료쿠폰", "무료제공"), PaymentForm.methods)
     }
 
     @Test fun `split divides remainder to first method`() {
@@ -51,8 +55,23 @@ class PaymentFormTest {
     }
 
     @Test fun `second method candidates exclude chosen first`() {
-        assertEquals(listOf("계좌이체", "쿠폰", "무료쿠폰"), PaymentForm.secondCandidates("현금"))
-        assertEquals(listOf("현금", "쿠폰", "무료쿠폰"), PaymentForm.secondCandidates("계좌이체"))
+        assertEquals(listOf("쿠폰", "계좌이체", "무료쿠폰", "무료제공"), PaymentForm.secondCandidates("현금"))
+        assertEquals(listOf("현금", "쿠폰", "무료쿠폰", "무료제공"), PaymentForm.secondCandidates("계좌이체"))
+        assertEquals(listOf("현금", "쿠폰", "계좌이체", "무료쿠폰"), PaymentForm.secondCandidates("무료제공"))
+    }
+
+    @Test fun `free-provision first method can be split`() {
+        val sel = base().copy(firstMethod = "무료제공", splitEnabled = true, secondMethod = "현금", secondAmountText = "3000")
+        val order = PaymentForm.build(sel, cart, 7000, 5, "2026-05-23").getOrThrow()
+        assertEquals("무료제공", order.paymentMethods[0].type)
+        assertEquals(4000, order.paymentMethods[0].amount)
+        assertEquals("현금", order.paymentMethods[1].type)
+        assertEquals(3000, order.paymentMethods[1].amount)
+    }
+
+    @Test fun `account transfer as second method requires orderer name`() {
+        val sel = base().copy(splitEnabled = true, secondMethod = "계좌이체", secondAmountText = "2000")
+        assertTrue(PaymentForm.build(sel, cart, 7000, 5, "2026-05-23").isFailure)
     }
 
     @Test fun `split breakdown returns first-remainder and second-amount lines`() {

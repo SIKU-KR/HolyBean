@@ -15,4 +15,10 @@ object FeatureFlags {
      * 기본 true = Play 미경유 설치(debug 토큰)에서 동작. 실제 Play 프로덕션만 false.
      */
     val useDebugAppCheck: Boolean get() = BuildConfig.USE_DEBUG_APPCHECK
+
+    /**
+     * 레거시 '외상 관리' 화면 진입점 노출. 외상은 신규 결제 수단에서 제외됐고 코드만 남아 있다.
+     * 기본 false(숨김). 기존 미수를 정산해야 할 때만 enableLegacyCredits=true 로 빌드한다.
+     */
+    val enableLegacyCredits: Boolean get() = BuildConfig.ENABLE_LEGACY_CREDITS
 }

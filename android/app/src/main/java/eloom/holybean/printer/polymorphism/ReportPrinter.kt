@@ -24,7 +24,11 @@ class ReportPrinter @Inject constructor() {
         .text("현금 판매금액 : ${data.reportData["현금"] ?: 0}")
         .text("쿠폰 판매금액 : ${data.reportData["쿠폰"] ?: 0}")
         .text("계좌이체 판매금액 : ${data.reportData["계좌이체"] ?: 0}")
-        .text("외상 판매금액 : ${data.reportData["외상"] ?: 0}")
+        .also { builder ->
+            // 외상은 제거된 수단 — 과거 정산분이 남아 있는 기간만 출력해 총합과 내역을 맞춘다.
+            val legacyCredit = data.reportData["외상"] ?: 0
+            if (legacyCredit > 0) builder.text("외상 판매금액 : $legacyCredit")
+        }
         .text("무료쿠폰 판매금액 : ${data.reportData["무료쿠폰"] ?: 0}")
         .text("무료제공 판매금액 : ${data.reportData["무료제공"] ?: 0}")
         .divider('-')

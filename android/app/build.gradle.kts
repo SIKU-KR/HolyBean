@@ -46,6 +46,8 @@ android {
         // App Check: 기본 true = Debug provider(등록된 debug 토큰 사용, Play 미경유 가능).
         // 실제 Play 스토어 프로덕션 배포 시에만 useDebugAppCheck=false 로 PlayIntegrity 사용.
         buildConfigField("boolean", "USE_DEBUG_APPCHECK", featureFlag("useDebugAppCheck", true).toString())
+        // 외상(레거시): 신규 결제에서는 제외됨. true면 설정에 '외상 관리'를 노출해 기존 미수를 정산할 수 있다.
+        buildConfigField("boolean", "ENABLE_LEGACY_CREDITS", featureFlag("enableLegacyCredits", false).toString())
     }
 
     buildTypes {

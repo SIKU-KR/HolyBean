@@ -16,11 +16,11 @@ data class PaymentSelection(
 )
 
 object PaymentForm {
-    val methods = listOf("현금", "쿠폰", "계좌이체", "외상", "무료쿠폰", "무료제공")
-    private val secondPool = listOf("계좌이체", "현금", "쿠폰", "무료쿠폰")
+    // 외상은 신규 결제에서 제외(레거시). 기존 미수 정산 흐름과 아래 creditStatus 처리는 유지한다.
+    val methods = listOf("현금", "쿠폰", "계좌이체", "무료쿠폰", "무료제공")
     private fun needsOrderer(m: String?) = m == "계좌이체" || m == "외상"
 
-    fun secondCandidates(first: String): List<String> = secondPool.filter { it != first }
+    fun secondCandidates(first: String): List<String> = methods.filter { it != first }
 
     /** 분할결제 ON 시 1번째(잔액)·2번째 수단의 금액 분배 라인. 입력이 유효하지 않으면 빈 리스트. */
     fun splitBreakdown(first: String, second: String?, total: Int, secondAmountText: String): List<SplitLine> {
