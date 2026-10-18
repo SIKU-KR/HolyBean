@@ -8,7 +8,7 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import eloom.holybean.config.FeatureFlags
+import eloom.holybean.config.RunMode
 import javax.inject.Singleton
 
 @Module
@@ -17,12 +17,13 @@ object FirebaseModule {
 
     @Provides
     @Singleton
-    fun provideFirestore(): FirebaseFirestore {
+    fun provideRunMode(): RunMode = RunMode.fromFlags()
+
+    @Provides
+    @Singleton
+    fun provideFirestore(runMode: RunMode): FirebaseFirestore {
         val db = FirebaseFirestore.getInstance()
-        // useEmulator는 인스턴스를 처음 쓰기 전(=settings 설정 전)에 호출해야 한다.
-        if (FeatureFlags.useFirebaseEmulator) {
-            db.useEmulator("10.0.2.2", 8080)
-        }
+        runMode.configure(db)   // settings 설정 전에 호출해야 한다(에뮬레이터 연결 등)
         db.firestoreSettings = firestoreSettings {
             setLocalCacheSettings(persistentCacheSettings {})
         }
@@ -31,11 +32,6 @@ object FirebaseModule {
 
     @Provides
     @Singleton
-    fun provideFirebaseAuth(): FirebaseAuth {
-        val auth = FirebaseAuth.getInstance()
-        if (FeatureFlags.useFirebaseEmulator) {
-            auth.useEmulator("10.0.2.2", 9099)
-        }
-        return auth
-    }
+    fun provideFirebaseAuth(runMode: RunMode): FirebaseAuth =
+        FirebaseAuth.getInstance().also(runMode::configure)
 }
