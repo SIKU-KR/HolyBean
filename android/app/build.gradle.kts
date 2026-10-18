@@ -16,8 +16,8 @@ plugins {
 }
 
 // Feature flags: local.properties → -P gradle property → default.
-// 빌드타입과 독립적으로 백엔드 구성을 토글한다.
-//   useFirebaseEmulator=true  → Firestore/Auth 를 10.0.2.2 에뮬레이터로
+// 백엔드 구성을 토글한다. 앱에서는 RunMode 가 이 값들로 실행 모드를 정한다.
+//   useFirebaseEmulator=true  → Firestore/Auth 를 10.0.2.2 에뮬레이터로 (debug 빌드에서만 적용)
 val featureFlagProps = Properties().apply {
     val f = rootProject.file("local.properties")
     if (f.exists()) f.inputStream().use { load(it) }
@@ -42,7 +42,6 @@ android {
             useSupportLibrary = true
         }
 
-        buildConfigField("boolean", "USE_FIREBASE_EMULATOR", featureFlag("useFirebaseEmulator", false).toString())
         // App Check: 기본 true = Debug provider(등록된 debug 토큰 사용, Play 미경유 가능).
         // 실제 Play 스토어 프로덕션 배포 시에만 useDebugAppCheck=false 로 PlayIntegrity 사용.
         buildConfigField("boolean", "USE_DEBUG_APPCHECK", featureFlag("useDebugAppCheck", true).toString())
@@ -51,7 +50,13 @@ android {
     }
 
     buildTypes {
+        debug {
+            buildConfigField("boolean", "USE_FIREBASE_EMULATOR", featureFlag("useFirebaseEmulator", false).toString())
+        }
         release {
+            // 배포 빌드는 local.properties 와 무관하게 항상 실서버에 붙는다.
+            // (에뮬레이터 접속용 평문 HTTP 허용도 debug 소스셋에만 있어 release 에선 동작하지 않는다)
+            buildConfigField("boolean", "USE_FIREBASE_EMULATOR", "false")
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"

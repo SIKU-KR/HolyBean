@@ -3,11 +3,11 @@ package eloom.holybean.config
 import eloom.holybean.BuildConfig
 
 /**
- * 빌드타입과 독립적인 기능 토글. 값은 build.gradle.kts가 local.properties/-P에서
- * 읽어 BuildConfig로 주입한다(기본 false = real 백엔드/real 프린터).
+ * 기능 토글. 값은 build.gradle.kts가 local.properties/-P에서 읽어 BuildConfig로 주입한다
+ * (기본 false = real 백엔드/real 프린터). useFirebaseEmulator만 debug 빌드 전용이다.
  */
 object FeatureFlags {
-    /** Firestore/Auth를 로컬 Firebase 에뮬레이터(10.0.2.2)로 붙인다. */
+    /** Firestore/Auth를 로컬 Firebase 에뮬레이터(10.0.2.2)로 붙인다. debug 빌드에서만 켤 수 있고 release는 항상 false. */
     val useFirebaseEmulator: Boolean get() = BuildConfig.USE_FIREBASE_EMULATOR
 
     /**
