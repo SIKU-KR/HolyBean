@@ -221,6 +221,8 @@ private fun MethodGrid(methods: ImmutableList<String>, selected: String, onSelec
                 rowItems.forEach { m ->
                     PaymentMethodTile(m, m == selected, { onSelect(m) }, Modifier.weight(1f))
                 }
+                // 마지막 줄이 3칸 미만이면 빈 칸으로 채워 윗줄과 타일 폭을 맞춘다.
+                repeat(3 - rowItems.size) { Spacer(Modifier.weight(1f)) }
             }
         }
     }
