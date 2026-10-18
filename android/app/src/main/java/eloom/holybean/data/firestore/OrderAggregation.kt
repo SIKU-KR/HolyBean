@@ -21,7 +21,7 @@ object OrderAggregation {
         "orderNum" to order.orderNum,
         "totalAmount" to order.totalAmount,
         "customerName" to order.customerName,
-        "creditStatus" to FirestoreSchema.CREDIT_SETTLED,
+        "creditStatus" to order.creditStatus,
         "items" to order.orderItems.map {
             mapOf("name" to it.name, "quantity" to it.count, "subtotal" to it.total, "unitPrice" to it.price)
         },
@@ -34,7 +34,7 @@ object OrderAggregation {
         "customerName" to order.customerName,
         "totalAmount" to order.totalAmount,
         "orderMethod" to orderMethodLabel(order.paymentMethods),
-        "creditStatus" to FirestoreSchema.CREDIT_SETTLED
+        "creditStatus" to order.creditStatus
     )
 
     fun rollupDelta(order: Order): RollupDelta = rollupDelta(order.orderItems, order.paymentMethods)

@@ -19,11 +19,17 @@ class PaymentFormTest {
         assertEquals(1, order.paymentMethods.size)
         assertEquals("현금", order.paymentMethods[0].type)
         assertEquals(7000, order.paymentMethods[0].amount)
+        assertEquals(0, order.creditStatus)
     }
 
     @Test fun `account transfer requires orderer name`() {
         val r = PaymentForm.build(base().copy(firstMethod = "계좌이체"), cart, 7000, 5, "2026-05-23")
         assertTrue(r.isFailure)
+    }
+
+    @Test fun `legacy credit still sets creditStatus 1`() {
+        val r = PaymentForm.build(base().copy(firstMethod = "외상", ordererName = "홍길동"), cart, 7000, 5, "2026-05-23")
+        assertEquals(1, r.getOrThrow().creditStatus)
     }
 
     @Test fun `methods no longer include credit`() {

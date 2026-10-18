@@ -12,6 +12,7 @@ import eloom.holybean.ui.theme.Dimens
 fun SettingsSheet(
     onDismiss: () -> Unit,
     onMenuMgmt: () -> Unit,
+    onCredits: (() -> Unit)?,
     onReport: () -> Unit,
     onDevTools: () -> Unit,
 ) {
@@ -19,6 +20,7 @@ fun SettingsSheet(
         Column(Modifier.padding(bottom = Dimens.sectionGap)) {
             Text("설정", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(Dimens.spaceMd))
             SettingsRow("메뉴 관리 (비밀번호)", onMenuMgmt)
+            onCredits?.let { SettingsRow("외상 관리", it) }
             SettingsRow("기간 매출 리포트", onReport)
             SettingsRow("개발자 도구", onDevTools)
         }

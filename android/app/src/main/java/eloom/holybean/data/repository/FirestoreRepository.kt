@@ -106,6 +106,21 @@ class FirestoreRepository @Inject constructor(
         })
     }
 
+    suspend fun getCreditsList(): ArrayList<CreditItem> = withContext(ioDispatcher) {
+        val snap = db.collection(FirestoreSchema.AGGREGATES)
+            .document(FirestoreSchema.OPEN_CREDITS_DOC).get().await()
+        @Suppress("UNCHECKED_CAST")
+        val items = (snap.get("items") as? Map<String, Map<String, Any>>) ?: emptyMap()
+        ArrayList(items.values.map {
+            CreditItem(
+                orderId = (it["orderNum"] as? Number)?.toInt() ?: 0,
+                totalAmount = (it["totalAmount"] as? Number)?.toInt() ?: 0,
+                date = it["orderDate"] as? String ?: "",
+                orderer = it["customerName"] as? String ?: ""
+            )
+        }.sortedWith(compareBy({ it.date }, { it.orderId })))
+    }
+
     suspend fun getReport(start: String, end: String): SalesReport = withContext(ioDispatcher) {
         val startDate = LocalDate.parse(start, dateFormatter)
         val endDate = LocalDate.parse(end, dateFormatter)
@@ -157,7 +172,24 @@ class FirestoreRepository @Inject constructor(
             SetOptions.merge()
         )
 
-        applyRollupDelta(batch, data.orderDate, OrderAggregation.rollupDelta(data), sign = 1)
+        if (data.creditStatus == FirestoreSchema.CREDIT_SETTLED) {
+            applyRollupDelta(batch, data.orderDate, OrderAggregation.rollupDelta(data), sign = 1)
+        } else {
+            val creditsRef = db.collection(FirestoreSchema.AGGREGATES)
+                .document(FirestoreSchema.OPEN_CREDITS_DOC)
+            batch.set(
+                creditsRef,
+                mapOf("items" to mapOf(
+                    FirestoreSchema.creditKey(data.orderDate, data.orderNum) to mapOf(
+                        "customerName" to data.customerName,
+                        "totalAmount" to data.totalAmount,
+                        "orderNum" to data.orderNum,
+                        "orderDate" to data.orderDate
+                    )
+                )),
+                SetOptions.merge()
+            )
+        }
         try {
             withTimeout(POST_ORDER_ACK_TIMEOUT_MS) { batch.commit().await() }  // 서버 ack 대기
         } catch (e: TimeoutCancellationException) {
@@ -192,6 +224,46 @@ class FirestoreRepository @Inject constructor(
             ),
             SetOptions.merge()
         )
+    }
+
+    /** 외상 정산(1→0): 원 주문일 reportRollups에 가산. 주문 본문을 읽어 델타 계산. */
+    suspend fun setCreditOrderPaid(date: String, num: Int) = withContext(ioDispatcher) {
+        val orderRef = db.collection(FirestoreSchema.ORDERS)
+            .document(FirestoreSchema.orderId(date, num))
+        val snap = orderRef.get().await()
+        if (!snap.exists()) return@withContext
+        if ((snap.getLong("creditStatus") ?: 0L).toInt() == FirestoreSchema.CREDIT_SETTLED) return@withContext
+
+        @Suppress("UNCHECKED_CAST")
+        val items = (snap.get("items") as? List<Map<String, Any>>) ?: emptyList()
+        @Suppress("UNCHECKED_CAST")
+        val payments = (snap.get("payments") as? List<Map<String, Any>>) ?: emptyList()
+
+        val cartItems = items.map {
+            eloom.holybean.data.model.CartItem(
+                0, it["name"] as? String ?: "", (it["unitPrice"] as? Number)?.toInt() ?: 0,
+                (it["quantity"] as? Number)?.toInt() ?: 0, (it["subtotal"] as? Number)?.toInt() ?: 0
+            )
+        }
+        val paymentMethods = payments.map {
+            eloom.holybean.data.model.PaymentMethod(
+                it["method"] as? String ?: "", (it["amount"] as? Number)?.toInt() ?: 0
+            )
+        }
+        val delta = OrderAggregation.rollupDelta(cartItems, paymentMethods)
+
+        val batch = db.batch()
+        batch.update(orderRef, "creditStatus", FirestoreSchema.CREDIT_SETTLED)
+        batch.update(
+            db.collection(FirestoreSchema.DAY_SUMMARIES).document(date),
+            "orders.$num.creditStatus", FirestoreSchema.CREDIT_SETTLED
+        )
+        batch.update(
+            db.collection(FirestoreSchema.AGGREGATES).document(FirestoreSchema.OPEN_CREDITS_DOC),
+            FieldPath.of("items", FirestoreSchema.creditKey(date, num)), FieldValue.delete()
+        )
+        applyRollupDelta(batch, date, delta, sign = 1)
+        batch.commit().await()
     }
 
     /** 주문 삭제: 정산분이면 reportRollups 감산, 미수면 openCredits 제거. lastOrderNum은 되돌리지 않음(번호 재사용 금지). */

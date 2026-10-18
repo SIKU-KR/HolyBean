@@ -16,8 +16,9 @@ data class PaymentSelection(
 )
 
 object PaymentForm {
+    // 외상은 신규 결제에서 제외(레거시). 기존 미수 정산 흐름과 아래 creditStatus 처리는 유지한다.
     val methods = listOf("현금", "쿠폰", "계좌이체", "무료쿠폰", "무료제공")
-    private fun needsOrderer(m: String?) = m == "계좌이체"
+    private fun needsOrderer(m: String?) = m == "계좌이체" || m == "외상"
 
     fun secondCandidates(first: String): List<String> = methods.filter { it != first }
 
@@ -39,7 +40,7 @@ object PaymentForm {
             if (needsOrderer(first) && sel.ordererName.isBlank())
                 return Result.failure(IllegalStateException("주문자를 입력하세요"))
             return Result.success(
-                order(date, orderId, sel.ordererName, cart,
+                order(date, orderId, credit(first), sel.ordererName, cart,
                     listOf(PaymentMethod(first, total)), total)
             )
         }
@@ -52,17 +53,20 @@ object PaymentForm {
         if ((needsOrderer(first) || needsOrderer(second)) && sel.ordererName.isBlank())
             return Result.failure(IllegalStateException("주문자를 입력하세요"))
         return Result.success(
-            order(date, orderId, sel.ordererName, cart,
+            order(date, orderId, credit(first, second), sel.ordererName, cart,
                 listOf(PaymentMethod(first, remainder), PaymentMethod(second, secondAmount)), total)
         )
     }
 
+    private fun credit(vararg m: String) = if (m.any { it == "외상" }) 1 else 0
+
     private fun order(
-        date: String, num: Int, name: String, items: List<CartItem>,
+        date: String, num: Int, credit: Int, name: String, items: List<CartItem>,
         methods: List<PaymentMethod>, total: Int,
     ) = Order(
         orderDate = date,
         orderNum = num,
+        creditStatus = credit,
         customerName = name,
         orderItems = items,
         paymentMethods = methods,

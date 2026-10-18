@@ -23,6 +23,9 @@ fun HolyBeanNavHost(navController: NavHostController = rememberNavController()) 
         eloom.holybean.ui.settings.SettingsSheet(
             onDismiss = { showSettings = false },
             onMenuMgmt = { showSettings = false; navController.navigate(MenuMgmtDest) },
+            onCredits = if (eloom.holybean.config.FeatureFlags.enableLegacyCredits) {
+                { showSettings = false; navController.navigate(CreditsDest) }
+            } else null,
             onReport = { showSettings = false; navController.navigate(ReportDest) },
             onDevTools = { showSettings = false; navController.navigate(DevToolsDest) },
         )
@@ -59,6 +62,9 @@ fun HolyBeanNavHost(navController: NavHostController = rememberNavController()) 
         }
         composable<MenuMgmtDest> {
             eloom.holybean.ui.menumanagement.MenuManagementRoute(onClose = { navController.popBackStack() })
+        }
+        composable<CreditsDest> {
+            eloom.holybean.ui.credits.CreditsRoute(onClose = { navController.popBackStack() })
         }
         composable<ReportDest> {
             eloom.holybean.ui.report.ReportRoute(onClose = { navController.popBackStack() })
